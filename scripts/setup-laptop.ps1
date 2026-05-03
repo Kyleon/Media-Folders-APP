@@ -4,9 +4,15 @@
 #
 # Lee docs/MULTI-EQUIPO.md primero si tienes dudas.
 #
-# Uso:
-#   # Descarga este script primero (sin clonar el repo aun):
-#   iwr https://raw.githubusercontent.com/Kyleon/Media-Folders-APP/main/scripts/setup-laptop.ps1 -OutFile setup-laptop.ps1
+# Uso normal (repo ya clonado):
+#   cd F:\dev\proyectos\Media-Folders-APP\scripts
+#   .\setup-laptop.ps1
+#
+# Si el repo aun no esta clonado, clonalo primero:
+#   mkdir -Force F:\dev\proyectos
+#   cd F:\dev\proyectos
+#   git clone https://github.com/Kyleon/Media-Folders-APP.git
+#   cd Media-Folders-APP\scripts
 #   .\setup-laptop.ps1
 #
 # Argumentos opcionales:

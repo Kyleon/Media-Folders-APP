@@ -38,7 +38,7 @@ Cierra y abre una PowerShell nueva (sin admin) para los siguientes pasos.
 
 ---
 
-## 3. Clonar el repo
+## 3. Clonar el repo y arrancar el setup
 
 Usa **la misma ruta** que en el equipo principal — así Claude Code reutiliza tus sesiones sincronizadas via Dropbox sin reinventar carpetas:
 
@@ -46,9 +46,23 @@ Usa **la misma ruta** que en el equipo principal — así Claude Code reutiliza 
 # Asegúrate de que F:\dev\proyectos\ existe (ajusta a tu unidad)
 mkdir -Force F:\dev\proyectos
 cd F:\dev\proyectos
+
+# Clonar (pide credenciales de GitHub la primera vez si el repo es privado)
 git clone https://github.com/Kyleon/Media-Folders-APP.git
-cd Media-Folders-APP
+
+# Ejecutar el bootstrap automático
+cd Media-Folders-APP\scripts
+.\setup-laptop.ps1
 ```
+
+> El script detecta automáticamente si ya estás dentro del repo y, en lugar de re-clonar, hace `git pull`. Después se encarga de `npm install`, plantilla de `sftp.json` y junction a Dropbox.
+
+### Autenticarse con GitHub la primera vez
+
+`git clone` con HTTPS pedirá tus credenciales:
+
+- **Más fácil**: instala [Git Credential Manager](https://github.com/git-ecosystem/git-credential-manager) (suele venir con Git for Windows). Te abrirá el navegador para login con tu cuenta de GitHub. Una sola vez.
+- **Alternativa**: usa un [Personal Access Token](https://github.com/settings/tokens) con scope `repo`. Cuando Git te pida la password, pega el token.
 
 > **Si tu portátil no tiene unidad `F:`** y no quieres pelearte con letras: usa `subst F: D:\` (donde `D:\` es donde tengas tus proyectos) para crear una letra virtual cada arranque. O cambia la letra de la unidad de datos en Administración de discos.
 
