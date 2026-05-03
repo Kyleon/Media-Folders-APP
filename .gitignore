@@ -1,0 +1,42 @@
+# ── Dependencias y artefactos de build (PWA Vue) ──
+app/node_modules/
+app/dist/
+app/dist-ssr/
+app/.vite/
+app/*.local
+
+# ── Configuración SFTP con credenciales (NUNCA commitear) ──
+app/.vscode/sftp.json
+**/.vscode/sftp.json
+**/sftp.json
+
+# ── Variables de entorno ──
+.env
+.env.local
+**/.env
+**/.env.local
+
+# ── Sistema operativo ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editores ──
+*.swp
+*.swo
+*~
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ── WordPress: artefactos en local que no aplican al plugin ──
+plugin/users.json
+plugin/setup.php
+plugin/config.php
+
+# ── Logs ──
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

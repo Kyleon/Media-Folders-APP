@@ -1,0 +1,42 @@
+/* Design tokens — dark by default, light cuando html[data-theme="light"] */
+:root,
+[data-theme="dark"] {
+  --bg:        #0f0f0f;
+  --s1:        #191919;
+  --s2:        #222;
+  --s3:        #2a2a2a;
+  --border:    #2e2e2e;
+  --border2:   #3a3a3a;
+  --text:      #e6e6e6;
+  --text-mute: #a0a0a0;
+  --dim:       #5a5a5a;
+  --accent:    #c8a97e;
+  --accent-lo: rgba(200,169,126,.16);
+  --danger:    #e05555;
+  --ok:        #4caf7d;
+  --info:      #4e8ef7;
+
+  --radius:    8px;
+  --radius-lg: 14px;
+  --shadow:    0 6px 24px rgba(0,0,0,.4);
+  --tap:       44px;
+}
+
+[data-theme="light"] {
+  --bg:        #fafafa;
+  --s1:        #ffffff;
+  --s2:        #f1f1f1;
+  --s3:        #e7e7e7;
+  --border:    #e0e0e0;
+  --border2:   #cdcdcd;
+  --text:      #1a1a1a;
+  --text-mute: #555;
+  --dim:       #888;
+  --accent:    #8b7250;
+  --accent-lo: rgba(139,114,80,.12);
+  --danger:    #c93030;
+  --ok:        #2f8a5a;
+  --info:      #2e6cd6;
+
+  --shadow:    0 4px 18px rgba(0,0,0,.08);
+}
