@@ -9,6 +9,7 @@ import Spinner from '../components/Spinner.vue';
 import FolderPicker from '../components/FolderPicker.vue';
 import GeoTagger from '../components/GeoTagger.vue';
 import L from 'leaflet';
+import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 const router  = useRouter();
@@ -163,15 +164,93 @@ const folderName = computed(() => {
   if (!folderId.value) return '— Sin carpeta —';
   return folders.byId[folderId.value]?.name || '?';
 });
+
+// ── Navegación entre fotos ──────────────────────────────────────
+// Usamos los items que la pantalla de Media tenga cargados.
+// Si está vacío (entró directo por URL), los botones quedan deshabilitados.
+const currentIndex = computed(() => {
+  if (!media.items.length) return -1;
+  return media.items.findIndex(i => i.id == props.id);
+});
+const prevId = computed(() => {
+  const i = currentIndex.value;
+  return i > 0 ? media.items[i - 1].id : null;
+});
+const nextId = computed(() => {
+  const i = currentIndex.value;
+  return i >= 0 && i < media.items.length - 1 ? media.items[i + 1].id : null;
+});
+
+function goPrev() {
+  if (prevId.value) router.replace({ name: 'media-detail', params: { id: prevId.value } });
+}
+function goNext() {
+  if (nextId.value) router.replace({ name: 'media-detail', params: { id: nextId.value } });
+}
+
+// Atajos de teclado
+useKeyboardShortcuts({
+  'arrowleft':  goPrev,
+  'arrowright': goNext,
+  'escape':     () => router.back(),
+});
+
+// Swipe táctil
+let touchStartX = null;
+let touchStartY = null;
+function onTouchStart(e) {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}
+function onTouchEnd(e) {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  // Sólo swipe horizontal claro (no diagonal, no vertical)
+  if (Math.abs(dx) > 60 && Math.abs(dy) < 40) {
+    if (dx > 0) goPrev();
+    else        goNext();
+  }
+  touchStartX = null;
+}
+
+// Recargar el detalle cuando cambia el id (al navegar entre fotos)
+watch(() => props.id, async (newId) => {
+  if (!newId) return;
+  loading.value = true;
+  try {
+    item.value = await MediaAPI.detail(newId);
+    form.value = {
+      title: item.value.title || '',
+      alt:   item.value.alt   || '',
+      seo_title: item.value.seo_title || '',
+      caption: item.value.caption || '',
+      description: item.value.description || '',
+    };
+    folderId.value = item.value.folder_ids?.[0] || 0;
+    if (tab.value === 'geo') renderMiniMap();
+  } catch (e) {
+    ui.toast(e.message, 'err');
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>
   <div v-if="loading" class="center muted"><Spinner /> Cargando…</div>
 
   <div v-else-if="item">
-    <div class="hero">
+    <div class="hero" @touchstart.passive="onTouchStart" @touchend="onTouchEnd">
       <img v-if="(item.mime || '').startsWith('image/')" :src="item.medium || item.url" :alt="item.title" />
       <div v-else class="hero-icon">📎</div>
+
+      <!-- Botones flotantes prev/next -->
+      <button v-if="prevId" class="nav-btn nav-prev" @click="goPrev" title="Anterior (←)">‹</button>
+      <button v-if="nextId" class="nav-btn nav-next" @click="goNext" title="Siguiente (→)">›</button>
+      <span v-if="currentIndex >= 0" class="nav-counter">
+        {{ currentIndex + 1 }} / {{ media.items.length }}
+      </span>
     </div>
 
     <div class="hero-actions">
@@ -304,15 +383,46 @@ const folderName = computed(() => {
 .center { display: flex; gap: 10px; justify-content: center; padding: 40px; }
 
 .hero {
+  position: relative;
   background: var(--s2);
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 12px;
   display: flex; align-items: center; justify-content: center;
   aspect-ratio: 4/3;
+  touch-action: pan-y;  /* permitir scroll vertical, capturamos solo swipe horizontal */
 }
 .hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .hero-icon { font-size: 60px; }
+
+.nav-btn {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px;
+  background: rgba(0,0,0,.55);
+  color: white;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, opacity .15s;
+  opacity: .8;
+  z-index: 2;
+}
+.nav-btn:hover { opacity: 1; background: rgba(0,0,0,.8); }
+.nav-prev { left: 8px; padding-right: 4px; }
+.nav-next { right: 8px; padding-left: 4px; }
+
+.nav-counter {
+  position: absolute;
+  bottom: 8px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.55);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
 
 .hero-actions { display: flex; gap: 8px; margin-bottom: 16px; }
 .hero-actions .btn { flex: 1; }

@@ -5,6 +5,7 @@ import { useFoldersStore } from '../stores/folders';
 import { useMediaStore } from '../stores/media';
 import { useUiStore } from '../stores/ui';
 import Spinner from '../components/Spinner.vue';
+import Skeleton from '../components/Skeleton.vue';
 import PullRefresh from '../components/PullRefresh.vue';
 import GeoTagger from '../components/GeoTagger.vue';
 
@@ -25,6 +26,34 @@ const aiProgress       = ref(null);    // { done, errors, total } durante bulk A
 const movingFolder     = ref(null);    // { id, name } cuando estamos eligiendo destino para mover una carpeta
 const dragFolderId     = ref(null);    // id de carpeta arrastrada (drag & drop nativo en desktop)
 const showBulkGeo      = ref(false);   // sheet de geotag para seleccionados
+const viewMode         = ref(localStorage.getItem('ypva.media.view') || 'grid'); // 'grid' | 'list'
+const activeQuickFilter = ref(null);  // id del filtro rápido activo
+
+watch(viewMode, (v) => localStorage.setItem('ypva.media.view', v));
+
+// Filtros rápidos predefinidos
+const QUICK_FILTERS = [
+  { id: 'today',     label: '🆕 Hoy',           apply: () => ({ orderby: 'date', order: 'DESC', search: '', mime: '' }) },
+  { id: 'no-alt',    label: '⚠ Sin alt',        apply: () => ({ search: '__NO_ALT__', mime: 'image' }) },
+  { id: 'no-folder', label: '📭 Sin carpeta',   apply: () => ({ folder: 0 }) },
+  { id: 'images',    label: '🖼 Solo fotos',    apply: () => ({ mime: 'image' }) },
+  { id: 'videos',    label: '🎬 Solo vídeos',   apply: () => ({ mime: 'video' }) },
+  { id: 'biggest',   label: '📦 Más pesadas',   apply: () => ({ orderby: 'size', order: 'DESC', mime: '' }) },
+];
+
+function applyQuickFilter(qf) {
+  if (activeQuickFilter.value === qf.id) {
+    // Toggle: desactivar
+    activeQuickFilter.value = null;
+    media.setFilter({ folder: -1, search: '', mime: '', orderby: 'date', order: 'DESC' });
+    media.load(true);
+    return;
+  }
+  activeQuickFilter.value = qf.id;
+  const patch = qf.apply();
+  media.setFilter(patch);
+  media.load(true);
+}
 
 // Long-press para entrar en modo selección
 let pressTimer = null;
@@ -315,6 +344,15 @@ watch(sentinel, setupObserver);
       <input v-model="searchInput" @input="onSearch" placeholder="Buscar…" class="search" />
     </div>
 
+    <!-- Filtros rápidos predefinidos -->
+    <div class="quick-filters">
+      <button v-for="qf in QUICK_FILTERS" :key="qf.id"
+        class="qf-chip" :class="{ on: activeQuickFilter === qf.id }"
+        @click="applyQuickFilter(qf)">
+        {{ qf.label }}
+      </button>
+    </div>
+
     <div class="chips">
       <button class="chip" :class="{ on: media.filter.mime === ''      }" @click="changeMime('')">Todos</button>
       <button class="chip" :class="{ on: media.filter.mime === 'image' }" @click="changeMime('image')">🖼 Fotos</button>
@@ -329,9 +367,13 @@ watch(sentinel, setupObserver);
         <option value="size">Tamaño</option>
       </select>
       <button class="chip" @click="toggleOrder">{{ media.filter.order === 'DESC' ? '↓' : '↑' }}</button>
+      <div class="view-toggle">
+        <button class="vt-btn" :class="{ on: viewMode === 'grid' }" @click="viewMode = 'grid'" title="Cuadrícula">⊞</button>
+        <button class="vt-btn" :class="{ on: viewMode === 'list' }" @click="viewMode = 'list'" title="Lista">≡</button>
+      </div>
     </div>
 
-    <div class="grid">
+    <div class="grid" :class="{ 'list-view': viewMode === 'list' }">
       <button
         v-for="img in media.items"
         :key="img.id"
@@ -355,6 +397,9 @@ watch(sentinel, setupObserver);
         <div class="meta">
           <span class="name" :title="img.title">{{ img.title || img.filename }}</span>
           <span class="size">{{ img.filesize_h }}</span>
+          <span v-if="viewMode === 'list'" class="meta-extra">
+            {{ img.date }} · {{ img.width }}×{{ img.height }} · {{ img.mime?.replace('image/', '').toUpperCase() }}
+          </span>
         </div>
       </button>
     </div>
@@ -370,7 +415,15 @@ watch(sentinel, setupObserver);
       </div>
     </div>
 
-    <div v-if="media.loading" class="center muted"><Spinner /> Cargando…</div>
+    <!-- Skeleton mientras carga la primera página -->
+    <div v-if="media.loading && !media.items.length" class="grid">
+      <div v-for="n in 12" :key="n" class="item skeleton-item">
+        <Skeleton variant="thumb" />
+        <Skeleton variant="text" width="80%" />
+        <Skeleton variant="text" width="40%" />
+      </div>
+    </div>
+    <div v-else-if="media.loading" class="center muted"><Spinner /> Cargando más…</div>
     <div v-else-if="!media.items.length" class="empty muted">📭 Sin resultados</div>
     <div ref="sentinel" v-if="media.page < media.pages" style="height:30px"></div>
 
@@ -530,6 +583,32 @@ watch(sentinel, setupObserver);
   padding-bottom: 4px;
 }
 .chips::-webkit-scrollbar { display: none; }
+
+.quick-filters {
+  display: flex; gap: 6px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.quick-filters::-webkit-scrollbar { display: none; }
+.qf-chip {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  font-size: 12px;
+  white-space: nowrap;
+  min-height: 32px;
+}
+.qf-chip.on {
+  background: var(--accent-lo);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 500;
+}
 .chip {
   flex: 0 0 auto;
   padding: 6px 12px;
@@ -548,10 +627,52 @@ watch(sentinel, setupObserver);
   width: auto;
 }
 
+.view-toggle {
+  display: flex; gap: 2px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2px;
+}
+.vt-btn {
+  width: 28px; height: 28px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--text-mute);
+}
+.vt-btn.on { background: var(--s1); color: var(--accent); }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 6px;
+}
+/* Vista lista: 1 fila por ítem con thumbnail a la izquierda */
+.grid.list-view {
+  display: flex; flex-direction: column;
+  gap: 4px;
+}
+.grid.list-view .item {
+  flex-direction: row;
+  align-items: center;
+  padding: 8px;
+  gap: 12px;
+}
+.grid.list-view .thumb {
+  flex: 0 0 60px;
+  width: 60px; height: 60px;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+}
+.grid.list-view .meta {
+  flex: 1; min-width: 0;
+  padding: 0;
+}
+.meta-extra {
+  display: block;
+  font-size: 11px;
+  color: var(--text-mute);
+  margin-top: 2px;
 }
 .item {
   display: flex; flex-direction: column;
@@ -645,6 +766,18 @@ watch(sentinel, setupObserver);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .size { font-size: 10px; color: var(--text-mute); }
+
+/* Skeleton placeholder mientras carga */
+.skeleton-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+  display: flex; flex-direction: column;
+  background: var(--s1);
+}
+.skeleton-item > * + * { margin-top: 4px; }
+.skeleton-item :deep(.skel.thumb) { border-radius: var(--radius) var(--radius) 0 0; }
+.skeleton-item :deep(.skel.text)  { margin: 4px 8px; }
 
 .center { display: flex; gap: 10px; justify-content: center; padding: 30px; }
 .empty { text-align: center; padding: 40px 16px; }
