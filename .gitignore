@@ -28,6 +28,8 @@ desktop.ini
 .idea/
 *.sublime-workspace
 *.sublime-project
+.claude/settings.local.json
+**/.claude/settings.local.json
 
 # ── WordPress: artefactos en local que no aplican al plugin ──
 plugin/users.json
