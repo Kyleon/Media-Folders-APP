@@ -354,13 +354,13 @@ function toggleFolder(id) {
   font-size: 14px;
   font-weight: 600;
   box-shadow: var(--shadow);
-  z-index: 200;
+  z-index: 1100;  /* por encima de los controles Leaflet (1000) */
 }
 
 .map-overlay-controls {
   position: absolute;
   top: 12px; right: 12px;
-  z-index: 200;
+  z-index: 1100;  /* por encima de los controles Leaflet (1000) */
   display: flex; gap: 6px;
 }
 .layer-toggle {
@@ -383,7 +383,7 @@ function toggleFolder(id) {
   position: absolute;
   inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 250;
+  z-index: 1200;  /* encima del FAB y los controles del mapa */
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
 }
@@ -414,7 +414,7 @@ function toggleFolder(id) {
 .sheet-overlay {
   position: absolute; inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 300;
+  z-index: 1300;  /* el bottomsheet por encima de todo el mapa */
   display: flex; align-items: flex-end;
 }
 .sheet {
