@@ -163,6 +163,12 @@ class YZMF_Portfolio_Bridge {
             'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/portfolios/(?P<id>\d+)/duplicate', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'duplicate_portfolio' ],
+            'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+        ] );
+
         register_rest_route( self::NS, '/portfolios/(?P<id>\d+)/meta', [
             [
                 'methods'             => 'GET',
@@ -846,5 +852,77 @@ class YZMF_Portfolio_Bridge {
             case 'text':
             default:          return sanitize_text_field( (string) $val );
         }
+    }
+
+    /**
+     * Duplica un portfolio existente como plantilla:
+     * copia layout, categorías y todos los meta keys del schema (excepto
+     * la galería, que el usuario rellenará después con sync-folder o picker).
+     * Status: draft. Título: original + " (copia)".
+     *
+     * Body params opcionales:
+     *   title         string   título del nuevo portfolio (override)
+     *   include_gallery bool   true para copiar también la galería
+     */
+    public static function duplicate_portfolio( WP_REST_Request $req ) {
+        $sourceId = intval( $req['id'] );
+        $source   = get_post( $sourceId );
+        if ( ! $source || $source->post_type !== self::CPT ) {
+            return new WP_Error( 'yzmf_not_found', 'Portfolio no encontrado', [ 'status' => 404 ] );
+        }
+
+        $newTitle = sanitize_text_field( $req->get_param( 'title' ) ?: ( $source->post_title . ' (copia)' ) );
+        $includeGallery = (bool) $req->get_param( 'include_gallery' );
+
+        // Crear nuevo post
+        $newId = wp_insert_post( [
+            'post_type'    => self::CPT,
+            'post_title'   => $newTitle,
+            'post_content' => $source->post_content,
+            'post_excerpt' => $source->post_excerpt,
+            'post_status'  => 'draft',
+        ], true );
+        if ( is_wp_error( $newId ) ) return $newId;
+
+        // Copiar categorías
+        $cat_ids = wp_get_object_terms( $sourceId, self::TAX, [ 'fields' => 'ids' ] );
+        if ( ! is_wp_error( $cat_ids ) && ! empty( $cat_ids ) ) {
+            wp_set_object_terms( $newId, array_map( 'intval', $cat_ids ), self::TAX, false );
+        }
+
+        // Copiar layout
+        $layout = get_post_meta( $sourceId, 'rnr_wr_port_dt_opt', true );
+        if ( $layout ) update_post_meta( $newId, 'rnr_wr_port_dt_opt', $layout );
+
+        // Copiar todos los meta del schema (sidebar, info, button, etc.) excepto galería
+        $schema = self::meta_schema( $layout ?: 'st1' );
+        $galleryKey = self::gallery_meta_key( $layout ?: 'st1' );
+        foreach ( $schema as $field ) {
+            if ( $field['type'] === 'image' ) {
+                // image_advanced: multi-row
+                $rows = get_post_meta( $sourceId, $field['key'], false );
+                foreach ( (array) $rows as $r ) {
+                    $i = intval( $r );
+                    if ( $i > 0 ) add_post_meta( $newId, $field['key'], $i, false );
+                }
+            } else {
+                $val = get_post_meta( $sourceId, $field['key'], true );
+                if ( $val !== '' && $val !== null ) {
+                    update_post_meta( $newId, $field['key'], $val );
+                }
+            }
+        }
+
+        // Galería: copiar solo si include_gallery=true
+        if ( $includeGallery ) {
+            $ids = self::read_gallery_meta( $sourceId, $galleryKey );
+            self::write_gallery_meta( $newId, $galleryKey, $ids );
+        }
+
+        // Imagen destacada — opcional copiar la del original
+        $thumb = get_post_thumbnail_id( $sourceId );
+        if ( $thumb ) set_post_thumbnail( $newId, $thumb );
+
+        return rest_ensure_response( self::format_portfolio( get_post( $newId ), true ) );
     }
 }

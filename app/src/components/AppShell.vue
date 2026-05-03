@@ -16,6 +16,7 @@ const titles = {
   'portfolio-detail': 'Portfolio',
   'portfolio-categories': 'Categorías',
   map: 'Mapa',
+  exif: 'Estadísticas EXIF',
   settings: 'Ajustes',
 };
 const title = computed(() => titles[route.name] || 'YPVA');

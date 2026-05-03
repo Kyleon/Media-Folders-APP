@@ -8,6 +8,7 @@ import Spinner from '../components/Spinner.vue';
 import Skeleton from '../components/Skeleton.vue';
 import PullRefresh from '../components/PullRefresh.vue';
 import GeoTagger from '../components/GeoTagger.vue';
+import { StatsAPI } from '../api/endpoints';
 
 const router  = useRouter();
 const route   = useRoute();
@@ -26,6 +27,10 @@ const aiProgress       = ref(null);    // { done, errors, total } durante bulk A
 const movingFolder     = ref(null);    // { id, name } cuando estamos eligiendo destino para mover una carpeta
 const dragFolderId     = ref(null);    // id de carpeta arrastrada (drag & drop nativo en desktop)
 const showBulkGeo      = ref(false);   // sheet de geotag para seleccionados
+const showTagPicker    = ref(false);
+const showColorPicker  = ref(false);
+const allTags          = ref([]);      // [{tag, count}]
+const allColors        = ref([]);      // [{color, count}]
 const viewMode         = ref(localStorage.getItem('ypva.media.view') || 'grid'); // 'grid' | 'list'
 const activeQuickFilter = ref(null);  // id del filtro rápido activo
 
@@ -75,11 +80,13 @@ function onItemTap(img, evt) {
 }
 
 onMounted(async () => {
-  // Sincronizar carpeta desde la URL si viene
+  // Sincronizar filtros desde la URL si vienen
   const f = route.query.folder;
   if (f !== undefined && f !== null && f !== '') {
     media.filter.folder = parseInt(f);
   }
+  if (route.query.tag)   media.filter.tag   = String(route.query.tag);
+  if (route.query.color) media.filter.color = String(route.query.color);
   await Promise.all([ folders.load(), media.load(true) ]);
 });
 
@@ -262,6 +269,33 @@ async function onBulkGeoPick(payload) {
   }
 }
 
+async function openTagPicker() {
+  showTagPicker.value = true;
+  if (!allTags.value.length) {
+    try { allTags.value = await StatsAPI.tags(); }
+    catch (e) { ui.toast(e.message, 'err'); }
+  }
+}
+async function openColorPicker() {
+  showColorPicker.value = true;
+  if (!allColors.value.length) {
+    try { allColors.value = await StatsAPI.colors(); }
+    catch (e) { ui.toast(e.message, 'err'); }
+  }
+}
+function applyTagFilter(tag) {
+  media.setFilter({ tag: media.filter.tag === tag ? '' : tag });
+  media.load(true);
+  showTagPicker.value = false;
+}
+function applyColorFilter(color) {
+  media.setFilter({ color: media.filter.color === color ? '' : color });
+  media.load(true);
+  showColorPicker.value = false;
+}
+function clearTagFilter()   { media.setFilter({ tag: '' });   media.load(true); }
+function clearColorFilter() { media.setFilter({ color: '' }); media.load(true); }
+
 async function onBulkGeoClear() {
   if (!confirm(`¿Quitar ubicación de ${media.selectedCount} imágenes?`)) return;
   try {
@@ -350,6 +384,16 @@ watch(sentinel, setupObserver);
         class="qf-chip" :class="{ on: activeQuickFilter === qf.id }"
         @click="applyQuickFilter(qf)">
         {{ qf.label }}
+      </button>
+      <button class="qf-chip" :class="{ on: !!media.filter.tag }" @click="openTagPicker">
+        🏷 {{ media.filter.tag || 'Tag' }}
+        <span v-if="media.filter.tag" class="qf-clear" @click.stop="clearTagFilter">✕</span>
+      </button>
+      <button class="qf-chip" :class="{ on: !!media.filter.color }" @click="openColorPicker">
+        <span v-if="media.filter.color" class="color-dot" :style="{ background: media.filter.color }"></span>
+        <span v-else>🎨</span>
+        {{ media.filter.color ? media.filter.color : 'Color' }}
+        <span v-if="media.filter.color" class="qf-clear" @click.stop="clearColorFilter">✕</span>
       </button>
     </div>
 
@@ -528,6 +572,53 @@ watch(sentinel, setupObserver);
       </div>
     </transition>
 
+    <!-- Sheet de Tags -->
+    <transition name="sheet">
+      <div v-if="showTagPicker" class="sheet-overlay" @click.self="showTagPicker = false">
+        <div class="sheet">
+          <div class="sheet-handle" />
+          <div class="sheet-head">
+            <h3>Filtrar por etiqueta</h3>
+            <button class="close-btn" @click="showTagPicker = false">✕</button>
+          </div>
+          <p v-if="!allTags.length" class="muted small empty-msg">
+            No hay tags todavía. Genera con IA imágenes para que aparezcan aquí.
+          </p>
+          <div v-else class="tag-cloud">
+            <button v-for="t in allTags" :key="t.tag"
+              class="tag-chip" :class="{ on: media.filter.tag === t.tag }"
+              @click="applyTagFilter(t.tag)">
+              {{ t.tag }} <span class="muted small">{{ t.count }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Sheet de Colores -->
+    <transition name="sheet">
+      <div v-if="showColorPicker" class="sheet-overlay" @click.self="showColorPicker = false">
+        <div class="sheet">
+          <div class="sheet-handle" />
+          <div class="sheet-head">
+            <h3>Filtrar por color dominante</h3>
+            <button class="close-btn" @click="showColorPicker = false">✕</button>
+          </div>
+          <p v-if="!allColors.length" class="muted small empty-msg">
+            No hay paletas todavía. Sube imágenes nuevas (la paleta se calcula al subir).
+          </p>
+          <div v-else class="color-grid">
+            <button v-for="c in allColors" :key="c.color"
+              class="color-cell" :class="{ on: media.filter.color === c.color }"
+              :style="{ background: c.color }"
+              :title="c.color + ' · ' + c.count + ' imágenes'"
+              @click="applyColorFilter(c.color)">
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- GeoTagger en lote -->
     <GeoTagger v-model="showBulkGeo"
       :initial-lat="null"
@@ -609,6 +700,51 @@ watch(sentinel, setupObserver);
   border-color: var(--accent);
   font-weight: 500;
 }
+.qf-clear {
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 50%;
+  font-size: 10px;
+  opacity: .7;
+}
+.qf-clear:hover { opacity: 1; }
+.color-dot {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* Tag cloud */
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.tag-chip {
+  padding: 6px 12px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--text);
+}
+.tag-chip.on { background: var(--accent); color: #0f0f0f; border-color: var(--accent); }
+.empty-msg { padding: 20px; text-align: center; }
+
+/* Color grid */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 4px;
+  padding: 4px 0;
+}
+.color-cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  transition: transform .15s, border-color .15s;
+}
+.color-cell:hover { transform: scale(1.1); border-color: rgba(255,255,255,.3); }
+.color-cell.on { border-color: white; transform: scale(1.15); }
 .chip {
   flex: 0 0 auto;
   padding: 6px 12px;

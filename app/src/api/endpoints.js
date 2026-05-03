@@ -31,6 +31,7 @@ export const MediaAPI = {
   setGeo: (id, body)          => api.put(NS + 'media/' + id + '/geo', body),
   bulkGeo: (ids, body)        => api.post(NS + 'media/geo/bulk', { ids, ...body }),
   listGeo: (limit = 1000)     => api.get(NS + 'media/geo/all', { limit }),
+  setPalette: (id, palette)   => api.put(NS + 'media/' + id + '/palette', { palette }),
 };
 
 export const MapAPI = {
@@ -56,12 +57,16 @@ export const PortfoliosAPI = {
   setGallery: (id, ids)    => api.put(NS + 'portfolios/' + id + '/gallery', { gallery: ids }),
   syncFolder: (id, folder_id, orderby='date', order='ASC') =>
     api.post(NS + 'portfolios/' + id + '/sync-folder', { folder_id, orderby, order }),
+  duplicate: (id, body = {}) => api.post(NS + 'portfolios/' + id + '/duplicate', body),
   getMeta:    (id)              => api.get(NS + 'portfolios/' + id + '/meta'),
   setMeta:    (id, values)      => api.put(NS + 'portfolios/' + id + '/meta', { values }),
 };
 
 export const StatsAPI = {
-  get: () => api.get(NS + 'stats'),
+  get:    () => api.get(NS + 'stats'),
+  exif:   () => api.get(NS + 'stats/exif'),
+  tags:   () => api.get(NS + 'tags'),
+  colors: () => api.get(NS + 'colors'),
 };
 
 export const PortfolioCatsAPI = {

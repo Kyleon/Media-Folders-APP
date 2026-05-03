@@ -295,6 +295,18 @@ watch(() => props.id, async (newId) => {
         </button>
       </div>
 
+      <div v-if="item.tags?.length" class="field">
+        <label>Etiquetas IA</label>
+        <div class="tags-list">
+          <button v-for="t in item.tags" :key="t"
+            class="tag-pill"
+            @click="$router.push({ name: 'media', query: { tag: t } })"
+            :title="'Filtrar por: ' + t">
+            🏷 {{ t }}
+          </button>
+        </div>
+      </div>
+
       <div class="row" style="margin-top:14px">
         <button class="btn" :disabled="generating" @click="generateAI">
           <Spinner v-if="generating" :size="14" />
@@ -482,6 +494,17 @@ watch(() => props.id, async (newId) => {
   min-height: var(--tap);
 }
 .folder-picker-btn:active { background: var(--s2); }
+
+.tags-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag-pill {
+  padding: 4px 10px;
+  background: var(--accent-lo);
+  color: var(--accent);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.tag-pill:active { background: var(--accent); color: #0f0f0f; }
 
 .mini-map {
   height: 200px;

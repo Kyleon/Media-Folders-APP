@@ -44,8 +44,11 @@ function clearCaches() {
       <button class="btn" @click="$router.push({ name: 'folders' })" style="width:100%;margin-bottom:8px">
         📁 Carpetas de medios
       </button>
-      <button class="btn" @click="$router.push({ name: 'portfolio-categories' })" style="width:100%">
+      <button class="btn" @click="$router.push({ name: 'portfolio-categories' })" style="width:100%;margin-bottom:8px">
         📂 Categorías de portfolio
+      </button>
+      <button class="btn" @click="$router.push({ name: 'exif' })" style="width:100%">
+        📷 Estadísticas EXIF
       </button>
     </div>
 

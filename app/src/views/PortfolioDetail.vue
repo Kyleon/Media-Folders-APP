@@ -26,6 +26,7 @@ const galleryDirty = ref(false);
 const showAddPicker = ref(false);
 const showHeroPicker = ref(false);
 const showAdvanced  = ref(false);
+const duplicating   = ref(false);
 
 const form = ref({
   title: '', excerpt: '', status: 'draft', layout: 'st1',
@@ -162,6 +163,25 @@ async function clearHero() {
     ui.toast('Imagen destacada quitada', 'ok');
   } catch (e) {
     ui.toast(e.message, 'err');
+  }
+}
+
+async function duplicate() {
+  const newTitle = prompt('Título para la copia:', item.value.title + ' (copia)');
+  if (newTitle === null) return; // cancelado
+  const includeGallery = confirm('¿Copiar también la galería de imágenes?\n\nOK = sí · Cancelar = sólo configuración (galería vacía)');
+  duplicating.value = true;
+  try {
+    const created = await PortfoliosAPI.duplicate(props.id, {
+      title: newTitle.trim() || (item.value.title + ' (copia)'),
+      include_gallery: includeGallery,
+    });
+    ui.toast('✓ Plantilla creada', 'ok');
+    router.push({ name: 'portfolio-detail', params: { id: created.id } });
+  } catch (e) {
+    ui.toast(e.message, 'err');
+  } finally {
+    duplicating.value = false;
   }
 }
 
@@ -313,6 +333,10 @@ async function remove() {
     <div class="card danger-zone" style="margin-top:14px">
       <a class="btn" :href="item.permalink" target="_blank" style="width:100%;margin-bottom:8px">↗ Ver portfolio</a>
       <a class="btn" :href="item.edit_url"  target="_blank" style="width:100%;margin-bottom:8px">⚙ Editor de WP</a>
+      <button class="btn" @click="duplicate" :disabled="duplicating" style="width:100%;margin-bottom:8px">
+        <Spinner v-if="duplicating" :size="14" />
+        <span v-else>📋 Duplicar como plantilla</span>
+      </button>
       <button class="btn danger" @click="remove" style="width:100%">🗑 Mover a papelera</button>
     </div>
   </div>

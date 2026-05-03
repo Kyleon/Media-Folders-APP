@@ -14,6 +14,8 @@ export const useMediaStore = defineStore('media', {
       orderby: 'date',
       order: 'DESC',
       mime: '',
+      tag: '',     // tag IA opcional
+      color: '',   // color hex opcional (#RRGGBB)
     },
     // Selección múltiple
     selectMode: false,
@@ -36,6 +38,8 @@ export const useMediaStore = defineStore('media', {
           orderby: this.filter.orderby,
           order: this.filter.order,
           mime: this.filter.mime,
+          tag:   this.filter.tag,
+          color: this.filter.color,
         });
         this.items = reset || this.page === 1 ? res.images : [...this.items, ...res.images];
         this.total = res.total;

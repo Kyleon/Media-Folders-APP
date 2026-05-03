@@ -7,6 +7,7 @@ const routes = [
   { path: '/media',     name: 'media',     component: () => import('../views/Media.vue') },
   { path: '/media/:id', name: 'media-detail', component: () => import('../views/MediaDetail.vue'), props: true },
   { path: '/folders',   name: 'folders',   component: () => import('../views/Folders.vue') },
+  { path: '/exif',      name: 'exif',      component: () => import('../views/ExifStats.vue') },
   { path: '/upload',    name: 'upload',    component: () => import('../views/Upload.vue') },
   { path: '/portfolios', name: 'portfolios', component: () => import('../views/Portfolios.vue') },
   { path: '/portfolios/categories', name: 'portfolio-categories', component: () => import('../views/PortfolioCategories.vue') },

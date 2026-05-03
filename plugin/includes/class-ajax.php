@@ -145,6 +145,8 @@ class YZMF_Ajax {
         $orderby = sanitize_key( $_POST['orderby'] ?? 'date' );
         $order   = strtoupper( $_POST['order']   ?? 'DESC' ) === 'ASC' ? 'ASC' : 'DESC';
         $mime    = sanitize_text_field( $_POST['mime'] ?? '' );
+        $tag     = sanitize_text_field( $_POST['tag'] ?? '' );  // filtro por tag IA
+        $color   = sanitize_text_field( $_POST['color'] ?? '' ); // filtro por color hex (#RRGGBB)
 
         $allowed = [ 'date', 'title', 'size' ];
         if ( ! in_array( $orderby, $allowed ) ) $orderby = 'date';
@@ -162,10 +164,39 @@ class YZMF_Ajax {
         } else {
             $args['orderby'] = $orderby;
         }
+        // Filtros especiales en search
+        $meta_q = [];
+        if ( $search === '__NO_ALT__' ) {
+            // Imágenes sin alt text
+            $meta_q[] = [
+                'relation' => 'OR',
+                [ 'key' => '_wp_attachment_image_alt', 'compare' => 'NOT EXISTS' ],
+                [ 'key' => '_wp_attachment_image_alt', 'value' => '', 'compare' => '=' ],
+            ];
+            $search = '';
+        }
         if ( $search ) $args['s'] = $search;
         if ( $mime ) {
             $map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
             if ( isset( $map[ $mime ] ) ) $args['post_mime_type'] = $map[ $mime ];
+        }
+
+        // Filtro por tag IA (LIKE sobre el meta serializado)
+        if ( $tag ) {
+            $meta_q[] = [ 'key' => '_yzmf_ai_tags', 'value' => '"' . $tag . '"', 'compare' => 'LIKE' ];
+        }
+
+        // Filtro por color dominante (LIKE sobre meta de paleta)
+        if ( $color && preg_match( '/^#?[0-9A-Fa-f]{6}$/', $color ) ) {
+            $hex = strtoupper( ltrim( $color, '#' ) );
+            $meta_q[] = [ 'key' => '_yzmf_color_palette', 'value' => $hex, 'compare' => 'LIKE' ];
+        }
+
+        if ( ! empty( $meta_q ) ) {
+            $meta_q['relation'] = 'AND';
+            $args['meta_query'] = isset( $args['meta_query'] )
+                ? array_merge( $args['meta_query'], $meta_q )
+                : $meta_q;
         }
 
         if ( $folder === 0 ) {
@@ -220,6 +251,9 @@ class YZMF_Ajax {
             'source' => get_post_meta( $att->ID, '_yzmf_geo_source', true ) ?: 'manual',
         ] : null;
 
+        $ai_tags = get_post_meta( $att->ID, '_yzmf_ai_tags', true );
+        if ( ! is_array( $ai_tags ) ) $ai_tags = [];
+
         return [
             'id'         => $att->ID,
             'title'      => $att->post_title,
@@ -240,6 +274,7 @@ class YZMF_Ajax {
             'folder_ids' => is_wp_error( $terms ) ? [] : $terms,
             'exif'       => $exif,
             'geo'        => $geo,
+            'tags'       => $ai_tags,
             'edit_url'   => get_edit_post_link( $att->ID, 'raw' ),
         ];
     }
@@ -429,9 +464,14 @@ class YZMF_Ajax {
             . "No empieces con \"Imagen de\" o \"Foto de\".\n\n"
             . "2. CAPTION: Pie de foto breve y evocador (máx 160 caracteres) con tono fotográfico. "
             . "Puede incluir contexto, lugar o sensación.\n\n"
+            . "3. TAGS: 3 a 6 etiquetas en español, en minúsculas, una palabra cada una, "
+            . "del repertorio: paisaje, retrato, urbano, naturaleza, arquitectura, calle, viaje, "
+            . "interior, monocromo, color, atardecer, noche, día, agua, montaña, bosque, ciudad, "
+            . "evento, abstracto, macro, animal, persona, objeto, vehículo, comida, deporte, arte. "
+            . "Si aplica, añade tu propia etiqueta breve (1-2 palabras).\n\n"
             . "Título del archivo: " . $title . '.' . $exif_ctx . "\n\n"
             . "Responde ÚNICAMENTE en este formato JSON exacto, sin texto adicional:\n"
-            . '{"alt":"...","caption":"..."}';
+            . '{"alt":"...","caption":"...","tags":["...","..."]}';
 
         $model = get_option( 'yzmf_ai_model', 'claude-haiku-4-5-20251001' );
 
@@ -445,7 +485,7 @@ class YZMF_Ajax {
                 ],
                 'body' => wp_json_encode( [
                     'model'      => $model,
-                    'max_tokens' => 200,
+                    'max_tokens' => 350,  // ampliado para incluir tags
                     'messages'   => [ [
                         'role'    => 'user',
                         'content' => [
@@ -491,14 +531,20 @@ class YZMF_Ajax {
 
         $alt     = sanitize_text_field( $parsed['alt']     ?? '' );
         $caption = sanitize_text_field( $parsed['caption'] ?? '' );
+        $tags    = is_array( $parsed['tags'] ?? null ) ? $parsed['tags'] : [];
+        $tags    = array_values( array_filter( array_map( function( $t ) {
+            return sanitize_text_field( strtolower( trim( (string) $t ) ) );
+        }, $tags ), function( $t ) { return $t !== ''; } ) );
 
         if ( $alt )     update_post_meta( $image_id, '_wp_attachment_image_alt', $alt );
         if ( $caption ) wp_update_post( [ 'ID' => $image_id, 'post_excerpt' => $caption ] );
+        if ( $tags )    update_post_meta( $image_id, '_yzmf_ai_tags', $tags );
 
         return [ 'success' => true, 'data' => [
             'image_id' => $image_id,
             'alt'      => $alt,
             'caption'  => $caption,
+            'tags'     => $tags,
         ] ];
     }
 

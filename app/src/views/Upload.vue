@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useFoldersStore } from '../stores/folders';
 import { useUiStore } from '../stores/ui';
 import { MediaAPI } from '../api/endpoints';
+import { extractPalette } from '../utils/palette';
 import Spinner from '../components/Spinner.vue';
 
 const folders = useFoldersStore();
@@ -52,6 +53,14 @@ async function runQueue() {
       const res = await MediaAPI.upload(item.file, folderId.value || null);
       item.status = 'ok';
       item.result = res;
+      // Extraer paleta dominante en cliente y guardarla en el server (best effort).
+      // No bloquea la subida en caso de fallo.
+      if (item.file.type?.startsWith('image/')) {
+        try {
+          const palette = await extractPalette(item.file, 5);
+          if (palette.length) await MediaAPI.setPalette(res.id, palette);
+        } catch { /* silencioso */ }
+      }
     } catch (e) {
       item.status = 'err';
       item.error  = e.message;

@@ -210,6 +210,30 @@ class YZMF_REST {
             'permission_callback' => [ __CLASS__, 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/stats/exif', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'get_stats_exif' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
+        register_rest_route( self::NS, '/tags', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'get_tags' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
+        register_rest_route( self::NS, '/colors', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'get_colors' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
+        register_rest_route( self::NS, '/media/(?P<id>\d+)/palette', [
+            'methods'             => 'PUT',
+            'callback'            => [ __CLASS__, 'set_media_palette' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
         // ── GEOCODING (proxy de Nominatim) ──────────────────────
         register_rest_route( self::NS, '/geocode/search', [
             'methods'             => 'GET',
@@ -324,11 +348,36 @@ class YZMF_REST {
         } else {
             $args['orderby'] = $orderby;
         }
+
+        $tag   = sanitize_text_field( $req->get_param( 'tag' ) ?: '' );
+        $color = sanitize_text_field( $req->get_param( 'color' ) ?: '' );
+        $meta_q = [];
+
+        if ( $search === '__NO_ALT__' ) {
+            $meta_q[] = [
+                'relation' => 'OR',
+                [ 'key' => '_wp_attachment_image_alt', 'compare' => 'NOT EXISTS' ],
+                [ 'key' => '_wp_attachment_image_alt', 'value' => '', 'compare' => '=' ],
+            ];
+            $search = '';
+        }
         if ( $search ) $args['s'] = $search;
         if ( $mime_in ) {
             $map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
             if ( isset( $map[ $mime_in ] ) ) $args['post_mime_type'] = $map[ $mime_in ];
         }
+        if ( $tag ) {
+            $meta_q[] = [ 'key' => '_yzmf_ai_tags', 'value' => '"' . $tag . '"', 'compare' => 'LIKE' ];
+        }
+        if ( $color && preg_match( '/^#?[0-9A-Fa-f]{6}$/', $color ) ) {
+            $hex = strtoupper( ltrim( $color, '#' ) );
+            $meta_q[] = [ 'key' => '_yzmf_color_palette', 'value' => $hex, 'compare' => 'LIKE' ];
+        }
+        if ( ! empty( $meta_q ) ) {
+            $meta_q['relation'] = 'AND';
+            $args['meta_query'] = $meta_q;
+        }
+
         if ( $folder === 0 ) {
             $args['tax_query'] = [ [ 'taxonomy' => YZMF_TAXONOMY, 'operator' => 'NOT EXISTS' ] ];
         } elseif ( $folder > 0 ) {
@@ -700,6 +749,189 @@ class YZMF_REST {
 
         set_transient( 'yzmf_stats_cache', $stats, 5 * MINUTE_IN_SECONDS );
         return rest_ensure_response( $stats );
+    }
+
+    /**
+     * Histograma de datos EXIF: cámaras, lentes (focal), aperturas, ISOs.
+     * Recorre todas las imágenes y agrega valores. Cache 30 min.
+     */
+    public static function get_stats_exif( WP_REST_Request $req ) {
+        $cache = get_transient( 'yzmf_stats_exif_cache' );
+        if ( $cache !== false ) {
+            return rest_ensure_response( $cache );
+        }
+
+        global $wpdb;
+        // Cogemos todos los _wp_attachment_metadata de imágenes
+        $rows = $wpdb->get_col( "
+            SELECT pm.meta_value
+            FROM {$wpdb->postmeta} pm
+            INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+            WHERE pm.meta_key = '_wp_attachment_metadata'
+              AND p.post_type = 'attachment'
+              AND p.post_mime_type LIKE 'image/%'
+        " );
+
+        $cameras = []; $focals = []; $apertures = []; $isos = []; $shutters = [];
+
+        foreach ( $rows as $blob ) {
+            $meta = @maybe_unserialize( $blob );
+            if ( ! is_array( $meta ) || empty( $meta['image_meta'] ) ) continue;
+            $im = $meta['image_meta'];
+
+            if ( ! empty( $im['camera'] ) ) {
+                $k = trim( $im['camera'] );
+                if ( $k !== '' ) $cameras[ $k ] = ( $cameras[ $k ] ?? 0 ) + 1;
+            }
+            if ( ! empty( $im['focal_length'] ) ) {
+                $k = round( floatval( $im['focal_length'] ) ) . 'mm';
+                $focals[ $k ] = ( $focals[ $k ] ?? 0 ) + 1;
+            }
+            if ( ! empty( $im['aperture'] ) ) {
+                $k = 'f/' . round( floatval( $im['aperture'] ), 1 );
+                $apertures[ $k ] = ( $apertures[ $k ] ?? 0 ) + 1;
+            }
+            if ( ! empty( $im['iso'] ) ) {
+                $k = (string) intval( $im['iso'] );
+                $isos[ $k ] = ( $isos[ $k ] ?? 0 ) + 1;
+            }
+            if ( ! empty( $im['shutter_speed'] ) ) {
+                $s = floatval( $im['shutter_speed'] );
+                $k = $s < 1 ? '1/' . round( 1 / $s ) : round( $s, 1 ) . 's';
+                $shutters[ $k ] = ( $shutters[ $k ] ?? 0 ) + 1;
+            }
+        }
+
+        // Convertir a arrays ordenados {label, count}
+        $sortDesc = function( $arr, $limit = 20 ) {
+            arsort( $arr );
+            $out = [];
+            $i = 0;
+            foreach ( $arr as $k => $v ) {
+                $out[] = [ 'label' => $k, 'count' => $v ];
+                if ( ++$i >= $limit ) break;
+            }
+            return $out;
+        };
+
+        // Para focales/iso/aperturas/shutters mejor ordenar por valor numérico que por count
+        $sortByLabelNumeric = function( $arr, $extract ) {
+            uksort( $arr, function( $a, $b ) use ( $extract ) {
+                return $extract( $a ) <=> $extract( $b );
+            } );
+            $out = [];
+            foreach ( $arr as $k => $v ) $out[] = [ 'label' => $k, 'count' => $v ];
+            return $out;
+        };
+
+        $stats = [
+            'cameras'   => $sortDesc( $cameras ),
+            'focals'    => $sortByLabelNumeric( $focals,    function( $k ) { return floatval( $k ); } ),
+            'apertures' => $sortByLabelNumeric( $apertures, function( $k ) { return floatval( str_replace( 'f/', '', $k ) ); } ),
+            'isos'      => $sortByLabelNumeric( $isos,      function( $k ) { return intval( $k ); } ),
+            'shutters'  => $sortByLabelNumeric( $shutters,  function( $k ) {
+                if ( strpos( $k, '1/' ) === 0 ) return 1.0 / floatval( substr( $k, 2 ) );
+                return floatval( $k );
+            } ),
+            'total'     => array_sum( array_map( 'intval', $cameras ) ),
+        ];
+
+        set_transient( 'yzmf_stats_exif_cache', $stats, 30 * MINUTE_IN_SECONDS );
+        return rest_ensure_response( $stats );
+    }
+
+    /**
+     * Guarda la paleta dominante extraída en cliente.
+     * Body: { palette: ['#RRGGBB', ...] }
+     */
+    public static function set_media_palette( WP_REST_Request $req ) {
+        $id = intval( $req['id'] );
+        if ( ! $id || get_post_type( $id ) !== 'attachment' ) {
+            return new WP_Error( 'yzmf_not_found', 'No encontrado', [ 'status' => 404 ] );
+        }
+        $palette = (array) $req->get_param( 'palette' );
+        $clean = [];
+        foreach ( $palette as $hex ) {
+            $hex = strtoupper( ltrim( (string) $hex, '#' ) );
+            if ( preg_match( '/^[0-9A-F]{6}$/', $hex ) ) {
+                $clean[] = '#' . $hex;
+            }
+        }
+        if ( empty( $clean ) ) {
+            delete_post_meta( $id, '_yzmf_color_palette' );
+        } else {
+            update_post_meta( $id, '_yzmf_color_palette', $clean );
+        }
+        delete_transient( 'yzmf_colors_cache' );  // invalidar caché de colores
+        return rest_ensure_response( [ 'id' => $id, 'palette' => $clean ] );
+    }
+
+    /**
+     * Lista todas las tags IA con su frecuencia. Cache 30 min.
+     */
+    public static function get_tags( WP_REST_Request $req ) {
+        $cache = get_transient( 'yzmf_tags_cache' );
+        if ( $cache !== false ) return rest_ensure_response( $cache );
+
+        global $wpdb;
+        $rows = $wpdb->get_col( "
+            SELECT meta_value
+            FROM {$wpdb->postmeta}
+            WHERE meta_key = '_yzmf_ai_tags'
+        " );
+
+        $counts = [];
+        foreach ( $rows as $blob ) {
+            $arr = @maybe_unserialize( $blob );
+            if ( ! is_array( $arr ) ) continue;
+            foreach ( $arr as $t ) {
+                $t = strtolower( trim( (string) $t ) );
+                if ( $t === '' ) continue;
+                $counts[ $t ] = ( $counts[ $t ] ?? 0 ) + 1;
+            }
+        }
+        arsort( $counts );
+        $out = [];
+        foreach ( $counts as $tag => $count ) {
+            $out[] = [ 'tag' => $tag, 'count' => $count ];
+        }
+        set_transient( 'yzmf_tags_cache', $out, 30 * MINUTE_IN_SECONDS );
+        return rest_ensure_response( $out );
+    }
+
+    /**
+     * Lista los colores dominantes encontrados con conteo. Cache 30 min.
+     */
+    public static function get_colors( WP_REST_Request $req ) {
+        $cache = get_transient( 'yzmf_colors_cache' );
+        if ( $cache !== false ) return rest_ensure_response( $cache );
+
+        global $wpdb;
+        $rows = $wpdb->get_col( "
+            SELECT meta_value
+            FROM {$wpdb->postmeta}
+            WHERE meta_key = '_yzmf_color_palette'
+        " );
+
+        $counts = [];
+        foreach ( $rows as $blob ) {
+            $arr = @maybe_unserialize( $blob );
+            if ( ! is_array( $arr ) ) continue;
+            foreach ( $arr as $hex ) {
+                $hex = strtoupper( ltrim( (string) $hex, '#' ) );
+                if ( ! preg_match( '/^[0-9A-F]{6}$/', $hex ) ) continue;
+                $counts[ $hex ] = ( $counts[ $hex ] ?? 0 ) + 1;
+            }
+        }
+        arsort( $counts );
+        $out = [];
+        $i = 0;
+        foreach ( $counts as $hex => $count ) {
+            $out[] = [ 'color' => '#' . $hex, 'count' => $count ];
+            if ( ++$i >= 60 ) break;  // limitar a top 60 colores
+        }
+        set_transient( 'yzmf_colors_cache', $out, 30 * MINUTE_IN_SECONDS );
+        return rest_ensure_response( $out );
     }
 
     /* ─────────── GEOCODING (proxy Nominatim) ─────────── */
