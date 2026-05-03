@@ -412,7 +412,7 @@ function browseFolder(id) {
 .sheet-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 200;
+  z-index: 1350;  /* consistente con el resto de bottomsheets */
   display: flex; align-items: flex-end;
 }
 .sheet {

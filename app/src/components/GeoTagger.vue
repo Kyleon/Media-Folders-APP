@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
 .sheet-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 200;
+  z-index: 1400;  /* por encima de Leaflet (1000) y de cualquier mapa embebido */
   display: flex; align-items: flex-end;
 }
 .sheet {

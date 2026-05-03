@@ -653,7 +653,7 @@ watch(sentinel, setupObserver);
 .sheet-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 100;
+  z-index: 1350;  /* consistente con el resto de bottomsheets, encima de Leaflet */
   display: flex; align-items: flex-end;
 }
 .sheet {
