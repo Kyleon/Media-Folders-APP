@@ -4,12 +4,12 @@ import { useAuthStore } from '../stores/auth';
 const routes = [
   { path: '/login',     name: 'login',     component: () => import('../views/Login.vue'),     meta: { public: true } },
   { path: '/',          name: 'dashboard', component: () => import('../views/Dashboard.vue') },
-  { path: '/media',     name: 'media',     component: () => import('../views/Media.vue') },
+  { path: '/media',     name: 'media',     component: () => import('../views/Media.vue'), meta: { keepAlive: true } },
   { path: '/media/:id', name: 'media-detail', component: () => import('../views/MediaDetail.vue'), props: true },
   { path: '/folders',   name: 'folders',   component: () => import('../views/Folders.vue') },
   { path: '/exif',      name: 'exif',      component: () => import('../views/ExifStats.vue') },
   { path: '/upload',    name: 'upload',    component: () => import('../views/Upload.vue') },
-  { path: '/portfolios', name: 'portfolios', component: () => import('../views/Portfolios.vue') },
+  { path: '/portfolios', name: 'portfolios', component: () => import('../views/Portfolios.vue'), meta: { keepAlive: true } },
   { path: '/portfolios/categories', name: 'portfolio-categories', component: () => import('../views/PortfolioCategories.vue') },
   { path: '/portfolios/new', name: 'portfolio-new', component: () => import('../views/PortfolioCreate.vue') },
   { path: '/portfolios/:id', name: 'portfolio-detail', component: () => import('../views/PortfolioDetail.vue'), props: true },
@@ -21,7 +21,12 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior() { return { top: 0 }; },
+  scrollBehavior(to, from, savedPosition) {
+    // Al volver atrás/adelante, restaurar posición previa (necesario para que
+    // las vistas keepAlive recuperen el scroll donde estaban).
+    if (savedPosition) return savedPosition;
+    return { top: 0 };
+  },
 });
 
 router.beforeEach((to) => {

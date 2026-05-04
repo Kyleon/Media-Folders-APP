@@ -200,144 +200,149 @@ async function remove() {
 <template>
   <div v-if="loading" class="center muted"><Spinner /> Cargando…</div>
 
-  <div v-else-if="item">
-    <div v-if="item.hero_url" class="hero">
-      <img :src="item.hero_url" :alt="item.title" />
-      <div class="hero-badge" :class="{ fallback: !item.hero_id }">
-        <span v-if="item.hero_id">★ Imagen destacada</span>
-        <span v-else>🖼 Primera de la galería (sin destacada)</span>
+  <div v-else-if="item" class="pd-layout">
+    <div class="pd-col pd-col-left">
+      <div v-if="item.hero_url" class="hero">
+        <img :src="item.hero_url" :alt="item.title" />
+        <div class="hero-badge" :class="{ fallback: !item.hero_id }">
+          <span v-if="item.hero_id">★ Imagen destacada</span>
+          <span v-else>🖼 Primera de la galería (sin destacada)</span>
+        </div>
+        <div class="hero-actions">
+          <button class="hero-btn" @click="showHeroPicker = true">Cambiar</button>
+          <button v-if="item.hero_id" class="hero-btn" @click="clearHero">Quitar</button>
+        </div>
       </div>
-      <div class="hero-actions">
-        <button class="hero-btn" @click="showHeroPicker = true">Cambiar</button>
-        <button v-if="item.hero_id" class="hero-btn" @click="clearHero">Quitar</button>
+      <div v-else class="hero hero-empty">
+        <span class="muted">Sin imagen destacada</span>
+        <button class="btn pri" style="margin-top:10px" @click="showHeroPicker = true">★ Elegir destacada</button>
       </div>
-    </div>
-    <div v-else class="hero hero-empty">
-      <span class="muted">Sin imagen destacada</span>
-      <button class="btn pri" style="margin-top:10px" @click="showHeroPicker = true">★ Elegir destacada</button>
+
+      <div class="card">
+        <div class="field">
+          <label>Título</label>
+          <input v-model="form.title" />
+        </div>
+        <div class="field">
+          <label>Resumen</label>
+          <textarea v-model="form.excerpt" rows="2"></textarea>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1">
+            <label>Estado</label>
+            <select v-model="form.status">
+              <option value="draft">Borrador</option>
+              <option value="publish">Publicar</option>
+              <option value="private">Privado</option>
+              <option value="pending">Pendiente</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1">
+            <label>Layout</label>
+            <select v-model="form.layout">
+              <option v-for="l in PORTFOLIO_LAYOUTS" :key="l.code" :value="l.code">
+                {{ l.short }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Categorías</label>
+          <div class="checks">
+            <label v-for="c in portfolios.categories" :key="c.id" class="cat-check">
+              <input type="checkbox" :value="c.id" v-model="form.categories" />
+              <span>{{ c.name }}</span>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn pri" :disabled="saving" @click="save" style="width:100%;margin-top:8px">
+          <Spinner v-if="saving" :size="14" />
+          <span v-else>Guardar cambios</span>
+        </button>
+      </div>
+
+      <!-- Configuración avanzada (campos del tema kotlis) -->
+      <div class="card adv-card" style="padding:0">
+        <button class="adv-head" @click="showAdvanced = !showAdvanced">
+          <span>⚙️ Configuración avanzada del tema</span>
+          <span class="adv-arrow" :class="{ open: showAdvanced }">▶</span>
+        </button>
+        <div v-if="showAdvanced" class="adv-body">
+          <p class="muted small" style="margin:0 0 12px">
+            Campos del tema kotlis específicos del layout <strong>{{ item.layout }}</strong>.
+            Controla el sidebar, secciones de contenido, datos del proyecto, botón y prev/next.
+          </p>
+          <PortfolioMetaForm :portfolio-id="item.id" :layout-key="item.layout" />
+        </div>
+      </div>
+
+      <div class="card danger-zone">
+        <a class="btn" :href="item.permalink" target="_blank" style="width:100%;margin-bottom:8px">↗ Ver portfolio</a>
+        <a class="btn" :href="item.edit_url"  target="_blank" style="width:100%;margin-bottom:8px">⚙ Editor de WP</a>
+        <button class="btn" @click="duplicate" :disabled="duplicating" style="width:100%;margin-bottom:8px">
+          <Spinner v-if="duplicating" :size="14" />
+          <span v-else>📋 Duplicar como plantilla</span>
+        </button>
+        <button class="btn danger" @click="remove" style="width:100%">🗑 Mover a papelera</button>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field">
-        <label>Título</label>
-        <input v-model="form.title" />
-      </div>
-      <div class="field">
-        <label>Resumen</label>
-        <textarea v-model="form.excerpt" rows="2"></textarea>
-      </div>
-      <div class="row">
-        <div class="field" style="flex:1">
-          <label>Estado</label>
-          <select v-model="form.status">
-            <option value="draft">Borrador</option>
-            <option value="publish">Publicar</option>
-            <option value="private">Privado</option>
-            <option value="pending">Pendiente</option>
-          </select>
+    <div class="pd-col pd-col-right">
+      <div class="card">
+        <div class="gallery-head">
+          <h3 class="section" style="margin:0">Galería ({{ galleryItems.length }})</h3>
+          <div class="gh-actions">
+            <button class="btn sm" @click="showAddPicker = true">+ Añadir</button>
+            <button v-if="galleryDirty" class="btn pri sm" :disabled="reordering" @click="saveOrder">
+              <Spinner v-if="reordering" :size="12" />
+              <span v-else>💾 Guardar</span>
+            </button>
+          </div>
         </div>
-        <div class="field" style="flex:1">
-          <label>Layout</label>
-          <select v-model="form.layout">
-            <option v-for="l in PORTFOLIO_LAYOUTS" :key="l.code" :value="l.code">
-              {{ l.short }}
+        <p class="muted small" style="margin:0 0 8px">Arrastra una imagen para reordenarla</p>
+
+        <draggable v-if="galleryItems.length"
+          v-model="galleryItems"
+          item-key="id"
+          class="ggrid"
+          :animation="180"
+          :force-fallback="true"
+          :fallback-tolerance="3"
+          handle=".gitem"
+          ghost-class="g-ghost"
+          chosen-class="g-chosen"
+          drag-class="g-drag"
+          @end="onDragEnd">
+          <template #item="{ element: g }">
+            <div class="gitem" :class="{ 'is-hero': g.id === item.hero_id }">
+              <img :src="g.thumb" :alt="g.alt || g.title" loading="lazy" draggable="false" />
+              <button class="ghero"
+                :class="{ on: g.id === item.hero_id }"
+                @click.stop="setHero(g.id)"
+                :title="g.id === item.hero_id ? 'Es la imagen destacada' : 'Marcar como destacada'">★</button>
+              <button class="grm" @click.stop="removeFromGallery(g.id)" title="Quitar de galería">✕</button>
+            </div>
+          </template>
+        </draggable>
+        <p v-else class="muted small">Sin imágenes en la galería.</p>
+
+        <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
+
+        <div class="field">
+          <label>Vincular carpeta YZMF</label>
+          <select v-model.number="form.linked_folder">
+            <option :value="0">— Ninguna —</option>
+            <option v-for="f in folders.flat" :key="f.id" :value="f.id">
+              {{ '— '.repeat(f.depth) }}{{ f.name }} ({{ f.count }})
             </option>
           </select>
         </div>
+        <button class="btn" :disabled="syncing || !form.linked_folder" @click="syncFromFolder" style="width:100%">
+          <Spinner v-if="syncing" :size="14" />
+          <span v-else>↻ Sincronizar galería desde carpeta</span>
+        </button>
       </div>
-      <div class="field">
-        <label>Categorías</label>
-        <div class="checks">
-          <label v-for="c in portfolios.categories" :key="c.id" class="cat-check">
-            <input type="checkbox" :value="c.id" v-model="form.categories" />
-            <span>{{ c.name }}</span>
-          </label>
-        </div>
-      </div>
-
-      <button class="btn pri" :disabled="saving" @click="save" style="width:100%;margin-top:8px">
-        <Spinner v-if="saving" :size="14" />
-        <span v-else>Guardar cambios</span>
-      </button>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <div class="gallery-head">
-        <h3 class="section" style="margin:0">Galería ({{ galleryItems.length }})</h3>
-        <div class="gh-actions">
-          <button class="btn sm" @click="showAddPicker = true">+ Añadir</button>
-          <button v-if="galleryDirty" class="btn pri sm" :disabled="reordering" @click="saveOrder">
-            <Spinner v-if="reordering" :size="12" />
-            <span v-else>💾 Guardar</span>
-          </button>
-        </div>
-      </div>
-      <p class="muted small" style="margin:0 0 8px">Mantén pulsado y arrastra para reordenar</p>
-
-      <draggable v-if="galleryItems.length"
-        v-model="galleryItems"
-        item-key="id"
-        class="ggrid"
-        :animation="180"
-        :delay="120"
-        :delay-on-touch-only="true"
-        ghost-class="g-ghost"
-        chosen-class="g-chosen"
-        drag-class="g-drag"
-        @end="onDragEnd">
-        <template #item="{ element: g }">
-          <div class="gitem" :class="{ 'is-hero': g.id === item.hero_id }">
-            <img :src="g.thumb" :alt="g.alt || g.title" loading="lazy" />
-            <button class="ghero"
-              :class="{ on: g.id === item.hero_id }"
-              @click.stop="setHero(g.id)"
-              :title="g.id === item.hero_id ? 'Es la imagen destacada' : 'Marcar como destacada'">★</button>
-            <button class="grm" @click.stop="removeFromGallery(g.id)" title="Quitar de galería">✕</button>
-          </div>
-        </template>
-      </draggable>
-      <p v-else class="muted small">Sin imágenes en la galería.</p>
-
-      <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
-
-      <div class="field">
-        <label>Vincular carpeta YZMF</label>
-        <select v-model.number="form.linked_folder">
-          <option :value="0">— Ninguna —</option>
-          <option v-for="f in folders.flat" :key="f.id" :value="f.id">
-            {{ '— '.repeat(f.depth) }}{{ f.name }} ({{ f.count }})
-          </option>
-        </select>
-      </div>
-      <button class="btn" :disabled="syncing || !form.linked_folder" @click="syncFromFolder" style="width:100%">
-        <Spinner v-if="syncing" :size="14" />
-        <span v-else>↻ Sincronizar galería desde carpeta</span>
-      </button>
-    </div>
-
-    <!-- Configuración avanzada (campos del tema kotlis) -->
-    <div class="card adv-card" style="margin-top:14px;padding:0">
-      <button class="adv-head" @click="showAdvanced = !showAdvanced">
-        <span>⚙️ Configuración avanzada del tema</span>
-        <span class="adv-arrow" :class="{ open: showAdvanced }">▶</span>
-      </button>
-      <div v-if="showAdvanced" class="adv-body">
-        <p class="muted small" style="margin:0 0 12px">
-          Campos del tema kotlis específicos del layout <strong>{{ item.layout }}</strong>.
-          Controla el sidebar, secciones de contenido, datos del proyecto, botón y prev/next.
-        </p>
-        <PortfolioMetaForm :portfolio-id="item.id" :layout-key="item.layout" />
-      </div>
-    </div>
-
-    <div class="card danger-zone" style="margin-top:14px">
-      <a class="btn" :href="item.permalink" target="_blank" style="width:100%;margin-bottom:8px">↗ Ver portfolio</a>
-      <a class="btn" :href="item.edit_url"  target="_blank" style="width:100%;margin-bottom:8px">⚙ Editor de WP</a>
-      <button class="btn" @click="duplicate" :disabled="duplicating" style="width:100%;margin-bottom:8px">
-        <Spinner v-if="duplicating" :size="14" />
-        <span v-else>📋 Duplicar como plantilla</span>
-      </button>
-      <button class="btn danger" @click="remove" style="width:100%">🗑 Mover a papelera</button>
     </div>
   </div>
 
@@ -356,12 +361,44 @@ async function remove() {
 <style scoped>
 .center { display: flex; gap: 10px; justify-content: center; padding: 30px; }
 
+/* Layout móvil/tablet: una sola columna apilada con espaciado consistente */
+.pd-layout { display: flex; flex-direction: column; gap: 14px; }
+.pd-col { display: flex; flex-direction: column; gap: 14px; }
+/* Evitar que el flex-shrink:1 por defecto colapse hijos cuando el column tiene overflow */
+.pd-col > * { flex: 0 0 auto; }
+
+/* Escritorio: dos columnas, info+acciones a la izquierda, galería a la derecha */
+@media (min-width: 1024px) {
+  .pd-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 420px) 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .pd-col-left {
+    position: sticky;
+    top: 76px;
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .pd-col-left::-webkit-scrollbar { width: 6px; }
+  .pd-col-left::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 3px; }
+}
+
+/* Pantallas anchas: columna izquierda algo más amplia para que respire */
+@media (min-width: 1600px) {
+  .pd-layout { grid-template-columns: minmax(420px, 480px) 1fr; gap: 28px; }
+}
+@media (min-width: 2400px) {
+  .pd-layout { grid-template-columns: minmax(460px, 520px) 1fr; gap: 32px; }
+}
+
 .hero {
   position: relative;
   aspect-ratio: 16/9;
   border-radius: var(--radius-lg);
   overflow: hidden;
-  margin-bottom: 14px;
   background: var(--s2);
 }
 .hero img { width: 100%; height: 100%; object-fit: cover; }
@@ -435,6 +472,11 @@ async function remove() {
 .btn.sm { min-height: 32px; padding: 4px 10px; font-size: 12px; }
 
 .ggrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+@media (min-width: 768px)  { .ggrid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; } }
+@media (min-width: 1280px) { .ggrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; } }
+@media (min-width: 1800px) { .ggrid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; } }
+@media (min-width: 2400px) { .ggrid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; } }
+
 .gitem {
   position: relative;
   aspect-ratio: 1;
@@ -445,10 +487,17 @@ async function remove() {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  touch-action: none;
   transition: transform .15s, box-shadow .15s;
 }
 .gitem:active { cursor: grabbing; }
-.gitem img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.gitem img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
 .gitem.is-hero { box-shadow: 0 0 0 2px var(--accent); }
 
 .grm, .ghero {

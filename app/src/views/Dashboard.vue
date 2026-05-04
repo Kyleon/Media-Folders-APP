@@ -133,64 +133,68 @@ const kpis = computed(() => {
         </p>
       </div>
 
-      <template v-if="stats">
-        <!-- Almacenamiento -->
-        <div class="card stats-card">
-          <span class="card-label">Almacenamiento</span>
-          <span class="big">{{ stats.totals.storage_h }}</span>
-          <span class="muted small">{{ stats.totals.images }} imágenes</span>
-        </div>
-
-        <!-- Sparkline subidas -->
-        <div class="card stats-card">
-          <div class="sparkline-head">
-            <span class="card-label">Últimos 30 días</span>
-            <span class="muted small">{{ totalUploads30d }} subidas</span>
+      <div class="dash-grid">
+        <template v-if="stats">
+          <!-- Almacenamiento -->
+          <div class="card stats-card">
+            <span class="card-label">Almacenamiento</span>
+            <span class="big">{{ stats.totals.storage_h }}</span>
+            <span class="muted small">{{ stats.totals.images }} imágenes</span>
           </div>
-          <svg viewBox="0 0 200 40" preserveAspectRatio="none" class="sparkline">
-            <path :d="sparkPath" fill="none" stroke="var(--accent)" stroke-width="1.5" />
-          </svg>
-          <div class="spark-axis muted small">
-            <span>{{ stats.uploads_30d?.[0]?.date }}</span>
-            <span>hoy</span>
+
+          <!-- Sparkline subidas -->
+          <div class="card stats-card">
+            <div class="sparkline-head">
+              <span class="card-label">Últimos 30 días</span>
+              <span class="muted small">{{ totalUploads30d }} subidas</span>
+            </div>
+            <svg viewBox="0 0 200 40" preserveAspectRatio="none" class="sparkline">
+              <path :d="sparkPath" fill="none" stroke="var(--accent)" stroke-width="1.5" />
+            </svg>
+            <div class="spark-axis muted small">
+              <span>{{ stats.uploads_30d?.[0]?.date }}</span>
+              <span>hoy</span>
+            </div>
+          </div>
+
+          <!-- Top carpetas -->
+          <div v-if="stats.top_folders?.length" class="card">
+            <span class="card-label">Top carpetas</span>
+            <button v-for="f in stats.top_folders" :key="f.id"
+              class="top-row"
+              @click="$router.push({ name: 'media', query: { folder: f.id } })">
+              <span class="muted">📁</span>
+              <span class="top-name">{{ f.name }}</span>
+              <span class="top-count">{{ f.count }}</span>
+            </button>
+          </div>
+
+          <!-- Salud del catálogo -->
+          <div v-if="stats.health.missing_alt > 0 || stats.health.portfolios_no_thumb > 0" class="card health">
+            <span class="card-label">Salud del catálogo</span>
+            <div v-if="stats.health.missing_alt > 0" class="health-row">
+              <span class="warn-num">{{ stats.health.missing_alt }}</span>
+              <span class="health-lbl">imágenes sin alt text</span>
+            </div>
+            <div v-if="stats.health.portfolios_no_thumb > 0" class="health-row">
+              <span class="warn-num">{{ stats.health.portfolios_no_thumb }}</span>
+              <span class="health-lbl">portfolios sin imagen destacada</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- Acciones rápidas -->
+        <div class="card actions-card">
+          <span class="card-label">Acciones rápidas</span>
+          <div class="actions">
+            <button class="btn pri" @click="$router.push({ name: 'upload' })">↑ Subir fotos</button>
+            <button class="btn"     @click="$router.push({ name: 'folders' })">📁 Gestionar carpetas</button>
+            <button class="btn"     @click="$router.push({ name: 'portfolio-new' })">◇ Nuevo portfolio</button>
+            <button class="btn"     @click="$router.push({ name: 'portfolio-categories' })">📂 Categorías de portfolio</button>
+            <button class="btn"     @click="$router.push({ name: 'settings' })">⚙ Ajustes</button>
+            <button class="btn ghost danger" @click="logout">Cerrar sesión</button>
           </div>
         </div>
-
-        <!-- Top carpetas -->
-        <div v-if="stats.top_folders?.length" class="card">
-          <span class="card-label">Top carpetas</span>
-          <button v-for="f in stats.top_folders" :key="f.id"
-            class="top-row"
-            @click="$router.push({ name: 'media', query: { folder: f.id } })">
-            <span class="muted">📁</span>
-            <span class="top-name">{{ f.name }}</span>
-            <span class="top-count">{{ f.count }}</span>
-          </button>
-        </div>
-
-        <!-- Salud del catálogo -->
-        <div v-if="stats.health.missing_alt > 0 || stats.health.portfolios_no_thumb > 0" class="card health">
-          <span class="card-label">Salud del catálogo</span>
-          <div v-if="stats.health.missing_alt > 0" class="health-row">
-            <span class="warn-num">{{ stats.health.missing_alt }}</span>
-            <span class="health-lbl">imágenes sin alt text</span>
-          </div>
-          <div v-if="stats.health.portfolios_no_thumb > 0" class="health-row">
-            <span class="warn-num">{{ stats.health.portfolios_no_thumb }}</span>
-            <span class="health-lbl">portfolios sin imagen destacada</span>
-          </div>
-        </div>
-      </template>
-
-      <!-- Acciones rápidas -->
-      <div class="actions">
-        <h3>Acciones rápidas</h3>
-        <button class="btn pri" @click="$router.push({ name: 'upload' })">↑ Subir fotos</button>
-        <button class="btn"     @click="$router.push({ name: 'folders' })">📁 Gestionar carpetas</button>
-        <button class="btn"     @click="$router.push({ name: 'portfolio-new' })">◇ Nuevo portfolio</button>
-        <button class="btn"     @click="$router.push({ name: 'portfolio-categories' })">📂 Categorías de portfolio</button>
-        <button class="btn"     @click="$router.push({ name: 'settings' })">⚙ Ajustes</button>
-        <button class="btn ghost danger" @click="logout">Cerrar sesión</button>
       </div>
     </template>
   </div>
@@ -253,22 +257,34 @@ h2 { margin: 0; font-size: 18px; }
 .warn-num { font-size: 18px; font-weight: 700; color: var(--danger); }
 .health-lbl { font-size: 13px; }
 
-.actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
-.actions h3 { margin: 4px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-mute); font-weight: 600; }
+.actions-card { display: flex; flex-direction: column; gap: 10px; }
+.actions { display: flex; flex-direction: column; gap: 8px; }
 .actions .btn { width: 100%; justify-content: flex-start; }
 
-/* En escritorio: layout en 2-3 columnas para aprovechar el espacio */
+.dash-grid { display: flex; flex-direction: column; gap: 14px; }
+.stats-card { margin-bottom: 0; }
+
+/* Tablet: 2-4 KPIs en línea */
 @media (min-width: 768px) {
-  .kpis {
-    grid-template-columns: repeat(4, 1fr);
+  .kpis { grid-template-columns: repeat(4, 1fr); }
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    align-items: start;
   }
 }
 
-@media (min-width: 1024px) {
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
+/* Escritorio FHD: 3 columnas */
+@media (min-width: 1280px) {
+  .dash-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+}
+
+/* QHD/4K: 4 columnas para que las cards no queden sobredimensionadas */
+@media (min-width: 1800px) {
+  .dash-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 2400px) {
+  .dash-grid { grid-template-columns: repeat(5, 1fr); }
 }
 </style>

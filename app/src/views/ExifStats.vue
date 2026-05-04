@@ -46,16 +46,18 @@ const sections = computed(() => [
         Histograma EXIF de <strong>{{ data.total }}</strong> imágenes con metadatos.
       </p>
 
-      <div v-for="sec in sections" :key="sec.key" class="card section">
-        <h3>{{ sec.emoji }} {{ sec.label }}</h3>
-        <div v-if="!data[sec.key]?.length" class="muted small">Sin datos.</div>
-        <div v-else class="bars">
-          <div v-for="row in data[sec.key]" :key="row.label" class="bar-row">
-            <span class="bar-label">{{ row.label }}</span>
-            <div class="bar-track">
-              <div class="bar-fill" :style="{ width: pct(row.count, Math.max(...data[sec.key].map(r => r.count))) }"></div>
+      <div class="exif-grid">
+        <div v-for="sec in sections" :key="sec.key" class="card section">
+          <h3>{{ sec.emoji }} {{ sec.label }}</h3>
+          <div v-if="!data[sec.key]?.length" class="muted small">Sin datos.</div>
+          <div v-else class="bars">
+            <div v-for="row in data[sec.key]" :key="row.label" class="bar-row">
+              <span class="bar-label">{{ row.label }}</span>
+              <div class="bar-track">
+                <div class="bar-fill" :style="{ width: pct(row.count, Math.max(...data[sec.key].map(r => r.count))) }"></div>
+              </div>
+              <span class="bar-count">{{ row.count }}</span>
             </div>
-            <span class="bar-count">{{ row.count }}</span>
           </div>
         </div>
       </div>
@@ -68,7 +70,18 @@ const sections = computed(() => [
 .intro { margin: 0 0 14px; }
 .small { font-size: 11px; }
 
-.section { margin-bottom: 14px; }
+.exif-grid { display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 1024px) {
+  .exif-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+}
+@media (min-width: 1800px) { .exif-grid { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); } }
+
+.section { margin-bottom: 0; }
 .section h3 {
   margin: 0 0 12px;
   font-size: 12px;

@@ -34,7 +34,12 @@ useKeyboardShortcuts({
 
 <template>
   <AppShell v-if="showShell">
-    <router-view />
+    <router-view v-slot="{ Component, route: r }">
+      <keep-alive :max="6">
+        <component :is="Component" v-if="r.meta.keepAlive" :key="r.name" />
+      </keep-alive>
+      <component :is="Component" v-if="!r.meta.keepAlive" />
+    </router-view>
   </AppShell>
   <router-view v-else />
   <Toast />

@@ -191,6 +191,8 @@ function fileIcon(f) {
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 8px;
 }
+@media (min-width: 1280px) { .qgrid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; } }
+@media (min-width: 1800px) { .qgrid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; } }
 .qcard {
   display: flex; flex-direction: column;
   background: var(--s1);

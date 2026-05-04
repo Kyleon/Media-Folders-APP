@@ -783,6 +783,9 @@ watch(sentinel, setupObserver);
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 6px;
 }
+@media (min-width: 1280px) { .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; } }
+@media (min-width: 1800px) { .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; } }
+@media (min-width: 2400px) { .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; } }
 /* Vista lista: 1 fila por ítem con thumbnail a la izquierda */
 .grid.list-view {
   display: flex; flex-direction: column;

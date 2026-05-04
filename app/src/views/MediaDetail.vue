@@ -88,6 +88,58 @@ async function copyUrl() {
   } catch { ui.toast('No se pudo copiar', 'err'); }
 }
 
+async function download() {
+  if (!item.value?.url) return;
+  const filename = item.value.filename || `media-${item.value.id}`;
+  try {
+    // Intentar fetch para descarga directa (respeta el nombre original)
+    const res = await fetch(item.value.url, { credentials: 'omit' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 200);
+    ui.toast('⬇ Descargando', 'ok');
+  } catch (e) {
+    // Fallback: abrir en nueva pestaña — el navegador permite "guardar como"
+    const a = document.createElement('a');
+    a.href = item.value.url;
+    a.download = filename;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    ui.toast('⬇ Abriendo para guardar', 'ok');
+  }
+}
+
+async function share() {
+  if (!item.value?.url) return;
+  const shareData = {
+    title: item.value.title || item.value.filename || 'Imagen',
+    text:  item.value.caption || item.value.alt || '',
+    url:   item.value.url,
+  };
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        ui.toast(e?.message || 'No se pudo compartir', 'err');
+      }
+    }
+  } else {
+    // Sin Web Share API: copiar URL como fallback
+    await copyUrl();
+  }
+}
+
 async function remove() {
   if (!confirm('¿Eliminar esta imagen? No se puede deshacer.')) return;
   try {
@@ -240,24 +292,29 @@ watch(() => props.id, async (newId) => {
 <template>
   <div v-if="loading" class="center muted"><Spinner /> Cargando…</div>
 
-  <div v-else-if="item">
-    <div class="hero" @touchstart.passive="onTouchStart" @touchend="onTouchEnd">
-      <img v-if="(item.mime || '').startsWith('image/')" :src="item.medium || item.url" :alt="item.title" />
-      <div v-else class="hero-icon">📎</div>
+  <div v-else-if="item" class="md-layout">
+    <div class="md-col md-col-left">
+      <div class="hero" @touchstart.passive="onTouchStart" @touchend="onTouchEnd">
+        <img v-if="(item.mime || '').startsWith('image/')" :src="item.medium || item.url" :alt="item.title" />
+        <div v-else class="hero-icon">📎</div>
 
-      <!-- Botones flotantes prev/next -->
-      <button v-if="prevId" class="nav-btn nav-prev" @click="goPrev" title="Anterior (←)">‹</button>
-      <button v-if="nextId" class="nav-btn nav-next" @click="goNext" title="Siguiente (→)">›</button>
-      <span v-if="currentIndex >= 0" class="nav-counter">
-        {{ currentIndex + 1 }} / {{ media.items.length }}
-      </span>
+        <!-- Botones flotantes prev/next -->
+        <button v-if="prevId" class="nav-btn nav-prev" @click="goPrev" title="Anterior (←)">‹</button>
+        <button v-if="nextId" class="nav-btn nav-next" @click="goNext" title="Siguiente (→)">›</button>
+        <span v-if="currentIndex >= 0" class="nav-counter">
+          {{ currentIndex + 1 }} / {{ media.items.length }}
+        </span>
+      </div>
+
+      <div class="hero-actions">
+        <button class="btn ghost" @click="download" title="Descargar">⬇ Descargar</button>
+        <button class="btn ghost" @click="share"    title="Compartir">📤 Compartir</button>
+        <button class="btn ghost" @click="copyUrl"  title="Copiar URL">📋 Copiar</button>
+        <a class="btn ghost" :href="item.url" target="_blank" rel="noopener" title="Abrir original">↗ Abrir</a>
+      </div>
     </div>
 
-    <div class="hero-actions">
-      <button class="btn ghost" @click="copyUrl">📋 Copiar URL</button>
-      <a class="btn ghost" :href="item.url" target="_blank">↗ Abrir</a>
-    </div>
-
+    <div class="md-col md-col-right">
     <div class="tabs">
       <button class="tab" :class="{ on: tab === 'meta' }"  @click="tab = 'meta'">Datos</button>
       <button class="tab" :class="{ on: tab === 'geo' }"   @click="tab = 'geo'">📍 Ubic.</button>
@@ -374,6 +431,7 @@ watch(() => props.id, async (newId) => {
       <a class="btn" style="width:100%;margin-bottom:10px" :href="item.edit_url" target="_blank">⚙️ Editor de WordPress ↗</a>
       <button class="btn danger" style="width:100%" @click="remove">🗑 Eliminar imagen</button>
     </div>
+    </div>
   </div>
 
   <FolderPicker v-model="showFolderPicker"
@@ -394,12 +452,47 @@ watch(() => props.id, async (newId) => {
 <style scoped>
 .center { display: flex; gap: 10px; justify-content: center; padding: 40px; }
 
+/* Layout móvil: una columna apilada */
+.md-layout { display: flex; flex-direction: column; gap: 12px; }
+.md-col    { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.md-col > * { flex: 0 0 auto; }
+
+/* Escritorio: dos columnas, foto sticky a la izquierda, panel scroll a la derecha */
+@media (min-width: 1024px) {
+  .md-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(360px, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .md-col-left {
+    position: sticky;
+    top: 76px;
+  }
+  .md-col-left .hero {
+    aspect-ratio: auto;
+    max-height: calc(100vh - 200px);
+    min-height: 400px;
+  }
+  .md-col-left .hero img {
+    max-height: calc(100vh - 200px);
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+}
+@media (min-width: 1600px) {
+  .md-layout { grid-template-columns: minmax(0, 1.6fr) minmax(420px, 1fr); gap: 32px; }
+}
+@media (min-width: 2400px) {
+  .md-layout { grid-template-columns: minmax(0, 2fr) minmax(480px, 1fr); }
+}
+
 .hero {
   position: relative;
   background: var(--s2);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  margin-bottom: 12px;
   display: flex; align-items: center; justify-content: center;
   aspect-ratio: 4/3;
   touch-action: pan-y;  /* permitir scroll vertical, capturamos solo swipe horizontal */
@@ -436,8 +529,16 @@ watch(() => props.id, async (newId) => {
   font-weight: 500;
 }
 
-.hero-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-.hero-actions .btn { flex: 1; }
+.hero-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+@media (min-width: 480px) {
+  .hero-actions { grid-template-columns: repeat(4, 1fr); }
+}
+.hero-actions .btn { width: 100%; min-width: 0; }
 
 .tabs {
   display: flex;

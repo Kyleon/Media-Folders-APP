@@ -95,6 +95,17 @@ function prevPage() {
 .empty { text-align: center; padding: 40px 16px; }
 
 .list { display: flex; flex-direction: column; gap: 8px; }
+
+@media (min-width: 768px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+}
+@media (min-width: 1600px) { .list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; } }
+@media (min-width: 2400px) { .list { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; } }
+
 .pcard {
   display: flex; gap: 12px;
   background: var(--s1); border: 1px solid var(--border);
@@ -102,6 +113,10 @@ function prevPage() {
   padding: 8px;
   text-align: left;
   align-items: center;
+  transition: border-color .15s, transform .12s;
+}
+@media (hover: hover) {
+  .pcard:hover { border-color: var(--accent); transform: translateY(-1px); }
 }
 .pcard:active { transform: scale(.98); }
 .pthumb {

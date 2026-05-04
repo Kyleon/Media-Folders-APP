@@ -84,7 +84,8 @@ const title = computed(() => titles[route.name] || 'YPVA');
   }
 }
 
-/* Escritorio ≥1024px: dejar 220px a la izquierda para el sidebar */
+/* Escritorio ≥1024px: dejar 220px a la izquierda para el sidebar.
+   Aprovechamos todo el ancho disponible — cada vista decide su rejilla interna. */
 @media (min-width: 1024px) {
   .topbar {
     padding-left: calc(220px + 24px);
@@ -96,5 +97,11 @@ const title = computed(() => titles[route.name] || 'YPVA');
     max-width: none;
     margin: 0;
   }
+}
+
+/* Pantallas grandes (>1440px) y 4K: padding más generoso */
+@media (min-width: 1600px) {
+  .content { padding-right: 40px; padding-left: calc(220px + 40px); }
+  .topbar  { padding-left: calc(220px + 40px); }
 }
 </style>

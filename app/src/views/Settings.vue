@@ -23,7 +23,7 @@ function clearCaches() {
 </script>
 
 <template>
-  <div>
+  <div class="set-grid">
     <div class="card">
       <h3 class="section">Sesión</h3>
       <div class="kv-row"><span class="muted">Sitio</span><span class="val">{{ auth.creds?.baseUrl }}</span></div>
@@ -31,7 +31,7 @@ function clearCaches() {
       <button class="btn danger" @click="logout" style="width:100%;margin-top:12px">Cerrar sesión</button>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card">
       <h3 class="section">Apariencia</h3>
       <div class="kv-row">
         <span class="muted">Tema</span>
@@ -39,7 +39,7 @@ function clearCaches() {
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card">
       <h3 class="section">Gestión</h3>
       <button class="btn" @click="$router.push({ name: 'folders' })" style="width:100%;margin-bottom:8px">
         📁 Carpetas de medios
@@ -52,7 +52,7 @@ function clearCaches() {
       </button>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card">
       <h3 class="section">Mantenimiento</h3>
       <button class="btn" @click="clearCaches" style="width:100%">🧹 Limpiar cachés</button>
       <p class="muted small" style="margin-top:8px">
@@ -61,7 +61,7 @@ function clearCaches() {
       </p>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card">
       <h3 class="section">Acerca de</h3>
       <p class="muted small">
         YPVA Admin · v0.1.0<br>
@@ -72,6 +72,17 @@ function clearCaches() {
 </template>
 
 <style scoped>
+.set-grid { display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 768px) {
+  .set-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+}
+@media (min-width: 1600px) { .set-grid { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); } }
+
 .section { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-mute); font-weight: 600; }
 .kv-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
 .kv-row:last-child { border-bottom: 0; }
