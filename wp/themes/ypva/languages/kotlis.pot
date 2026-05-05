@@ -1,0 +1,2321 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#: comments.php:35 includes/kotlis-options.php:150
+#: includes/kotlis-options.php:152 includes/kotlis-options.php:156
+#: includes/kotlis-options.php:205 includes/kotlis-options.php:214
+#: includes/kotlis-options.php:251 includes/kotlis-options.php:286
+#: includes/kotlis-options.php:324 includes/kotlis-options.php:366
+#: includes/kotlis-options.php:423 includes/kotlis-options.php:451
+#: includes/kotlis-options.php:535 includes/kotlis-options.php:586
+#: includes/kotlis-options.php:612 includes/kotlis-options.php:627
+#: includes/kotlis-options.php:663 includes/kotlis-options.php:680
+#: includes/kotlis-options.php:1109 includes/kotlis-options.php:1155
+#: includes/kotlis-options.php:1201 includes/kotlis-options.php:1247
+#: includes/kotlis-options.php:1293 includes/kotlis-options.php:1396
+#: includes/kotlis-options.php:1614 includes/kotlis-options.php:1794
+#: includes/kotlis-options.php:1973 includes/kotlis-options.php:2304
+#: includes/kotlis-options.php:2483 includes/kotlis-options.php:2568
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-05 23:28+0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: 404.php:14
+msgid "Error"
+msgstr ""
+
+#: 404.php:21
+msgid "404"
+msgstr ""
+
+#: 404.php:28
+msgid "The page you were looking for, could not be found."
+msgstr ""
+
+#: comments.php:40
+#, php-format
+msgctxt "comments title"
+msgid "%1$s "
+msgid_plural "%1$s "
+msgstr[0] ""
+msgstr[1] ""
+
+#: comments.php:66 includes/kotlis-options.php:893
+msgid "Comments are closed."
+msgstr ""
+
+#: comments.php:114
+msgid "Leave a Reply"
+msgstr ""
+
+#: functions.php:19
+msgid "Primary menu"
+msgstr ""
+
+#: functions.php:43
+msgid "Small"
+msgstr ""
+
+#: functions.php:44
+msgid "S"
+msgstr ""
+
+#: functions.php:49
+msgid "Normal"
+msgstr ""
+
+#: functions.php:50
+msgid "M"
+msgstr ""
+
+#: functions.php:55
+msgid "Large"
+msgstr ""
+
+#: functions.php:56
+msgid "L"
+msgstr ""
+
+#: functions.php:61
+msgid "Huge"
+msgstr ""
+
+#: functions.php:62
+msgid "XL"
+msgstr ""
+
+#: functions.php:71
+msgid "Black"
+msgstr ""
+
+#: functions.php:76
+msgid "Light Grey"
+msgstr ""
+
+#: functions.php:142
+#, php-format
+msgid "%s"
+msgstr ""
+
+#: functions.php:152
+msgid "Your comment is awaiting moderation."
+msgstr ""
+
+#: functions.php:165
+msgid "Blog Sidebar"
+msgstr ""
+
+#: functions.php:167
+msgid "This area for blog widgets."
+msgstr ""
+
+#: functions.php:178
+msgid "Page Sidebar"
+msgstr ""
+
+#: functions.php:180
+msgid "This area for pages widgets."
+msgstr ""
+
+#: functions.php:191
+msgid "Header Click Sidebar"
+msgstr ""
+
+#: functions.php:193
+msgid "This area for header click widgets."
+msgstr ""
+
+#: functions.php:205
+msgid "WOOCOMMERCE Sidebar"
+msgstr ""
+
+#: functions.php:207
+msgid "This area for All WOOCOMMERCE Widget."
+msgstr ""
+
+#: functions.php:228 woocommerce/product-searchform.php:26
+msgid "Search for:"
+msgstr ""
+
+#: functions.php:332
+msgid "Send"
+msgstr ""
+
+#: search-portfolio.php:14 search-video.php:14 single-video.php:38
+#: taxonomy-portfolio_category.php:14 taxonomy-video_category.php:14
+#: template-parts/blog/default.php:28
+#: template-parts/header/title-section-2s.php:30
+#: template-parts/header/title-section-3s.php:45
+#: template-parts/header/title-section-4s.php:30
+#: template-parts/header/title-section-5s.php:30
+#: template-parts/header/title-section-6s.php:30
+#: template-parts/header/title-section-7s.php:30
+#: template-parts/page/sideblock.php:28
+#: template-parts/portfolio/boxed-grid.php:13
+#: template-parts/portfolio/column-grid-2.php:29
+#: template-parts/portfolio/column-grid.php:13
+#: template-parts/portfolio-details/gallery-des.php:37
+#: template-parts/portfolio-details/gallery-full.php:37
+#: template-parts/video/boxed-grid.php:13
+#: template-parts/video/column-grid-2.php:29
+#: template-parts/video/column-grid.php:13 woocommerce/archive-product.php:227
+#: woocommerce/content-single-product.php:39
+msgid "Scroll down to Discover"
+msgstr ""
+
+#: search-portfolio.php:62 search-video.php:57
+#: template-parts/search/blog-left.php:62
+#: template-parts/search/blog-right.php:55
+#: template-parts/search/blog-side-block.php:48
+msgid "No Post Found"
+msgstr ""
+
+#: search-portfolio.php:63 search-video.php:58 includes/kotlis-options.php:950
+#: template-parts/search/blog-left.php:63
+#: template-parts/search/blog-right.php:56
+#: template-parts/search/blog-side-block.php:49
+msgid "Please Search Again."
+msgstr ""
+
+#: single-video.php:62 template-parts/portfolio-details/carousel.php:118
+#: template-parts/portfolio-details/gallery-des.php:61
+#: template-parts/portfolio-details/gallery-full.php:61
+#: template-parts/portfolio-details/slider.php:129
+#: template-parts/single/left-side-block.php:109
+#: template-parts/single/left.php:121 template-parts/single/right.php:114
+#: woocommerce/content-single-product.php:61
+msgid "Prev - "
+msgstr ""
+
+#: single-video.php:71 single-video.php:105
+msgid "Back To Video"
+msgstr ""
+
+#: single-video.php:80 single-video.php:114
+#: template-parts/portfolio-details/carousel.php:138
+#: template-parts/portfolio-details/carousel.php:172
+#: template-parts/portfolio-details/gallery-des.php:79
+#: template-parts/portfolio-details/gallery-des.php:113
+#: template-parts/portfolio-details/gallery-full.php:79
+#: template-parts/portfolio-details/gallery-full.php:113
+#: template-parts/portfolio-details/slider.php:146
+#: template-parts/portfolio-details/slider.php:176
+msgid "Back To Home"
+msgstr ""
+
+#: single-video.php:96 template-parts/portfolio-details/carousel.php:152
+#: template-parts/portfolio-details/gallery-des.php:95
+#: template-parts/portfolio-details/gallery-full.php:95
+#: template-parts/portfolio-details/slider.php:159
+#: template-parts/single/left-side-block.php:137
+#: template-parts/single/left.php:149 template-parts/single/right.php:142
+#: woocommerce/content-single-product.php:87
+msgid "Next - "
+msgstr ""
+
+#: extendvc/extend-vc.php:136
+msgid "Please insert page section ID here. Ex: sec1"
+msgstr ""
+
+#: extendvc/extend-vc.php:145
+msgid "Ex: My Little Story"
+msgstr ""
+
+#: extendvc/extend-vc.php:162
+msgid "Ex: 01."
+msgstr ""
+
+#: extendvc/extend-vc.php:201
+msgid "Please insert height in format: 300px"
+msgstr ""
+
+#: extendvc/extend-vc.php:299 extendvc/extend-vc.php:308
+#: extendvc/extend-vc.php:317 extendvc/extend-vc.php:326
+#: extendvc/extend-vc.php:335 extendvc/extend-vc.php:344
+#: extendvc/extend-vc.php:353 extendvc/extend-vc.php:362
+msgid "In format: 10px"
+msgstr ""
+
+#: extendvc/extend-vc.php:391
+msgid "Ex: Skills and Attainments"
+msgstr ""
+
+#: extendvc/extend-vc.php:410
+msgid "Ex: 02."
+msgstr ""
+
+#: extendvc/extend-vc.php:433 extendvc/extend-vc.php:492
+#: extendvc/extend-vc.php:658 extendvc/extend-vc.php:802
+#: extendvc/extend-vc.php:838 extendvc/extend-vc.php:981
+#: extendvc/extend-vc.php:1054
+msgid "Please insert margin in format: 0px 0px 0px 0px"
+msgstr ""
+
+#: extendvc/extend-vc.php:442 extendvc/extend-vc.php:501
+#: extendvc/extend-vc.php:667 extendvc/extend-vc.php:811
+#: extendvc/extend-vc.php:847 extendvc/extend-vc.php:990
+#: extendvc/extend-vc.php:1063
+msgid "Please insert padding in format: 0px 0px 0px 0px"
+msgstr ""
+
+#: extendvc/extend-vc.php:780
+msgid "Please insert scroll link in format: #sec3"
+msgstr ""
+
+#: extendvc/extend-vc.php:874
+msgid "Please insert counter name in format: Finished projects"
+msgstr ""
+
+#: extendvc/extend-vc.php:885
+msgid "Please insert counter number in format: 461"
+msgstr ""
+
+#: extendvc/extend-vc.php:895
+msgid "Please insert counter name in format: Working projects"
+msgstr ""
+
+#: extendvc/extend-vc.php:906
+msgid "Please insert counter number in format: 354"
+msgstr ""
+
+#: extendvc/extend-vc.php:916
+msgid "Please insert counter name in format: Happy customers"
+msgstr ""
+
+#: extendvc/extend-vc.php:927
+msgid "Please insert counter number in format: 168"
+msgstr ""
+
+#: extendvc/extend-vc.php:937
+msgid "Please insert counter name in format: Working hours"
+msgstr ""
+
+#: extendvc/extend-vc.php:948
+msgid "Please insert counter number in format: 222"
+msgstr ""
+
+#: extendvc/extend-vc.php:1010
+msgid "Ex: Photoshop"
+msgstr ""
+
+#: extendvc/extend-vc.php:1020
+msgid "Ex: 95"
+msgstr ""
+
+#: extendvc/extend-vc.php:1100
+msgid "Ex: Price :"
+msgstr ""
+
+#: extendvc/extend-vc.php:1110
+msgid "Ex: $250-$1200"
+msgstr ""
+
+#: extendvc/extend-vc.php:1246
+msgid "Please insert address text here. Ex: Address : "
+msgstr ""
+
+#: extendvc/extend-vc.php:1265
+msgid "Please insert phone text here. Ex: Phone : "
+msgstr ""
+
+#: extendvc/extend-vc.php:1302
+msgid "Please insert phone text here. Ex: Mail : "
+msgstr ""
+
+#: extendvc/extend-vc.php:1358
+msgid "Please insert contact form id number in format: 27"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:334
+msgid "Install Required Plugins"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:335
+msgid "Install Plugins"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:337
+#, php-format
+msgid "Installing Plugin: %s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:339
+#, php-format
+msgid "Updating Plugin: %s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:340
+msgid "Something went wrong with the plugin API."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:343
+#, php-format
+msgid "This theme requires the following plugin: %1$s."
+msgid_plural "This theme requires the following plugins: %1$s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:349
+#, php-format
+msgid "This theme recommends the following plugin: %1$s."
+msgid_plural "This theme recommends the following plugins: %1$s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:355
+#, php-format
+msgid ""
+"The following plugin needs to be updated to its latest version to ensure "
+"maximum compatibility with this theme: %1$s."
+msgid_plural ""
+"The following plugins need to be updated to their latest version to ensure "
+"maximum compatibility with this theme: %1$s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:361
+#, php-format
+msgid "There is an update available for: %1$s."
+msgid_plural "There are updates available for the following plugins: %1$s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:367
+#, php-format
+msgid "The following required plugin is currently inactive: %1$s."
+msgid_plural "The following required plugins are currently inactive: %1$s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:373
+#, php-format
+msgid "The following recommended plugin is currently inactive: %1$s."
+msgid_plural "The following recommended plugins are currently inactive: %1$s."
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:378
+msgid "Begin installing plugin"
+msgid_plural "Begin installing plugins"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:383
+msgid "Begin updating plugin"
+msgid_plural "Begin updating plugins"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:388
+msgid "Begin activating plugin"
+msgid_plural "Begin activating plugins"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:392
+msgid "Return to Required Plugins Installer"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:393
+#: framework/class-tgm-plugin-activation.php:920
+#: framework/class-tgm-plugin-activation.php:2626
+#: framework/class-tgm-plugin-activation.php:3673
+msgid "Return to the Dashboard"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:394
+#: framework/class-tgm-plugin-activation.php:3252
+msgid "Plugin activated successfully."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:395
+#: framework/class-tgm-plugin-activation.php:3045
+msgid "The following plugin was activated successfully:"
+msgid_plural "The following plugins were activated successfully:"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:397
+#, php-format
+msgid "No action taken. Plugin %1$s was already active."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:399
+#, php-format
+msgid ""
+"Plugin not activated. A higher version of %s is needed for this theme. "
+"Please update the plugin."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:401
+#, php-format
+msgid "All plugins installed and activated successfully. %1$s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:402
+msgid "Dismiss this notice"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:403
+msgid ""
+"There are one or more required or recommended plugins to install, update or "
+"activate."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:404
+msgid "Please contact the administrator of this site for help."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:607
+msgid "This plugin needs to be updated to be compatible with your theme."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:608
+msgid "Update Required"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:725
+msgid "Set the parent_slug config variable instead."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:1027
+msgid ""
+"The remote plugin package does not contain a folder with the desired slug "
+"and renaming did not work."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:1027
+#: framework/class-tgm-plugin-activation.php:1030
+msgid ""
+"Please contact the plugin provider and ask them to package their plugin "
+"according to the WordPress guidelines."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:1030
+msgid ""
+"The remote plugin package consists of more than one file, but the files are "
+"not packaged in a folder."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:1214
+#: framework/class-tgm-plugin-activation.php:3041
+msgctxt "plugin A *and* plugin B"
+msgid "and"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2075
+#, php-format
+msgid "TGMPA v%s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2366
+msgid "Required"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2369
+msgid "Recommended"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2385
+msgid "WordPress Repository"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2388
+msgid "External Source"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2391
+msgid "Pre-Packaged"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2408
+msgid "Not Installed"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2412
+msgid "Installed But Not Activated"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2414
+msgid "Active"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2420
+msgid "Required Update not Available"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2423
+msgid "Requires Update"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2426
+msgid "Update recommended"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2435
+#, php-format
+msgctxt "Install/Update Status"
+msgid "%1$s, %2$s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2481
+#, php-format
+msgctxt "plugins"
+msgid "All <span class=\"count\">(%s)</span>"
+msgid_plural "All <span class=\"count\">(%s)</span>"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:2485
+#, php-format
+msgid "To Install <span class=\"count\">(%s)</span>"
+msgid_plural "To Install <span class=\"count\">(%s)</span>"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:2489
+#, php-format
+msgid "Update Available <span class=\"count\">(%s)</span>"
+msgid_plural "Update Available <span class=\"count\">(%s)</span>"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:2493
+#, php-format
+msgid "To Activate <span class=\"count\">(%s)</span>"
+msgid_plural "To Activate <span class=\"count\">(%s)</span>"
+msgstr[0] ""
+msgstr[1] ""
+
+#: framework/class-tgm-plugin-activation.php:2575
+msgctxt "as in: \"version nr unknown\""
+msgid "unknown"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2583
+msgid "Installed version:"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2591
+msgid "Minimum required version:"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2603
+msgid "Available version:"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2626
+msgid "No plugins to install, update or activate."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2640
+msgid "Plugin"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2641
+msgid "Source"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2642
+msgid "Type"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2646
+msgid "Version"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2647
+#: includes/ini/kotlis-base.php:92
+msgid "Status"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2696
+#, php-format
+msgid "Install %2$s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2701
+#, php-format
+msgid "Update %2$s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2707
+#, php-format
+msgid "Activate %2$s"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2777
+msgid "Upgrade message from the plugin author:"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2810
+msgid "Install"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2816
+msgid "Update"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2819
+msgid "Activate"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2850
+msgid "No plugins were selected to be installed. No action taken."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2852
+msgid "No plugins were selected to be updated. No action taken."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2893
+msgid "No plugins are available to be installed at this time."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:2895
+msgid "No plugins are available to be updated at this time."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3001
+msgid "No plugins were selected to be activated. No action taken."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3027
+msgid "No plugins are available to be activated at this time."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3251
+msgid "Plugin activation failed."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3591
+#, php-format
+msgid "Updating Plugin %1$s (%2$d/%3$d)"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3594
+#, php-format
+msgid "An error occurred while installing %1$s: <strong>%2$s</strong>."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3596
+#, php-format
+msgid "The installation of %1$s failed."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3600
+msgid ""
+"The installation and activation process is starting. This process may take a "
+"while on some hosts, so please be patient."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3602
+#, php-format
+msgid "%1$s installed and activated successfully."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3602
+#: framework/class-tgm-plugin-activation.php:3610
+msgid "Show Details"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3602
+#: framework/class-tgm-plugin-activation.php:3610
+msgid "Hide Details"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3603
+msgid "All installations and activations have been completed."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3605
+#, php-format
+msgid "Installing and Activating Plugin %1$s (%2$d/%3$d)"
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3608
+msgid ""
+"The installation process is starting. This process may take a while on some "
+"hosts, so please be patient."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3610
+#, php-format
+msgid "%1$s installed successfully."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3611
+msgid "All installations have been completed."
+msgstr ""
+
+#: framework/class-tgm-plugin-activation.php:3613
+#, php-format
+msgid "Installing Plugin %1$s (%2$d/%3$d)"
+msgstr ""
+
+#: includes/functions.php:81
+msgid "Redux Framework"
+msgstr ""
+
+#: includes/functions.php:89
+msgid "WPBakery Page Builder"
+msgstr ""
+
+#: includes/functions.php:96
+msgid "Kotlis Plugin"
+msgstr ""
+
+#: includes/functions.php:102
+msgid "Revolution Slider"
+msgstr ""
+
+#: includes/functions.php:108
+msgid "MailChimp for WordPress"
+msgstr ""
+
+#: includes/functions.php:114
+msgid "Contact Form 7"
+msgstr ""
+
+#: includes/functions.php:120
+msgid "Meta Box"
+msgstr ""
+
+#: includes/functions.php:126 includes/loader.php:65 includes/loader.php:66
+msgid "Kotlis Demo Importer"
+msgstr ""
+
+#: includes/kotlis-options.php:45 includes/kotlis-options.php:46
+msgid "Kotlis Options"
+msgstr ""
+
+#: includes/kotlis-options.php:172
+msgid "Support"
+msgstr ""
+
+#: includes/kotlis-options.php:173 includes/kotlis-options.php:180
+msgid "Send us a mail by using our item support form."
+msgstr ""
+
+#: includes/kotlis-options.php:204
+msgid "General Settings"
+msgstr ""
+
+#: includes/kotlis-options.php:213
+msgid "Select Logo Format"
+msgstr ""
+
+#: includes/kotlis-options.php:217
+msgid "Text Logo"
+msgstr ""
+
+#: includes/kotlis-options.php:218
+msgid "Image Logo"
+msgstr ""
+
+#: includes/kotlis-options.php:228
+msgid "Upload  Logo"
+msgstr ""
+
+#: includes/kotlis-options.php:229
+msgid "Image Size 110x22"
+msgstr ""
+
+#: includes/kotlis-options.php:238
+msgid "Logo Size"
+msgstr ""
+
+#: includes/kotlis-options.php:239
+msgid "."
+msgstr ""
+
+#: includes/kotlis-options.php:240
+msgid "Optional"
+msgstr ""
+
+#: includes/kotlis-options.php:250
+msgid "Logo Text "
+msgstr ""
+
+#: includes/kotlis-options.php:260
+msgid "Color Scheme Options"
+msgstr ""
+
+#: includes/kotlis-options.php:261 includes/kotlis-options.php:267
+msgid "Choose theme color scheme style."
+msgstr ""
+
+#: includes/kotlis-options.php:266
+msgid "Color Scheme"
+msgstr ""
+
+#: includes/kotlis-options.php:270
+msgid "Light Version"
+msgstr ""
+
+#: includes/kotlis-options.php:271
+msgid "Dark Version"
+msgstr ""
+
+#: includes/kotlis-options.php:279 includes/kotlis-options.php:285
+msgid "Custom Cursor"
+msgstr ""
+
+#: includes/kotlis-options.php:280
+msgid "Enable/ Disable Custom Cursor."
+msgstr ""
+
+#: includes/kotlis-options.php:289 includes/kotlis-options.php:327
+#: includes/kotlis-options.php:369 includes/kotlis-options.php:467
+#: includes/kotlis-options.php:690 includes/kotlis-options.php:702
+#: includes/kotlis-options.php:730 includes/kotlis-options.php:759
+#: includes/kotlis-options.php:770 includes/kotlis-options.php:2723
+msgid "Disable"
+msgstr ""
+
+#: includes/kotlis-options.php:290 includes/kotlis-options.php:328
+#: includes/kotlis-options.php:370 includes/kotlis-options.php:466
+#: includes/kotlis-options.php:689 includes/kotlis-options.php:701
+#: includes/kotlis-options.php:729 includes/kotlis-options.php:758
+#: includes/kotlis-options.php:769 includes/kotlis-options.php:2722
+msgid "Enable"
+msgstr ""
+
+#: includes/kotlis-options.php:298
+msgid "Menu Options"
+msgstr ""
+
+#: includes/kotlis-options.php:299
+msgid "Menu options of your site header."
+msgstr ""
+
+#: includes/kotlis-options.php:306
+msgid "Menu Section Title"
+msgstr ""
+
+#: includes/kotlis-options.php:307
+msgid "E.X: Menu"
+msgstr ""
+
+#: includes/kotlis-options.php:316
+msgid "Share Options"
+msgstr ""
+
+#: includes/kotlis-options.php:317
+msgid "Share options of your site header."
+msgstr ""
+
+#: includes/kotlis-options.php:323
+msgid "Share Option"
+msgstr ""
+
+#: includes/kotlis-options.php:340
+msgid "Share Section Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:341
+msgid "Share Section Text Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:349
+msgid "Share Text"
+msgstr ""
+
+#: includes/kotlis-options.php:350
+msgid "Replace \"Share\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:358
+msgid "Search Options"
+msgstr ""
+
+#: includes/kotlis-options.php:359
+msgid "Search options of your site menu."
+msgstr ""
+
+#: includes/kotlis-options.php:365
+msgid "Search Option"
+msgstr ""
+
+#: includes/kotlis-options.php:382
+msgid "Search Section Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:383
+msgid "Search Section Text Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:391
+msgid "Search Text"
+msgstr ""
+
+#: includes/kotlis-options.php:392
+msgid "Replace \"Search..\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:401
+msgid "Page Settings"
+msgstr ""
+
+#: includes/kotlis-options.php:408
+msgid "Portfolio Page Option"
+msgstr ""
+
+#: includes/kotlis-options.php:414
+msgid "Portfolio Page URL"
+msgstr ""
+
+#: includes/kotlis-options.php:415
+msgid "Insert portfolio page URL here."
+msgstr ""
+
+#: includes/kotlis-options.php:422
+msgid "Portfolio Mouse Over"
+msgstr ""
+
+#: includes/kotlis-options.php:426
+msgid "Image Popup"
+msgstr ""
+
+#: includes/kotlis-options.php:427 includes/kotlis-options.php:455
+msgid "Details URL"
+msgstr ""
+
+#: includes/kotlis-options.php:436
+msgid "Video Page Option"
+msgstr ""
+
+#: includes/kotlis-options.php:442
+msgid "Video Page URL"
+msgstr ""
+
+#: includes/kotlis-options.php:443
+msgid "Insert video page URL here."
+msgstr ""
+
+#: includes/kotlis-options.php:450
+msgid "Video Mouse Over"
+msgstr ""
+
+#: includes/kotlis-options.php:454
+msgid "Video Popup"
+msgstr ""
+
+#: includes/kotlis-options.php:462 includes/kotlis-options.php:725
+#: includes/kotlis-options.php:2592 includes/kotlis-options.php:2611
+msgid "Scroll Down"
+msgstr ""
+
+#: includes/kotlis-options.php:463
+msgid "Enable/Disable header section for portfolio category & search page."
+msgstr ""
+
+#: includes/kotlis-options.php:475 includes/kotlis-options.php:739
+#: includes/kotlis-options.php:787
+msgid "Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:476 includes/kotlis-options.php:740
+#: includes/kotlis-options.php:788
+msgid "Default Text Translate Here."
+msgstr ""
+
+#: includes/kotlis-options.php:481 includes/kotlis-options.php:746
+msgid "Scroll Down Text"
+msgstr ""
+
+#: includes/kotlis-options.php:482
+msgid "Change/Repalce portfolio page \"Scroll down to Discover\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:489
+msgid "Back To Portfolio Text"
+msgstr ""
+
+#: includes/kotlis-options.php:490
+msgid "Change/Repalce portfolio post \"Back To Portfolio\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:498
+msgid "Back To Video Text"
+msgstr ""
+
+#: includes/kotlis-options.php:499
+msgid "Change/Repalce video post \"Back To Video\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:507
+msgid "Back To Shop Text"
+msgstr ""
+
+#: includes/kotlis-options.php:508
+msgid "Change/Repalce product details \"Back To Shop\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:516
+msgid "Back To Home Text"
+msgstr ""
+
+#: includes/kotlis-options.php:517
+msgid "Change/Repalce portfolio post \"Back To Home\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:526
+msgid "404 Error Page Option"
+msgstr ""
+
+#: includes/kotlis-options.php:533
+msgid "Upload Background Image"
+msgstr ""
+
+#: includes/kotlis-options.php:534
+msgid "Upload error page background image."
+msgstr ""
+
+#: includes/kotlis-options.php:540
+msgid "Title Text"
+msgstr ""
+
+#: includes/kotlis-options.php:541
+msgid "Change/Repalce \"404\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:548
+msgid "Subtitle Text"
+msgstr ""
+
+#: includes/kotlis-options.php:549
+msgid "Change/Repalce \"Page Error\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:556 includes/kotlis-options.php:2111
+msgid "Content Text"
+msgstr ""
+
+#: includes/kotlis-options.php:557
+msgid "Change/Repalce \"Page not Found\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:568
+msgid "Shop Options"
+msgstr ""
+
+#: includes/kotlis-options.php:576
+msgid "Shop Page Header Options"
+msgstr ""
+
+#: includes/kotlis-options.php:577 includes/kotlis-options.php:604
+msgid " "
+msgstr ""
+
+#: includes/kotlis-options.php:585
+msgid "Upload Shop Page Header Image"
+msgstr ""
+
+#: includes/kotlis-options.php:593 includes/kotlis-options.php:642
+msgid "Sub Title "
+msgstr ""
+
+#: includes/kotlis-options.php:594
+msgid "Shop page sub title"
+msgstr ""
+
+#: includes/kotlis-options.php:603
+msgid "Product Details Page Options"
+msgstr ""
+
+#: includes/kotlis-options.php:611
+msgid "Details Page Style"
+msgstr ""
+
+#: includes/kotlis-options.php:615
+msgid "Full Width"
+msgstr ""
+
+#: includes/kotlis-options.php:616
+msgid "Left Side Block"
+msgstr ""
+
+#: includes/kotlis-options.php:626
+msgid "Upload Product Details Page Header Image"
+msgstr ""
+
+#: includes/kotlis-options.php:634
+msgid "Title "
+msgstr ""
+
+#: includes/kotlis-options.php:635
+msgid "Product Details PageTitle"
+msgstr ""
+
+#: includes/kotlis-options.php:643
+msgid "Product Details Page Sub Title"
+msgstr ""
+
+#: includes/kotlis-options.php:657
+msgid "Blog Settings"
+msgstr ""
+
+#: includes/kotlis-options.php:662
+msgid "Select Blog Layout"
+msgstr ""
+
+#: includes/kotlis-options.php:666
+msgid "Left Sidebar"
+msgstr ""
+
+#: includes/kotlis-options.php:667
+msgid "Side Block"
+msgstr ""
+
+#: includes/kotlis-options.php:668
+msgid "Right Sidebar"
+msgstr ""
+
+#: includes/kotlis-options.php:678
+msgid "Header & Sideblock Image"
+msgstr ""
+
+#: includes/kotlis-options.php:679
+msgid ""
+"Upload header/sideblock background image for blog, archives, category, tag & "
+"search page."
+msgstr ""
+
+#: includes/kotlis-options.php:685
+msgid "Blog Header Section"
+msgstr ""
+
+#: includes/kotlis-options.php:686 includes/kotlis-options.php:698
+#: includes/kotlis-options.php:726
+msgid ""
+"Enable/Disable header section for blog single, archives, category, tag & "
+"search page."
+msgstr ""
+
+#: includes/kotlis-options.php:697
+msgid "Blog Header Title"
+msgstr ""
+
+#: includes/kotlis-options.php:709
+msgid "Blog Title Text"
+msgstr ""
+
+#: includes/kotlis-options.php:710
+msgid ""
+"Insert blog page header title text here for blog single, archives, category, "
+"tag & search page."
+msgstr ""
+
+#: includes/kotlis-options.php:717
+msgid "Blog Subtitle Text"
+msgstr ""
+
+#: includes/kotlis-options.php:718
+msgid ""
+"Insert blog page header subtitle text here for blog single, archives, "
+"category, tag & search page."
+msgstr ""
+
+#: includes/kotlis-options.php:747
+msgid "Change/Repalce blog page \"Scroll down to Discover\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:754
+msgid "Blog Author Info"
+msgstr ""
+
+#: includes/kotlis-options.php:755
+msgid "Enable/Disable author info for blog single page."
+msgstr ""
+
+#: includes/kotlis-options.php:765
+msgid "Blog Prev & Next"
+msgstr ""
+
+#: includes/kotlis-options.php:766
+msgid "Enable/Disable prev & next for blog single page."
+msgstr ""
+
+#: includes/kotlis-options.php:776
+msgid "Blog Page Link URL"
+msgstr ""
+
+#: includes/kotlis-options.php:777
+msgid "Insert blog page link url  here."
+msgstr ""
+
+#: includes/kotlis-options.php:793
+msgid "Read More Text"
+msgstr ""
+
+#: includes/kotlis-options.php:794
+msgid "Change/Repalce blog post \"Read More\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:801
+msgid "No Post Available Text"
+msgstr ""
+
+#: includes/kotlis-options.php:802
+msgid "Change/Repalce blog post \"No Post Available\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:810
+msgid "Archive Page Title"
+msgstr ""
+
+#: includes/kotlis-options.php:811
+msgid "Write header title for blog archive page here. Ex: Archive : "
+msgstr ""
+
+#: includes/kotlis-options.php:818
+msgid "Category Page Title"
+msgstr ""
+
+#: includes/kotlis-options.php:819
+msgid "Write header title for blog category page here. Ex: Category : "
+msgstr ""
+
+#: includes/kotlis-options.php:827
+msgid "Tag Page Title"
+msgstr ""
+
+#: includes/kotlis-options.php:828
+msgid "Write header title for blog tag page here. Ex: Tag : "
+msgstr ""
+
+#: includes/kotlis-options.php:836
+msgid "Search Page Title"
+msgstr ""
+
+#: includes/kotlis-options.php:837
+msgid ""
+"Write header title for blog search page title here. Ex: Search Results for :"
+msgstr ""
+
+#: includes/kotlis-options.php:844
+msgid "Type & Hit Enter..."
+msgstr ""
+
+#: includes/kotlis-options.php:845
+msgid "Search Widget Placeholder Text."
+msgstr ""
+
+#: includes/kotlis-options.php:851
+msgid "Search..."
+msgstr ""
+
+#: includes/kotlis-options.php:852
+msgid "Search Page Form Placeholder Text."
+msgstr ""
+
+#: includes/kotlis-options.php:858
+msgid "Comment"
+msgstr ""
+
+#: includes/kotlis-options.php:859 includes/kotlis-options.php:866
+msgid "Post Meta."
+msgstr ""
+
+#: includes/kotlis-options.php:865
+msgid "Comments"
+msgstr ""
+
+#: includes/kotlis-options.php:872
+msgid "One comment on"
+msgstr ""
+
+#: includes/kotlis-options.php:873 includes/kotlis-options.php:880
+#: includes/kotlis-options.php:887 includes/kotlis-options.php:894
+msgid "Post Comment Section."
+msgstr ""
+
+#: includes/kotlis-options.php:879
+msgid "Comment on"
+msgstr ""
+
+#: includes/kotlis-options.php:886
+msgid "Comments on"
+msgstr ""
+
+#: includes/kotlis-options.php:900
+msgid "Your Name"
+msgstr ""
+
+#: includes/kotlis-options.php:901 includes/kotlis-options.php:908
+#: includes/kotlis-options.php:915 includes/kotlis-options.php:922
+msgid "Post Comment Section Form."
+msgstr ""
+
+#: includes/kotlis-options.php:907
+msgid "Your Email"
+msgstr ""
+
+#: includes/kotlis-options.php:914
+msgid "Your Comment"
+msgstr ""
+
+#: includes/kotlis-options.php:921
+msgid "Add Comment"
+msgstr ""
+
+#: includes/kotlis-options.php:928
+msgid "Prev"
+msgstr ""
+
+#: includes/kotlis-options.php:929 includes/kotlis-options.php:936
+msgid "Post & Portfolio Pagination."
+msgstr ""
+
+#: includes/kotlis-options.php:935
+msgid "Next"
+msgstr ""
+
+#: includes/kotlis-options.php:943
+msgid "No Item Found"
+msgstr ""
+
+#: includes/kotlis-options.php:944 includes/kotlis-options.php:951
+msgid "Post Search Page."
+msgstr ""
+
+#: includes/kotlis-options.php:959
+msgid "Typography"
+msgstr ""
+
+#: includes/kotlis-options.php:964
+msgid "Body"
+msgstr ""
+
+#: includes/kotlis-options.php:970
+msgid "Specify the Body Text font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:986
+msgid "Entry Headings"
+msgstr ""
+
+#: includes/kotlis-options.php:987
+msgid "Entry Headings in posts/pages"
+msgstr ""
+
+#: includes/kotlis-options.php:992
+msgid "H1"
+msgstr ""
+
+#: includes/kotlis-options.php:997 includes/kotlis-options.php:1016
+#: includes/kotlis-options.php:1035 includes/kotlis-options.php:1054
+#: includes/kotlis-options.php:1073 includes/kotlis-options.php:1092
+msgid "Specify the Heading font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1011
+msgid "H2"
+msgstr ""
+
+#: includes/kotlis-options.php:1030
+msgid "H3"
+msgstr ""
+
+#: includes/kotlis-options.php:1049
+msgid "H4"
+msgstr ""
+
+#: includes/kotlis-options.php:1068
+msgid "H5"
+msgstr ""
+
+#: includes/kotlis-options.php:1087
+msgid "H6"
+msgstr ""
+
+#: includes/kotlis-options.php:1108
+msgid "Permalink"
+msgstr ""
+
+#: includes/kotlis-options.php:1114
+msgid "Link URL"
+msgstr ""
+
+#: includes/kotlis-options.php:1119
+msgid "Specify the permalink link url font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1133
+msgid "Link URL Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1138
+msgid "Specify the permalink font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1154
+msgid "Button"
+msgstr ""
+
+#: includes/kotlis-options.php:1160
+msgid "Button Text"
+msgstr ""
+
+#: includes/kotlis-options.php:1165 includes/kotlis-options.php:1184
+msgid "Specify the button font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1179
+msgid "Button Text Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1200
+msgid "Sideblock"
+msgstr ""
+
+#: includes/kotlis-options.php:1206
+msgid "Sideblock Title "
+msgstr ""
+
+#: includes/kotlis-options.php:1211 includes/kotlis-options.php:1230
+#: includes/kotlis-options.php:1257 includes/kotlis-options.php:1276
+#: includes/kotlis-options.php:1360 includes/kotlis-options.php:1379
+#: includes/kotlis-options.php:1444 includes/kotlis-options.php:1463
+#: includes/kotlis-options.php:1482 includes/kotlis-options.php:1501
+#: includes/kotlis-options.php:1520 includes/kotlis-options.php:1539
+#: includes/kotlis-options.php:1558 includes/kotlis-options.php:1577
+#: includes/kotlis-options.php:1596 includes/kotlis-options.php:1702
+#: includes/kotlis-options.php:1721 includes/kotlis-options.php:1740
+#: includes/kotlis-options.php:1759 includes/kotlis-options.php:1777
+#: includes/kotlis-options.php:1804 includes/kotlis-options.php:1823
+#: includes/kotlis-options.php:1842 includes/kotlis-options.php:1861
+#: includes/kotlis-options.php:1880 includes/kotlis-options.php:1899
+#: includes/kotlis-options.php:1918 includes/kotlis-options.php:1937
+#: includes/kotlis-options.php:1956 includes/kotlis-options.php:1983
+#: includes/kotlis-options.php:2002 includes/kotlis-options.php:2021
+#: includes/kotlis-options.php:2040 includes/kotlis-options.php:2059
+#: includes/kotlis-options.php:2078 includes/kotlis-options.php:2097
+#: includes/kotlis-options.php:2116 includes/kotlis-options.php:2135
+#: includes/kotlis-options.php:2154 includes/kotlis-options.php:2173
+#: includes/kotlis-options.php:2192 includes/kotlis-options.php:2211
+#: includes/kotlis-options.php:2230 includes/kotlis-options.php:2249
+#: includes/kotlis-options.php:2268 includes/kotlis-options.php:2287
+#: includes/kotlis-options.php:2314 includes/kotlis-options.php:2333
+#: includes/kotlis-options.php:2352 includes/kotlis-options.php:2371
+#: includes/kotlis-options.php:2390 includes/kotlis-options.php:2409
+#: includes/kotlis-options.php:2428 includes/kotlis-options.php:2447
+#: includes/kotlis-options.php:2466 includes/kotlis-options.php:2493
+#: includes/kotlis-options.php:2512 includes/kotlis-options.php:2531
+#: includes/kotlis-options.php:2550 includes/kotlis-options.php:2578
+#: includes/kotlis-options.php:2597 includes/kotlis-options.php:2616
+#: includes/kotlis-options.php:2635 includes/kotlis-options.php:2654
+#: includes/kotlis-options.php:2673
+msgid "Specify the font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1225
+msgid "Sideblock Subtitle "
+msgstr ""
+
+#: includes/kotlis-options.php:1246
+msgid "Banner"
+msgstr ""
+
+#: includes/kotlis-options.php:1252
+msgid "Banner Title "
+msgstr ""
+
+#: includes/kotlis-options.php:1271
+msgid "Banner Subtitle "
+msgstr ""
+
+#: includes/kotlis-options.php:1292
+msgid "Page"
+msgstr ""
+
+#: includes/kotlis-options.php:1298
+msgid "Page Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1303
+msgid "Specify the page title font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1317
+msgid "Page Subtitle"
+msgstr ""
+
+#: includes/kotlis-options.php:1322
+msgid "Specify the page subtitle font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1336 includes/kotlis-options.php:1420
+msgid "Content"
+msgstr ""
+
+#: includes/kotlis-options.php:1341
+msgid "Specify the page content text font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1355
+msgid "Page Scroll Menu"
+msgstr ""
+
+#: includes/kotlis-options.php:1374
+msgid "Page Scroll Menu Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1395
+msgid "Post"
+msgstr ""
+
+#: includes/kotlis-options.php:1401 includes/kotlis-options.php:1978
+msgid "Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1406
+msgid "Specify the blog post title font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1425
+msgid "Specify the blog post content font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1439
+msgid "Post Info"
+msgstr ""
+
+#: includes/kotlis-options.php:1458
+msgid "Post Info Permalink"
+msgstr ""
+
+#: includes/kotlis-options.php:1477
+msgid "Post Info Permalink Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1496
+msgid "Read More Button"
+msgstr ""
+
+#: includes/kotlis-options.php:1515
+msgid "Author Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1534
+msgid "Author Bio Text"
+msgstr ""
+
+#: includes/kotlis-options.php:1553
+msgid "Comment & Reply Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1572
+msgid "Comment Meta Info"
+msgstr ""
+
+#: includes/kotlis-options.php:1591
+msgid "Comment Notes Text"
+msgstr ""
+
+#: includes/kotlis-options.php:1613
+msgid "Header Section"
+msgstr ""
+
+#: includes/kotlis-options.php:1619
+msgid "Navigation Menu"
+msgstr ""
+
+#: includes/kotlis-options.php:1624 includes/kotlis-options.php:1643
+#: includes/kotlis-options.php:1683
+msgid "Specify the nav link font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1638
+msgid "Navigation Menu Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1657
+msgid "Navigation Menu Item Active"
+msgstr ""
+
+#: includes/kotlis-options.php:1665
+msgid "Specify the Menu Item Text font properties."
+msgstr ""
+
+#: includes/kotlis-options.php:1678
+msgid "Navigation Menu Sub"
+msgstr ""
+
+#: includes/kotlis-options.php:1697
+msgid "Contact Info Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1716
+msgid "Contact Info Text Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1735
+msgid "Contact Info Text Subitle"
+msgstr ""
+
+#: includes/kotlis-options.php:1754
+msgid "Header Tooltip"
+msgstr ""
+
+#: includes/kotlis-options.php:1772
+msgid "Social Share text"
+msgstr ""
+
+#: includes/kotlis-options.php:1793
+msgid "Sidebar Widgets Section"
+msgstr ""
+
+#: includes/kotlis-options.php:1799
+msgid "Widgets Title"
+msgstr ""
+
+#: includes/kotlis-options.php:1818
+msgid "Widgets Content"
+msgstr ""
+
+#: includes/kotlis-options.php:1837
+msgid "Widgets Permalink Text"
+msgstr ""
+
+#: includes/kotlis-options.php:1856
+msgid "Widgets Permalink Text Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1875
+msgid "Widgets Button"
+msgstr ""
+
+#: includes/kotlis-options.php:1894
+msgid "Widgets Button Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1913
+msgid "Widgets Tweet Text"
+msgstr ""
+
+#: includes/kotlis-options.php:1932
+msgid "Widgets Tweet Permalink Text"
+msgstr ""
+
+#: includes/kotlis-options.php:1951
+msgid "Widgets Tweet Permalink Text Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:1972
+msgid "Portfolio"
+msgstr ""
+
+#: includes/kotlis-options.php:1997
+msgid "Title Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:2016
+msgid "Subtitle"
+msgstr ""
+
+#: includes/kotlis-options.php:2035
+msgid "Title Grid Style"
+msgstr ""
+
+#: includes/kotlis-options.php:2054
+msgid "Title Grid Style Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:2073
+msgid "Subtitle Grid Style"
+msgstr ""
+
+#: includes/kotlis-options.php:2092
+msgid "Content Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2130
+msgid "Caption Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2149
+msgid "Caption Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2168
+msgid "Caption Text Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:2187
+msgid "Tooltip Prev Next Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2206
+msgid "Footer Prev Next Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2225
+msgid "Filter Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2244
+msgid "Filter Category Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2263
+msgid "Filter Category Active Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2282
+msgid "View Details & Show Thumb Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2303
+msgid "Intro Section"
+msgstr ""
+
+#: includes/kotlis-options.php:2309
+msgid "Slideshow Follow text"
+msgstr ""
+
+#: includes/kotlis-options.php:2328
+msgid "Slideshow Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2347
+msgid "Slideshow Subtitle"
+msgstr ""
+
+#: includes/kotlis-options.php:2366
+msgid "Slideshow Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2385
+msgid "Slider Details & Classic Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2404
+msgid "Slider Details & Classic Subtitle"
+msgstr ""
+
+#: includes/kotlis-options.php:2423
+msgid "Slider Details Info Title"
+msgstr ""
+
+#: includes/kotlis-options.php:2442
+msgid "Slider Details Info Subtitle"
+msgstr ""
+
+#: includes/kotlis-options.php:2461
+msgid "Slider Details Info Number"
+msgstr ""
+
+#: includes/kotlis-options.php:2482
+msgid "Services Section"
+msgstr ""
+
+#: includes/kotlis-options.php:2488
+msgid "Services Title Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2507
+msgid "Services List Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2526
+msgid "Services Price Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2545
+msgid "Services Price Currency"
+msgstr ""
+
+#: includes/kotlis-options.php:2567
+msgid "Footer Section"
+msgstr ""
+
+#: includes/kotlis-options.php:2573
+msgid "Copyright Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2630 includes/kotlis-options.php:2742
+msgid "Back To Top Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2649
+msgid "Back To Top Text Hover"
+msgstr ""
+
+#: includes/kotlis-options.php:2668
+msgid "Previous Next Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2688
+msgid "Footer Settings"
+msgstr ""
+
+#: includes/kotlis-options.php:2696
+msgid "Footer Copyright Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2697
+msgid "Footer copy right Text"
+msgstr ""
+
+#: includes/kotlis-options.php:2706
+msgid "Copyright text of the Website"
+msgstr ""
+
+#: includes/kotlis-options.php:2707
+msgid "Write a Copyright text of your WebSite"
+msgstr ""
+
+#: includes/kotlis-options.php:2719
+msgid "Back To Top"
+msgstr ""
+
+#: includes/kotlis-options.php:2733
+msgid "Back To Top Section Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:2734
+msgid "Back To Top Section Text Translation Options"
+msgstr ""
+
+#: includes/kotlis-options.php:2743
+msgid "Replace \"Back To Top\" text here."
+msgstr ""
+
+#: includes/kotlis-options.php:2752
+msgid "Documentation"
+msgstr ""
+
+#: includes/kotlis-options.php:2760
+msgid "Kotlis Theme Documentation"
+msgstr ""
+
+#: includes/kotlis-options.php:2761
+msgid ""
+"<a href=\"http://webredox.net/demo/wp/kotlis/doc/documentation.html\" target="
+"\"_blank\">Click Here</a> To get the theme documentation."
+msgstr ""
+
+#: includes/kotlis-options.php:2873
+msgid "Section via hook"
+msgstr ""
+
+#: includes/kotlis-options.php:2874
+msgid ""
+"<p class=\"description\">This is a section created by adding a filter to the "
+"sections array. Can be used by child themes to add/remove sections from the "
+"options.</p>"
+msgstr ""
+
+#: includes/loader.php:17 includes/loader.php:34
+msgid "Be patient, it can take a couple of minutes."
+msgstr ""
+
+#: includes/style.php:26
+msgctxt "Mukta font: on or off"
+msgid "on"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:95
+msgid "Valid"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:97
+msgid "Invalid"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:103
+msgid "Support Expired on"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:116
+msgid "License Type"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:123
+msgid "Your License Key"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:189
+msgid ""
+"Enter your item purchase code here, to activate the product, and get full "
+"feature updates and premium support."
+msgstr ""
+
+#: includes/ini/kotlis-base.php:212
+msgid "Item Purchase Code"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:216
+msgid "Email Address"
+msgstr ""
+
+#: includes/ini/kotlis-base.php:221
+msgid ""
+"We will send update news of this product by this email address, don't worry, "
+"we hate spam"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-instagram.php:8
+msgid "Kotlis Instagram Widget"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-instagram.php:60
+#: kotlis-widget/widget/kotlis-recentpost.php:105
+#: kotlis-widget/widget/kotlis-social.php:125
+#: kotlis-widget/widget/kotlis-twitter.php:70
+#: kotlis-widget/widget/kotlis-user.php:101
+msgid "Title:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-instagram.php:67
+msgid "Instagram Token:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-instagram.php:71
+msgid "Generate Access Token"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-recentpost.php:108
+msgid "Number of posts to show:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:8
+msgid "Kotlis Social Widget"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:131
+msgid "Facebook:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:136
+msgid "Twitter:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:141
+msgid "Goole+:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:147
+msgid "Skype:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:152
+msgid "Linkedin:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:157
+msgid "Youtube:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:162
+msgid "Instagram:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:167
+msgid "Behance:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:172
+msgid "Soundcloud:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:177
+msgid "Dribbble:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-social.php:182
+msgid "Pinterest:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-twitter.php:8
+msgid "Kotlis Twitter Widget"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-twitter.php:75
+msgid "Twitter User Name:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-twitter.php:80
+msgid "Twitts Count:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-twitter.php:86
+msgid "Button Text:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-twitter.php:86
+msgid "Ex: Follow Us "
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-twitter.php:91
+msgid "Button URL:"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:8
+msgid "Kotlis - User Details"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:35
+msgid "Find on : "
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:40
+msgid "Facebook"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:45
+msgid "Twitter"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:50
+msgid "Instagram"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:55
+msgid "Tumblr"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:60
+msgid "Pinterest"
+msgstr ""
+
+#: kotlis-widget/widget/kotlis-user.php:65
+msgid "Youtube"
+msgstr ""
+
+#: template-parts/footer-copyrights.php:18
+#: template-parts/footer-copyrights2.php:18
+msgid "Back to top "
+msgstr ""
+
+#: template-parts/archive/blog-left.php:40
+#: template-parts/archive/blog-right.php:33
+#: template-parts/archive/blog-side-block.php:28
+#: template-parts/blog/blog-left.php:68 template-parts/blog/blog-right.php:61
+#: template-parts/blog/default.php:65 template-parts/cat/blog-left.php:40
+#: template-parts/cat/blog-right.php:33
+#: template-parts/cat/blog-side-block.php:28
+#: template-parts/index/blog-left.php:40
+#: template-parts/index/blog-right.php:33
+#: template-parts/index/blog-side-block.php:28
+#: template-parts/search/blog-left.php:40
+#: template-parts/search/blog-right.php:33
+#: template-parts/search/blog-side-block.php:28
+#: template-parts/single/left-side-block.php:22
+#: template-parts/single/left-side-block.php:25
+#: template-parts/single/left.php:37 template-parts/single/left.php:40
+#: template-parts/single/right.php:30 template-parts/single/right.php:33
+#: template-parts/tag/blog-left.php:40 template-parts/tag/blog-right.php:33
+#: template-parts/tag/blog-side-block.php:28
+#: woocommerce/content-single-product.php:132
+#: woocommerce/content-single-product.php:138
+msgid " - "
+msgstr ""
+
+#: template-parts/header/header-portfolio-section.php:23
+#: template-parts/header/header-section.php:25
+#: template-parts/header/header-section.php:34
+#: template-parts/header/header-section.php:43
+#: template-parts/header/header-section.php:52
+#: template-parts/header/header-section.php:61
+#: template-parts/header/header-section.php:70
+#: template-parts/header/header-section.php:79
+#: template-parts/header/header-section.php:88
+#: template-parts/header/header-section.php:97
+#: template-parts/header/header-section.php:106
+#: template-parts/header/header-section.php:115
+#: template-parts/header/header-section.php:124
+#: template-parts/header/header-section.php:133
+#: template-parts/header/header-section.php:142
+#: template-parts/header/header-section.php:154
+#: template-parts/header/header-section.php:163
+#: template-parts/header/header-section.php:172
+#: template-parts/header/header-section.php:181
+#: template-parts/header/header-section.php:190
+#: template-parts/header/header-section.php:199
+#: template-parts/header/header-section.php:209
+#: template-parts/header/header-video-section.php:23
+msgid "Search.."
+msgstr ""
+
+#: template-parts/header/header-portfolio-section.php:38
+#: template-parts/header/header-section.php:225
+#: template-parts/header/header-video-section.php:38
+msgid "Share"
+msgstr ""
+
+#: template-parts/header/title-section-2.php:18
+#: template-parts/header/title-section-2s.php:14
+#: template-parts/header/title-section-3.php:28
+msgid "Our Last News"
+msgstr ""
+
+#: template-parts/header/title-section-3s.php:24
+msgid "My Stories"
+msgstr ""
+
+#: template-parts/header/title-section-4.php:18
+#: template-parts/header/title-section-4s.php:14
+msgid "Archive : "
+msgstr ""
+
+#: template-parts/header/title-section-5.php:18
+#: template-parts/header/title-section-5s.php:14
+msgid "Category : "
+msgstr ""
+
+#: template-parts/header/title-section-6.php:18
+#: template-parts/header/title-section-6s.php:14
+#: template-parts/post-formats/gallery-index.php:32
+#: template-parts/post-formats/gallery-single.php:32
+#: template-parts/post-formats/image-index.php:17
+#: template-parts/post-formats/image-single.php:17
+#: template-parts/post-formats/standard-index.php:32
+#: template-parts/post-formats/standard-single.php:27
+#: template-parts/post-formats/video-index.php:18
+#: template-parts/post-formats/video-single.php:18
+msgid "Tag : "
+msgstr ""
+
+#: template-parts/header/title-section-7.php:16
+#: template-parts/header/title-section-7.php:18
+#: template-parts/header/title-section-7s.php:12
+#: template-parts/header/title-section-7s.php:14
+#, php-format
+msgid " \"%s\""
+msgstr ""
+
+#: template-parts/header/title-section-7.php:18
+#: template-parts/header/title-section-7s.php:14
+msgid "Search Results For : "
+msgstr ""
+
+#: template-parts/intro/custom-carousel.php:71
+#: template-parts/intro/full-carousel.php:80
+#: template-parts/intro/slider-details.php:94
+msgid "Scroll down or  Swipe"
+msgstr ""
+
+#: template-parts/intro/full-image.php:13
+#: template-parts/intro/full-slider.php:13
+#: template-parts/intro/multi-slideshow.php:13 template-parts/intro/rev.php:13
+#: template-parts/intro/slideshow.php:13 template-parts/intro/vimeo.php:13
+msgid "Follow"
+msgstr ""
+
+#: template-parts/intro/full-slider.php:96
+#: template-parts/intro/slider-details.php:110
+msgid "1"
+msgstr ""
+
+#: template-parts/portfolio/boxed-grid.php:21
+#: template-parts/portfolio/column-grid.php:21
+#: template-parts/portfolio/row-1.php:29 template-parts/portfolio/row-2.php:29
+#: template-parts/portfolio/row-3.php:29
+#: template-parts/video/boxed-grid.php:21
+#: template-parts/video/column-grid.php:21 template-parts/video/row-1.php:29
+#: template-parts/video/row-2.php:29 template-parts/video/row-3.php:29
+msgid "Filters "
+msgstr ""
+
+#: template-parts/portfolio/boxed-grid.php:23
+#: template-parts/portfolio/column-grid-2.php:46
+#: template-parts/portfolio/column-grid.php:23
+#: template-parts/portfolio/row-1.php:31 template-parts/portfolio/row-2.php:31
+#: template-parts/portfolio/row-3.php:31
+#: template-parts/video/boxed-grid.php:23
+#: template-parts/video/column-grid-2.php:46
+#: template-parts/video/column-grid.php:23 template-parts/video/row-1.php:31
+#: template-parts/video/row-2.php:31 template-parts/video/row-3.php:31
+msgid "All"
+msgstr ""
+
+#: template-parts/portfolio/row-1.php:21 template-parts/portfolio/row-2.php:21
+#: template-parts/portfolio/row-3.php:21 template-parts/video/row-1.php:21
+#: template-parts/video/row-2.php:21 template-parts/video/row-3.php:21
+msgid "Scroll down or  Swipe to Discover"
+msgstr ""
+
+#: template-parts/portfolio-details/carousel.php:40
+#: template-parts/portfolio-details/slider.php:42
+msgid "Show Thumbnails"
+msgstr ""
+
+#: template-parts/portfolio-details/carousel.php:50
+#: template-parts/portfolio-details/slider.php:52
+msgid "View Details"
+msgstr ""
+
+#: template-parts/portfolio-details/carousel.php:126
+#: template-parts/portfolio-details/carousel.php:160
+#: template-parts/portfolio-details/gallery-des.php:70
+#: template-parts/portfolio-details/gallery-des.php:104
+#: template-parts/portfolio-details/gallery-full.php:70
+#: template-parts/portfolio-details/gallery-full.php:104
+#: template-parts/portfolio-details/slider.php:137
+#: template-parts/portfolio-details/slider.php:167
+msgid "Back To Portfolio"
+msgstr ""
+
+#: template-parts/portfolio-details/slider.php:68
+msgid "Fullscreen Mode"
+msgstr ""
+
+#: template-parts/post-formats/gallery-index.php:62
+#: template-parts/post-formats/image-index.php:47
+#: template-parts/post-formats/standard-index.php:45
+#: template-parts/post-formats/video-index.php:48
+msgid "Read more"
+msgstr ""
+
+#: template-parts/single/left-side-block.php:123
+#: template-parts/single/left-side-block.php:151
+#: template-parts/single/left.php:135 template-parts/single/left.php:163
+#: template-parts/single/right.php:128 template-parts/single/right.php:156
+msgid "No Post Available"
+msgstr ""
+
+#: woocommerce/content-single-product.php:31
+msgid "My Shop"
+msgstr ""
+
+#: woocommerce/content-single-product.php:73
+#: woocommerce/content-single-product.php:99
+msgid "Back To Shop"
+msgstr ""
+
+#: woocommerce/content-widget-reviews.php:35
+#, php-format
+msgid "by %s"
+msgstr ""
+
+#: woocommerce/product-searchform.php:27
+msgid "Search products&hellip;"
+msgstr ""
+
+#: woocommerce/cart/mini-cart.php:47
+msgid "Remove this item"
+msgstr ""
+
+#: woocommerce/cart/mini-cart.php:97
+msgid "No products in the cart."
+msgstr ""
+
+#: woocommerce/single-product/product-image.php:83
+msgid "Awaiting product image"
+msgstr ""

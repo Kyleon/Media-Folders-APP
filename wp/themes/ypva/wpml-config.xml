@@ -1,0 +1,98 @@
+<wpml-config>
+    
+    <custom-types>
+        <custom-type translate="1">portfolio</custom-type>
+        <custom-type translate="1">video</custom-type>
+    </custom-types>    
+    <taxonomies>
+        <taxonomy translate="1">portfolio_category</taxonomy>
+        <taxonomy translate="1">video_category</taxonomy>
+    </taxonomies>    
+    <admin-texts>
+        <key name="kotlis">
+            <key name="logotext" />
+            <key name="menu_st_title" />
+            <key name="share_bt_title1" />
+            <key name="search_bt_title1" />
+            <key name="port-page-url" />
+            <key name="video-page-url" />
+            <key name="portfolio_page_translet_scroll" />
+            <key name="port-page-nopost" />
+            <key name="video-page-nopost" />
+            <key name="shop-page-nopost" />
+            <key name="port-page-back-home" />
+            <key name="error-page-title" />
+            <key name="error-page-sbtitle" />
+            <key name="error-page-subtitle" />
+            <key name="shopsubtitle" />
+            <key name="shoptitledt" />
+            <key name="shopsubtitledt" />
+            <key name="blog-page-title" />
+            <key name="blog-page-subtitle" />
+            <key name="blog_page_translet_scroll" />
+            <key name="blog-page-url" />
+            <key name="blog-read-more" />
+            <key name="blog-page-nopost" />
+            <key name="arch-page-title" />
+            <key name="cat-page-title" />
+            <key name="tag-page-title" />
+            <key name="src-page-title" />
+            <key name="translet_opt_6" />
+            <key name="translet_opt_7" />
+            <key name="translet_opt_8" />
+            <key name="translet_opt_9" />
+            <key name="translet_opt_10" />
+            <key name="translet_opt_11" />
+            <key name="translet_opt_12" />
+            <key name="translet_opt_13" />
+            <key name="translet_opt_14" />
+            <key name="translet_opt_15" />
+            <key name="translet_opt_16" />
+            <key name="translet_opt_17" />
+            <key name="translet_opt_18" />
+            <key name="translet_opt_20" />
+            <key name="translet_opt_23" />
+            <key name="translet_opt_24" />
+            <key name="copyright" />
+            <key name="to-top-title" />
+        </key>
+        <key name="simple_string_option" />
+    </admin-texts>    
+    <language-switcher-settings>
+        <key name="icl_lang_sel_config">
+            <key name="font-current-normal">#444444</key>
+            <key name="font-current-hover">#000000</key>
+            <key name="background-current-normal">#ffffff</key>
+            <key name="background-current-hover">#eeeeee</key>
+            <key name="font-other-normal">#444444</key>
+            <key name="font-other-hover">#000000</key>
+            <key name="background-other-normal">#ffffff</key>
+            <key name="background-other-hover">#eeeeee</key>
+            <key name="border">#cdcdcd</key>
+        </key>
+        <key name="icl_lang_sel_footer_config">
+            <key name="font-current-normal">#444444</key>
+            <key name="font-current-hover">#000000</key>
+            <key name="background-current-normal">#ffffff</key>
+            <key name="background-current-hover">#eeeeee</key>
+            <key name="font-other-normal">#444444</key>
+            <key name="font-other-hover">#000000</key>
+            <key name="background-other-normal">#ffffff</key>
+            <key name="background-other-hover">#eeeeee</key>
+            <key name="border">#cdcdcd</key>
+        </key>    
+        <key name="icl_language_switcher_sidebar">0</key>  
+        <key name="icl_widget_title_show">0</key>
+        <key name="icl_lang_sel_type">dropdown</key>
+        <key name="icl_lso_link_empty">0</key>
+        <key name="icl_lso_flags">0</key>
+        <key name="icl_lso_native_lang">1</key>
+        <key name="icl_lso_display_lang">1</key>
+        <key name="icl_lang_sel_footer">0</key>
+        <key name="icl_post_availability">0</key>
+        <key name="icl_post_availability_position">below</key>
+        <key name="icl_post_availability_text">This post is also available in: %s</key>    
+    </language-switcher-settings>    
+</wpml-config>
+
+

@@ -8,21 +8,47 @@ Desarrollado para **yezraelperez.es** pero pensado para ser reutilizable en cual
 
 ```
 Media-Folders-APP/
-├── plugin/           ← Plugin de WordPress (PHP)
+├── plugin/           ← Plugin de WordPress propio (yz-media-folders)
 │   ├── yz-media-folders.php
-│   ├── includes/     ← Clases: taxonomy, ajax, admin, map, rest, portfolio-bridge
+│   ├── includes/     ← taxonomy, ajax, admin, map, rest, portfolio-bridge
 │   └── assets/       ← JS/CSS del panel admin
 │
-└── app/              ← PWA Vue 3 + Vite (cliente móvil/desktop)
-    ├── src/
-    │   ├── views/        ← 11 pantallas
-    │   ├── components/   ← FolderPicker, MediaPicker, GeoTagger, ...
-    │   ├── stores/       ← Pinia: auth, ui, folders, media, portfolios, locations
-    │   ├── api/          ← Cliente REST con auth Application Password
-    │   └── styles/       ← Tokens (dark/light) + base
-    ├── public/
-    └── vite.config.js
+├── app/              ← PWA Vue 3 + Vite (cliente móvil/desktop)
+│   ├── src/
+│   │   ├── views/        ← pantallas
+│   │   ├── components/   ← FolderPicker, MediaPicker, GeoTagger, dashboards…
+│   │   ├── stores/       ← Pinia: auth, ui, folders, media, portfolios, locations
+│   │   ├── api/          ← Cliente REST con auth Application Password
+│   │   └── styles/       ← Tokens (dark/light) + base
+│   ├── public/
+│   └── vite.config.js
+│
+├── wp/               ← Espejo del WP local con todo lo que tocamos
+│   ├── themes/
+│   │   ├── ypva/         ← Theme parent (kotlis personalizado)
+│   │   └── ypva-child/   ← Child theme: aquí van las customizaciones
+│   └── plugins/
+│       └── kotlis-plugin/ ← Companion plugin del tema
+│
+└── scripts/
+    ├── sync-wp.ps1   ← Sync repo ↔ WP local (push/pull/diff)
+    └── …
 ```
+
+> El plugin propio `yz-media-folders` mantiene su lugar histórico en `plugin/`.
+> El theme y el companion plugin están bajo `wp/` para mirror cómodo del
+> `wp-content/`.
+
+### Sincronizar el espejo `wp/` con el WordPress local
+
+```powershell
+.\scripts\sync-wp.ps1            # push (repo → C:\dev\proyectos\yezraelperez.es)
+.\scripts\sync-wp.ps1 -Mode pull # pull (WP local → repo)
+.\scripts\sync-wp.ps1 -Mode diff # qué archivos diferirían
+```
+
+La fuente de verdad es el repo. Edita ahí, ejecuta `push` para reflejarlo en
+el WP local de pruebas, y luego SFTP a Hostinger para producción.
 
 ## Funcionalidad
 

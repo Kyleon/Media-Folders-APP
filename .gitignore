@@ -36,6 +36,16 @@ plugin/users.json
 plugin/setup.php
 plugin/config.php
 
+# ── WordPress theme + theme-plugin (espejo del WP local) ──
+# Mantenemos las fuentes en repo, pero ignoramos cachés/builds que cada
+# instalación regenera localmente.
+wp/**/cache/
+wp/**/.cache/
+wp/**/dist/
+wp/**/build/
+wp/**/node_modules/
+wp/**/.sass-cache/
+
 # ── Logs ──
 *.log
 logs/

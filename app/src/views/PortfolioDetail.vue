@@ -195,29 +195,100 @@ async function remove() {
     ui.toast(e.message, 'err');
   }
 }
+
+function openMedia(id) {
+  router.push({ name: 'media-detail', params: { id } });
+}
 </script>
 
 <template>
   <div v-if="loading" class="center muted"><Spinner /> Cargando…</div>
 
   <div v-else-if="item" class="pd-layout">
-    <div class="pd-col pd-col-left">
-      <div v-if="item.hero_url" class="hero">
-        <img :src="item.hero_url" :alt="item.title" />
-        <div class="hero-badge" :class="{ fallback: !item.hero_id }">
-          <span v-if="item.hero_id">★ Imagen destacada</span>
-          <span v-else>🖼 Primera de la galería (sin destacada)</span>
-        </div>
-        <div class="hero-actions">
-          <button class="hero-btn" @click="showHeroPicker = true">Cambiar</button>
-          <button v-if="item.hero_id" class="hero-btn" @click="clearHero">Quitar</button>
-        </div>
+    <!-- 1. Hero (imagen destacada) -->
+    <div v-if="item.hero_url" class="hero">
+      <img :src="item.hero_url" :alt="item.title" />
+      <div class="hero-badge" :class="{ fallback: !item.hero_id }">
+        <span v-if="item.hero_id">★ Imagen destacada</span>
+        <span v-else>🖼 Primera de la galería (sin destacada)</span>
       </div>
-      <div v-else class="hero hero-empty">
-        <span class="muted">Sin imagen destacada</span>
-        <button class="btn pri" style="margin-top:10px" @click="showHeroPicker = true">★ Elegir destacada</button>
+      <div class="hero-actions">
+        <button class="hero-btn" @click="showHeroPicker = true">Cambiar</button>
+        <button v-if="item.hero_id" class="hero-btn" @click="clearHero">Quitar</button>
       </div>
+    </div>
+    <div v-else class="hero hero-empty">
+      <span class="muted">Sin imagen destacada</span>
+      <button class="btn pri" style="margin-top:10px" @click="showHeroPicker = true">★ Elegir destacada</button>
+    </div>
 
+    <!-- 2. Galería justo debajo del hero -->
+    <div class="card">
+      <div class="gallery-head">
+        <h3 class="section" style="margin:0">Galería ({{ galleryItems.length }})</h3>
+        <div class="gh-actions">
+          <button v-if="galleryItems.length" class="btn sm"
+            @click="$router.push({ name: 'slideshow', query: { portfolio: item.id } })"
+            title="Modo presentación">▶ Slideshow</button>
+          <button class="btn sm" @click="showAddPicker = true">+ Añadir</button>
+          <button v-if="galleryDirty" class="btn pri sm" :disabled="reordering" @click="saveOrder">
+            <Spinner v-if="reordering" :size="12" />
+            <span v-else>💾 Guardar</span>
+          </button>
+        </div>
+      </div>
+      <p class="muted small" style="margin:0 0 8px">Pulsa para abrir · mantén pulsado 1 s para arrastrar</p>
+
+      <draggable v-if="galleryItems.length"
+        v-model="galleryItems"
+        item-key="id"
+        class="ggrid"
+        :animation="180"
+        :force-fallback="true"
+        :fallback-tolerance="3"
+        :delay="1000"
+        :delay-on-touch-only="true"
+        handle=".gitem"
+        ghost-class="g-ghost"
+        chosen-class="g-chosen"
+        drag-class="g-drag"
+        @end="onDragEnd">
+        <template #item="{ element: g }">
+          <div class="gitem"
+            :class="{ 'is-hero': g.id === item.hero_id }"
+            @click="openMedia(g.id)"
+            :title="g.title || g.alt || 'Abrir imagen'">
+            <img :src="g.thumb" :alt="g.alt || g.title" loading="lazy" draggable="false" />
+            <button class="ghero"
+              :class="{ on: g.id === item.hero_id }"
+              @click.stop="setHero(g.id)"
+              :title="g.id === item.hero_id ? 'Es la imagen destacada' : 'Marcar como destacada'">★</button>
+            <button class="grm" @click.stop="removeFromGallery(g.id)" title="Quitar de galería">✕</button>
+            <span class="gopen" aria-hidden="true">↗</span>
+          </div>
+        </template>
+      </draggable>
+      <p v-else class="muted small">Sin imágenes en la galería.</p>
+
+      <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
+
+      <div class="field">
+        <label>Vincular carpeta YZMF</label>
+        <select v-model.number="form.linked_folder">
+          <option :value="0">— Ninguna —</option>
+          <option v-for="f in folders.flat" :key="f.id" :value="f.id">
+            {{ '— '.repeat(f.depth) }}{{ f.name }} ({{ f.count }})
+          </option>
+        </select>
+      </div>
+      <button class="btn" :disabled="syncing || !form.linked_folder" @click="syncFromFolder" style="width:100%">
+        <Spinner v-if="syncing" :size="14" />
+        <span v-else>↻ Sincronizar galería desde carpeta</span>
+      </button>
+    </div>
+
+    <!-- 3. Form + Avanzado (lado a lado en desktop) -->
+    <div class="meta-section">
       <div class="card">
         <div class="field">
           <label>Título</label>
@@ -276,72 +347,18 @@ async function remove() {
           <PortfolioMetaForm :portfolio-id="item.id" :layout-key="item.layout" />
         </div>
       </div>
+    </div>
 
-      <div class="card danger-zone">
-        <a class="btn" :href="item.permalink" target="_blank" style="width:100%;margin-bottom:8px">↗ Ver portfolio</a>
-        <a class="btn" :href="item.edit_url"  target="_blank" style="width:100%;margin-bottom:8px">⚙ Editor de WP</a>
-        <button class="btn" @click="duplicate" :disabled="duplicating" style="width:100%;margin-bottom:8px">
+    <!-- 4. Acciones / Zona danger al final -->
+    <div class="card danger-zone">
+      <div class="dz-grid">
+        <a class="btn" :href="item.permalink" target="_blank">↗ Ver portfolio</a>
+        <a class="btn" :href="item.edit_url"  target="_blank">⚙ Editor de WP</a>
+        <button class="btn" @click="duplicate" :disabled="duplicating">
           <Spinner v-if="duplicating" :size="14" />
           <span v-else>📋 Duplicar como plantilla</span>
         </button>
-        <button class="btn danger" @click="remove" style="width:100%">🗑 Mover a papelera</button>
-      </div>
-    </div>
-
-    <div class="pd-col pd-col-right">
-      <div class="card">
-        <div class="gallery-head">
-          <h3 class="section" style="margin:0">Galería ({{ galleryItems.length }})</h3>
-          <div class="gh-actions">
-            <button class="btn sm" @click="showAddPicker = true">+ Añadir</button>
-            <button v-if="galleryDirty" class="btn pri sm" :disabled="reordering" @click="saveOrder">
-              <Spinner v-if="reordering" :size="12" />
-              <span v-else>💾 Guardar</span>
-            </button>
-          </div>
-        </div>
-        <p class="muted small" style="margin:0 0 8px">Arrastra una imagen para reordenarla</p>
-
-        <draggable v-if="galleryItems.length"
-          v-model="galleryItems"
-          item-key="id"
-          class="ggrid"
-          :animation="180"
-          :force-fallback="true"
-          :fallback-tolerance="3"
-          handle=".gitem"
-          ghost-class="g-ghost"
-          chosen-class="g-chosen"
-          drag-class="g-drag"
-          @end="onDragEnd">
-          <template #item="{ element: g }">
-            <div class="gitem" :class="{ 'is-hero': g.id === item.hero_id }">
-              <img :src="g.thumb" :alt="g.alt || g.title" loading="lazy" draggable="false" />
-              <button class="ghero"
-                :class="{ on: g.id === item.hero_id }"
-                @click.stop="setHero(g.id)"
-                :title="g.id === item.hero_id ? 'Es la imagen destacada' : 'Marcar como destacada'">★</button>
-              <button class="grm" @click.stop="removeFromGallery(g.id)" title="Quitar de galería">✕</button>
-            </div>
-          </template>
-        </draggable>
-        <p v-else class="muted small">Sin imágenes en la galería.</p>
-
-        <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
-
-        <div class="field">
-          <label>Vincular carpeta YZMF</label>
-          <select v-model.number="form.linked_folder">
-            <option :value="0">— Ninguna —</option>
-            <option v-for="f in folders.flat" :key="f.id" :value="f.id">
-              {{ '— '.repeat(f.depth) }}{{ f.name }} ({{ f.count }})
-            </option>
-          </select>
-        </div>
-        <button class="btn" :disabled="syncing || !form.linked_folder" @click="syncFromFolder" style="width:100%">
-          <Spinner v-if="syncing" :size="14" />
-          <span v-else>↻ Sincronizar galería desde carpeta</span>
-        </button>
+        <button class="btn danger" @click="remove">🗑 Mover a papelera</button>
       </div>
     </div>
   </div>
@@ -361,37 +378,18 @@ async function remove() {
 <style scoped>
 .center { display: flex; gap: 10px; justify-content: center; padding: 30px; }
 
-/* Layout móvil/tablet: una sola columna apilada con espaciado consistente */
+/* Layout vertical: hero, galería, meta (form+avanzado), danger zone al final */
 .pd-layout { display: flex; flex-direction: column; gap: 14px; }
-.pd-col { display: flex; flex-direction: column; gap: 14px; }
-/* Evitar que el flex-shrink:1 por defecto colapse hijos cuando el column tiene overflow */
-.pd-col > * { flex: 0 0 auto; }
 
-/* Escritorio: dos columnas, info+acciones a la izquierda, galería a la derecha */
+/* Form + Configuración avanzada lado a lado en desktop */
+.meta-section { display: flex; flex-direction: column; gap: 14px; }
 @media (min-width: 1024px) {
-  .pd-layout {
+  .meta-section {
     display: grid;
-    grid-template-columns: minmax(360px, 420px) 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
     align-items: start;
   }
-  .pd-col-left {
-    position: sticky;
-    top: 76px;
-    max-height: calc(100vh - 90px);
-    overflow-y: auto;
-    padding-right: 4px;
-  }
-  .pd-col-left::-webkit-scrollbar { width: 6px; }
-  .pd-col-left::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 3px; }
-}
-
-/* Pantallas anchas: columna izquierda algo más amplia para que respire */
-@media (min-width: 1600px) {
-  .pd-layout { grid-template-columns: minmax(420px, 480px) 1fr; gap: 28px; }
-}
-@media (min-width: 2400px) {
-  .pd-layout { grid-template-columns: minmax(460px, 520px) 1fr; gap: 32px; }
 }
 
 .hero {
@@ -400,6 +398,14 @@ async function remove() {
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--s2);
+  width: 100%;
+}
+/* En desktop, limitar el ancho del hero para que no se haga gigante */
+@media (min-width: 1024px) {
+  .hero { max-width: 1200px; margin: 0 auto; }
+}
+@media (min-width: 1800px) {
+  .hero { max-width: 1400px; }
 }
 .hero img { width: 100%; height: 100%; object-fit: cover; }
 .hero-empty {
@@ -483,12 +489,17 @@ async function remove() {
   background: var(--s2);
   border-radius: 4px;
   overflow: hidden;
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  touch-action: none;
+  /* touch-action: pan-y permite scroll vertical normal hasta que se cumple el delay de 1s */
+  touch-action: pan-y;
   transition: transform .15s, box-shadow .15s;
+}
+@media (hover: hover) {
+  .gitem { cursor: grab; }
+  .gitem:active { cursor: grabbing; }
 }
 .gitem:active { cursor: grabbing; }
 .gitem img {
@@ -519,11 +530,27 @@ async function remove() {
   opacity: 1;
 }
 
+/* Indicador de "abrir" — visible en hover en desktop */
+.gopen {
+  position: absolute;
+  bottom: 4px; right: 4px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.6);
+  color: white;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+
 /* En móvil (touch) los botones siempre visibles para que se puedan pulsar.
    En desktop sólo aparecen al hover. */
 @media (hover: hover) {
   .gitem:hover .grm,
-  .gitem:hover .ghero { opacity: 1; }
+  .gitem:hover .ghero,
+  .gitem:hover .gopen { opacity: 1; }
 }
 @media (hover: none) {
   .grm, .ghero { opacity: 0.85; }
@@ -534,6 +561,12 @@ async function remove() {
 .g-ghost  { opacity: .35; }
 .g-chosen { transform: scale(1.05); box-shadow: var(--shadow); }
 .g-drag   { transform: rotate(2deg); }
+
+/* Acciones finales en grid: 1 col móvil, 2 cols tablet, 4 cols desktop */
+.dz-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.dz-grid .btn { width: 100%; justify-content: center; }
+@media (min-width: 600px)  { .dz-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .dz-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
 
 .checks { display: flex; flex-wrap: wrap; gap: 6px; }
 .cat-check {

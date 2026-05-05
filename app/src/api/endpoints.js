@@ -75,3 +75,59 @@ export const PortfolioCatsAPI = {
   update: (id, body)         => api.put(NS + 'portfolio-categories/' + id, body),
   remove: (id)               => api.del(NS + 'portfolio-categories/' + id),
 };
+
+/**
+ * Marca: logo + nombre + color que aparecen en la cabecera de la PWA.
+ */
+export const BrandAPI = {
+  get: ()       => api.get(NS + 'brand'),
+  set: (body)   => api.put(NS + 'brand', body),
+};
+
+/**
+ * Usuarios: usamos directamente los endpoints nativos de WordPress.
+ * Necesita rol con capability 'list_users' / 'create_users' / etc.
+ */
+const WP_USERS_NS = 'wp-json/wp/v2/users';
+export const UsersAPI = {
+  list:    (params = {}) => api.get(WP_USERS_NS, { context: 'edit', per_page: 50, ...params }),
+  detail:  (id)          => api.get(WP_USERS_NS + '/' + id, { context: 'edit' }),
+  me:      ()            => api.get(WP_USERS_NS + '/me',   { context: 'edit' }),
+  create:  (body)        => api.post(WP_USERS_NS, body),
+  update:  (id, body)    => api.put(WP_USERS_NS + '/' + id, body),
+  remove:  (id, reassign = null) => {
+    const q = { force: true };
+    if (reassign != null) q.reassign = reassign;
+    return api.del(WP_USERS_NS + '/' + id, q);
+  },
+  // Application Passwords (REST nativo)
+  appPasswords: {
+    list:   (uid)        => api.get(WP_USERS_NS + '/' + uid + '/application-passwords', { context: 'edit' }),
+    create: (uid, name)  => api.post(WP_USERS_NS + '/' + uid + '/application-passwords', { name }),
+    remove: (uid, uuid)  => api.del(WP_USERS_NS + '/' + uid + '/application-passwords/' + uuid),
+  },
+};
+
+/**
+ * Registro de actividad de autenticación.
+ */
+export const AuthLogAPI = {
+  activity:    ()     => api.get(NS + 'auth/activity'),
+  clearLocks:  ()     => api.post(NS + 'auth/clear-locks'),
+  getSettings: ()     => api.get(NS + 'auth/settings'),
+  setSettings: (body) => api.put(NS + 'auth/settings', body),
+};
+
+/**
+ * Portal de cliente: galerías privadas con token.
+ * Endpoints admin (auth WP). Los públicos /cp/{token}/* los consume el
+ * frontend standalone del plugin yzmf-client-portal.
+ */
+export const ClientPortalAPI = {
+  list:    ()         => api.get(NS + 'cp/admin/galleries'),
+  detail:  (id)       => api.get(NS + 'cp/admin/galleries/' + id),
+  create:  (body)     => api.post(NS + 'cp/admin/galleries', body),
+  update:  (id, body) => api.put(NS + 'cp/admin/galleries/' + id, body),
+  remove:  (id)       => api.del(NS + 'cp/admin/galleries/' + id),
+  actions: (id)       => api.get(NS + 'cp/admin/galleries/' + id + '/actions'),
+};

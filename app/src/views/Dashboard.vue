@@ -7,23 +7,37 @@ import { StatsAPI, MediaAPI, PortfoliosAPI, MapAPI } from '../api/endpoints';
 import ThemeSwitch from '../components/ThemeSwitch.vue';
 import Spinner from '../components/Spinner.vue';
 import PullRefresh from '../components/PullRefresh.vue';
+import DashLatest from '../components/DashLatest.vue';
+import DashMiniMap from '../components/DashMiniMap.vue';
+import DashHeatmap from '../components/DashHeatmap.vue';
+import DashPalette from '../components/DashPalette.vue';
 
 const router  = useRouter();
 const auth    = useAuthStore();
 const folders = useFoldersStore();
 
-const loading       = ref(true);
-const stats         = ref(null);
-const statsError    = ref(false);   // true si /stats falla
-const fallbackTotals = ref(null);   // KPIs básicos cuando /stats no está disponible
+const loading        = ref(true);
+const stats          = ref(null);
+const statsError     = ref(false);
+const fallbackTotals = ref(null);
+const topTags        = ref([]);
+
+// Refs hijos para refrescar al pull-to-refresh
+const latestRef  = ref(null);
+const miniMapRef = ref(null);
+const paletteRef = ref(null);
 
 async function load() {
   loading.value = true;
   statsError.value = false;
   try {
-    stats.value = await StatsAPI.get();
+    const [s, t] = await Promise.all([
+      StatsAPI.get(),
+      StatsAPI.tags().catch(() => []),
+    ]);
+    stats.value = s;
+    topTags.value = (t || []).slice(0, 12);
   } catch (e) {
-    // El endpoint /stats es nuevo. Si falla (plugin viejo en server), caemos a KPIs básicos
     console.warn('Stats endpoint no disponible, usando fallback', e?.message);
     statsError.value = true;
     stats.value = null;
@@ -31,6 +45,13 @@ async function load() {
   } finally {
     loading.value = false;
   }
+}
+
+async function refreshAll() {
+  await load();
+  latestRef.value?.refresh?.();
+  miniMapRef.value?.refresh?.();
+  paletteRef.value?.refresh?.();
 }
 
 async function loadFallback() {
@@ -59,24 +80,6 @@ function logout() {
   router.replace({ name: 'login' });
 }
 
-// Sparkline en SVG (sólo si hay stats reales)
-const sparkPath = computed(() => {
-  if (!stats.value?.uploads_30d?.length) return '';
-  const data = stats.value.uploads_30d;
-  const max  = Math.max(1, ...data.map(d => d.count));
-  const w    = 200;
-  const h    = 40;
-  const stepX = w / (data.length - 1 || 1);
-  return data.map((d, i) => {
-    const x = i * stepX;
-    const y = h - (d.count / max) * h;
-    return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
-  }).join(' ');
-});
-
-const totalUploads30d = computed(() => stats.value?.uploads_30d?.reduce((a, d) => a + d.count, 0) || 0);
-
-// KPIs unificados: si hay stats, vienen de ahí; si no, del fallback
 const kpis = computed(() => {
   if (stats.value) return stats.value.totals;
   if (fallbackTotals.value) return {
@@ -87,11 +90,65 @@ const kpis = computed(() => {
   };
   return null;
 });
+
+// Health score: media de cuántos campos críticos tienen las imágenes (0-100)
+const healthScore = computed(() => {
+  if (!stats.value?.totals?.images) return null;
+  const total = stats.value.totals.images;
+  if (!total) return null;
+  const h = stats.value.health || {};
+  const parts = [
+    1 - (h.missing_alt    || 0) / total,
+    1 - (h.missing_geo    || 0) / total,
+    1 - (h.missing_tags   || 0) / total,
+    1 - (h.missing_folder || 0) / total,
+  ];
+  const avg = parts.reduce((a, x) => a + Math.max(0, x), 0) / parts.length;
+  return Math.round(avg * 100);
+});
+
+const healthRing = computed(() => {
+  const v = healthScore.value;
+  if (v === null) return { dash: '0 100', color: 'var(--text-mute)' };
+  const color = v >= 80 ? 'var(--ok)' : v >= 50 ? 'var(--info)' : v >= 30 ? 'var(--accent)' : 'var(--danger)';
+  return { dash: `${v} ${100 - v}`, color };
+});
+
+// Tareas pendientes (cards-chip clicables)
+const tasks = computed(() => {
+  if (!stats.value) return [];
+  const h = stats.value.health || {};
+  const out = [];
+  if (h.missing_alt > 0) out.push({
+    label: 'Sin alt text', count: h.missing_alt, icon: '📝',
+    to: { name: 'media', query: { search: '__NO_ALT__', mime: 'image' } },
+  });
+  if (h.missing_tags > 0) out.push({
+    label: 'Sin etiquetas IA', count: h.missing_tags, icon: '🏷',
+    to: { name: 'media' }, // sin filtro específico aún
+    hint: 'Genera con IA al abrir',
+  });
+  if (h.missing_geo > 0) out.push({
+    label: 'Sin geolocalización', count: h.missing_geo, icon: '📍',
+    to: { name: 'media' },
+  });
+  if (h.missing_folder > 0) out.push({
+    label: 'Sin carpeta', count: h.missing_folder, icon: '📭',
+    to: { name: 'media', query: { folder: 0 } },
+  });
+  if (h.portfolios_no_thumb > 0) out.push({
+    label: 'Portfolios sin destacada', count: h.portfolios_no_thumb, icon: '🖼',
+    to: { name: 'portfolios' },
+  });
+  return out;
+});
+
+const totalUploads30d = computed(() => stats.value?.uploads_30d?.reduce((a, d) => a + d.count, 0) || 0);
 </script>
 
 <template>
   <div>
-    <PullRefresh @refresh="load" />
+    <PullRefresh @refresh="refreshAll" />
 
     <div class="hello card">
       <div>
@@ -129,35 +186,61 @@ const kpis = computed(() => {
         <span class="card-label">Estadísticas avanzadas no disponibles</span>
         <p class="muted small" style="margin:6px 0 0">
           El plugin <code>yz-media-folders</code> en el servidor no expone aún el endpoint <code>/stats</code>.
-          Sube la última versión de <code>class-rest.php</code> para ver almacenamiento, gráficas y salud del catálogo.
+          Sube la última versión de <code>class-rest.php</code>.
         </p>
       </div>
 
       <div class="dash-grid">
+        <!-- 1. Últimas subidas — full-width -->
+        <DashLatest ref="latestRef" class="span-full" />
+
+        <!-- 2. Heatmap calendario — full-width -->
+        <DashHeatmap v-if="stats?.uploads_365d?.length"
+          :data="stats.uploads_365d"
+          class="span-full" />
+
         <template v-if="stats">
-          <!-- Almacenamiento -->
+          <!-- 3. Health score + tareas pendientes -->
+          <div class="card health-card" v-if="healthScore !== null || tasks.length">
+            <div class="hc-head">
+              <span class="card-label">Salud del catálogo</span>
+              <div class="ring-wrap" v-if="healthScore !== null">
+                <svg viewBox="0 0 36 36" class="ring">
+                  <circle cx="18" cy="18" r="15.9155" stroke="var(--s2)" stroke-width="3" fill="none" />
+                  <circle cx="18" cy="18" r="15.9155"
+                    :stroke="healthRing.color" stroke-width="3" fill="none"
+                    :stroke-dasharray="healthRing.dash"
+                    stroke-dashoffset="25"
+                    stroke-linecap="round" />
+                </svg>
+                <span class="ring-num" :style="{ color: healthRing.color }">{{ healthScore }}%</span>
+              </div>
+            </div>
+
+            <div v-if="tasks.length" class="tasks-list">
+              <button v-for="t in tasks" :key="t.label"
+                class="task-chip"
+                @click="$router.push(t.to)"
+                :title="t.hint || ''">
+                <span class="task-icon">{{ t.icon }}</span>
+                <span class="task-lbl">{{ t.label }}</span>
+                <span class="task-num">{{ t.count }}</span>
+              </button>
+            </div>
+            <p v-else class="muted small ok-msg">✓ Sin tareas pendientes. Catálogo impecable.</p>
+          </div>
+
+          <!-- 4. Mini-mapa -->
+          <DashMiniMap ref="miniMapRef" />
+
+          <!-- 5. Almacenamiento -->
           <div class="card stats-card">
             <span class="card-label">Almacenamiento</span>
             <span class="big">{{ stats.totals.storage_h }}</span>
-            <span class="muted small">{{ stats.totals.images }} imágenes</span>
+            <span class="muted small">{{ stats.totals.images }} imágenes · {{ totalUploads30d }} en 30d</span>
           </div>
 
-          <!-- Sparkline subidas -->
-          <div class="card stats-card">
-            <div class="sparkline-head">
-              <span class="card-label">Últimos 30 días</span>
-              <span class="muted small">{{ totalUploads30d }} subidas</span>
-            </div>
-            <svg viewBox="0 0 200 40" preserveAspectRatio="none" class="sparkline">
-              <path :d="sparkPath" fill="none" stroke="var(--accent)" stroke-width="1.5" />
-            </svg>
-            <div class="spark-axis muted small">
-              <span>{{ stats.uploads_30d?.[0]?.date }}</span>
-              <span>hoy</span>
-            </div>
-          </div>
-
-          <!-- Top carpetas -->
+          <!-- 6. Top carpetas -->
           <div v-if="stats.top_folders?.length" class="card">
             <span class="card-label">Top carpetas</span>
             <button v-for="f in stats.top_folders" :key="f.id"
@@ -169,32 +252,37 @@ const kpis = computed(() => {
             </button>
           </div>
 
-          <!-- Salud del catálogo -->
-          <div v-if="stats.health.missing_alt > 0 || stats.health.portfolios_no_thumb > 0" class="card health">
-            <span class="card-label">Salud del catálogo</span>
-            <div v-if="stats.health.missing_alt > 0" class="health-row">
-              <span class="warn-num">{{ stats.health.missing_alt }}</span>
-              <span class="health-lbl">imágenes sin alt text</span>
-            </div>
-            <div v-if="stats.health.portfolios_no_thumb > 0" class="health-row">
-              <span class="warn-num">{{ stats.health.portfolios_no_thumb }}</span>
-              <span class="health-lbl">portfolios sin imagen destacada</span>
+          <!-- 7. Top tags IA -->
+          <div v-if="topTags.length" class="card">
+            <span class="card-label">Etiquetas más usadas</span>
+            <div class="tags-cloud">
+              <button v-for="t in topTags" :key="t.tag"
+                class="tag-chip"
+                @click="$router.push({ name: 'media', query: { tag: t.tag } })">
+                🏷 {{ t.tag }}
+                <span class="tag-count">{{ t.count }}</span>
+              </button>
             </div>
           </div>
         </template>
 
-        <!-- Acciones rápidas -->
+        <!-- 8. Acciones rápidas -->
         <div class="card actions-card">
           <span class="card-label">Acciones rápidas</span>
           <div class="actions">
             <button class="btn pri" @click="$router.push({ name: 'upload' })">↑ Subir fotos</button>
             <button class="btn"     @click="$router.push({ name: 'folders' })">📁 Gestionar carpetas</button>
             <button class="btn"     @click="$router.push({ name: 'portfolio-new' })">◇ Nuevo portfolio</button>
-            <button class="btn"     @click="$router.push({ name: 'portfolio-categories' })">📂 Categorías de portfolio</button>
+            <button class="btn"     @click="$router.push({ name: 'portfolio-categories' })">📂 Categorías</button>
+            <button class="btn"     @click="$router.push({ name: 'client-galleries' })">🔐 Galerías de cliente</button>
+            <button class="btn"     @click="$router.push({ name: 'exif' })">📊 Estadísticas EXIF</button>
             <button class="btn"     @click="$router.push({ name: 'settings' })">⚙ Ajustes</button>
             <button class="btn ghost danger" @click="logout">Cerrar sesión</button>
           </div>
         </div>
+
+        <!-- 9. Paleta global — full-width -->
+        <DashPalette ref="paletteRef" class="span-full" />
       </div>
     </template>
   </div>
@@ -230,13 +318,9 @@ h2 { margin: 0; font-size: 18px; }
 .warn-card { border-color: var(--info); margin-bottom: 14px; }
 .warn-card code { background: var(--s2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
 
-.stats-card { margin-bottom: 14px; display: flex; flex-direction: column; gap: 4px; }
 .card-label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-mute); font-weight: 600; }
 .big { font-size: 24px; font-weight: 700; }
-
-.sparkline-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
-.sparkline { width: 100%; height: 40px; }
-.spark-axis { display: flex; justify-content: space-between; margin-top: 2px; }
+.stats-card { display: flex; flex-direction: column; gap: 4px; }
 
 .top-row {
   display: flex; gap: 10px; align-items: center;
@@ -249,22 +333,60 @@ h2 { margin: 0; font-size: 18px; }
 .top-name { flex: 1; font-size: 13px; }
 .top-count { font-size: 12px; color: var(--accent); font-weight: 600; }
 
-.health { margin-bottom: 14px; }
-.health-row {
-  display: flex; gap: 10px; align-items: baseline;
-  padding: 6px 0;
+/* Health card */
+.health-card { display: flex; flex-direction: column; gap: 10px; }
+.hc-head { display: flex; justify-content: space-between; align-items: center; }
+.ring-wrap { position: relative; width: 56px; height: 56px; }
+.ring { width: 56px; height: 56px; transform: rotate(-90deg); }
+.ring-num {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
 }
-.warn-num { font-size: 18px; font-weight: 700; color: var(--danger); }
-.health-lbl { font-size: 13px; }
+.tasks-list { display: flex; flex-direction: column; gap: 6px; }
+.task-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: var(--s2);
+  border-radius: var(--radius);
+  text-align: left;
+  width: 100%;
+  transition: background .12s, border-color .12s;
+  border: 1px solid transparent;
+}
+.task-chip:hover { border-color: var(--accent); background: var(--s1); }
+.task-icon { font-size: 16px; }
+.task-lbl  { flex: 1; font-size: 13px; }
+.task-num  { font-size: 13px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; }
+.ok-msg { color: var(--ok); margin: 4px 0 0; }
+
+/* Tags cloud */
+.tags-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: var(--accent-lo);
+  color: var(--accent);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  transition: transform .12s;
+}
+.tag-chip:hover { transform: translateY(-1px); }
+.tag-count {
+  background: rgba(0,0,0,.25);
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 10px;
+}
 
 .actions-card { display: flex; flex-direction: column; gap: 10px; }
 .actions { display: flex; flex-direction: column; gap: 8px; }
 .actions .btn { width: 100%; justify-content: flex-start; }
 
 .dash-grid { display: flex; flex-direction: column; gap: 14px; }
-.stats-card { margin-bottom: 0; }
 
-/* Tablet: 2-4 KPIs en línea */
+/* Tablet en adelante: rejilla con cards que pueden hacer span-full */
 @media (min-width: 768px) {
   .kpis { grid-template-columns: repeat(4, 1fr); }
   .dash-grid {
@@ -273,14 +395,11 @@ h2 { margin: 0; font-size: 18px; }
     gap: 14px;
     align-items: start;
   }
+  .span-full { grid-column: 1 / -1; }
 }
-
-/* Escritorio FHD: 3 columnas */
 @media (min-width: 1280px) {
   .dash-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
 }
-
-/* QHD/4K: 4 columnas para que las cards no queden sobredimensionadas */
 @media (min-width: 1800px) {
   .dash-grid { grid-template-columns: repeat(4, 1fr); }
 }

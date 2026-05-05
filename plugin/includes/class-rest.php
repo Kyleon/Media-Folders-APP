@@ -676,25 +676,28 @@ class YZMF_REST {
         " );
         $totals['storage_h'] = size_format( $totals['storage_bytes'] ?: 0 );
 
-        // Subidas por día — últimos 30 días
+        // Subidas por día — últimos 365 días (alimenta sparkline 30d y heatmap calendario)
         $rows = $wpdb->get_results( "
             SELECT DATE(post_date) AS d, COUNT(*) AS n
             FROM {$wpdb->posts}
             WHERE post_type='attachment'
-              AND post_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND post_date >= DATE_SUB(NOW(), INTERVAL 365 DAY)
             GROUP BY DATE(post_date)
             ORDER BY d ASC
         " );
-        $by_day = [];
-        $cursor = strtotime( '-29 days', strtotime( date( 'Y-m-d' ) ) );
-        $end    = strtotime( date( 'Y-m-d' ) );
-        $map    = [];
+        $map = [];
         foreach ( $rows as $r ) $map[ $r->d ] = (int) $r->n;
+
+        $by_day_365 = [];
+        $cursor = strtotime( '-364 days', strtotime( date( 'Y-m-d' ) ) );
+        $end    = strtotime( date( 'Y-m-d' ) );
         while ( $cursor <= $end ) {
             $d = date( 'Y-m-d', $cursor );
-            $by_day[] = [ 'date' => $d, 'count' => $map[ $d ] ?? 0 ];
+            $by_day_365[] = [ 'date' => $d, 'count' => $map[ $d ] ?? 0 ];
             $cursor = strtotime( '+1 day', $cursor );
         }
+        // Subset de los últimos 30 días para la sparkline existente
+        $by_day = array_slice( $by_day_365, -30 );
 
         // Top 5 carpetas con más imágenes
         $top_folders_terms = get_terms( [
@@ -737,12 +740,49 @@ class YZMF_REST {
               AND pm.meta_id IS NULL
         " );
 
+        // Imágenes sin geolocalización
+        $missing_geo = (int) $wpdb->get_var( "
+            SELECT COUNT(*)
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->postmeta} pm
+                   ON pm.post_id = p.ID AND pm.meta_key = '_yzmf_geo_lat'
+            WHERE p.post_type='attachment'
+              AND p.post_mime_type LIKE 'image/%'
+              AND ( pm.meta_id IS NULL OR pm.meta_value = '' )
+        " );
+
+        // Imágenes sin tags IA
+        $missing_tags = (int) $wpdb->get_var( "
+            SELECT COUNT(*)
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->postmeta} pm
+                   ON pm.post_id = p.ID AND pm.meta_key = '_yzmf_ai_tags'
+            WHERE p.post_type='attachment'
+              AND p.post_mime_type LIKE 'image/%'
+              AND ( pm.meta_id IS NULL OR pm.meta_value = '' )
+        " );
+
+        // Imágenes sin carpeta asignada
+        $missing_folder = (int) $wpdb->get_var( $wpdb->prepare( "
+            SELECT COUNT(*)
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID
+            LEFT JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = %s
+            WHERE p.post_type='attachment'
+              AND p.post_mime_type LIKE 'image/%%'
+              AND tt.term_taxonomy_id IS NULL
+        ", YZMF_TAXONOMY ) );
+
         $stats = [
             'totals'       => $totals,
             'uploads_30d'  => $by_day,
+            'uploads_365d' => $by_day_365,
             'top_folders'  => $top_folders,
             'health'       => [
                 'missing_alt'         => $missing_alt,
+                'missing_geo'         => $missing_geo,
+                'missing_tags'        => $missing_tags,
+                'missing_folder'      => $missing_folder,
                 'portfolios_no_thumb' => $portfolios_no_thumb,
             ],
         ];

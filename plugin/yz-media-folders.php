@@ -23,6 +23,10 @@ require_once YZMF_PATH . 'includes/class-admin.php';
 require_once YZMF_PATH . 'includes/class-map.php';
 require_once YZMF_PATH . 'includes/class-rest.php';
 require_once YZMF_PATH . 'includes/class-portfolio-bridge.php';
+require_once YZMF_PATH . 'includes/class-schema.php';
+require_once YZMF_PATH . 'includes/class-lightroom.php';
+require_once YZMF_PATH . 'includes/class-brand.php';
+require_once YZMF_PATH . 'includes/class-auth-log.php';
 
 add_action( 'plugins_loaded', function () {
     YZMF_Taxonomy::init();
@@ -31,6 +35,10 @@ add_action( 'plugins_loaded', function () {
     YZMF_Map::init();
     YZMF_REST::init();
     YZMF_Portfolio_Bridge::init();
+    YZMF_Schema::init();
+    YZMF_Lightroom::init();
+    YZMF_Brand::init();
+    YZMF_Auth_Log::init();
 } );
 
 register_activation_hook( __FILE__, function () {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onActivated, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useFoldersStore } from '../stores/folders';
 import { useMediaStore } from '../stores/media';
@@ -79,7 +79,7 @@ function onItemTap(img, evt) {
   }
 }
 
-onMounted(async () => {
+async function syncFromUrlAndLoad() {
   // Sincronizar filtros desde la URL si vienen
   const f = route.query.folder;
   if (f !== undefined && f !== null && f !== '') {
@@ -88,6 +88,29 @@ onMounted(async () => {
   if (route.query.tag)   media.filter.tag   = String(route.query.tag);
   if (route.query.color) media.filter.color = String(route.query.color);
   await Promise.all([ folders.load(), media.load(true) ]);
+}
+
+onMounted(syncFromUrlAndLoad);
+
+// Con keep-alive el componente no se vuelve a montar al volver desde otra vista.
+// Si la query cambió (p.ej. el usuario eligió otra carpeta en /folders),
+// re-sincronizamos filtros y recargamos.
+onActivated(() => {
+  const fNow = route.query.folder !== undefined && route.query.folder !== null && route.query.folder !== ''
+    ? parseInt(route.query.folder) : null;
+  const tagNow   = route.query.tag   ? String(route.query.tag)   : '';
+  const colorNow = route.query.color ? String(route.query.color) : '';
+  const changed =
+    (fNow !== null && fNow !== media.filter.folder) ||
+    (tagNow && tagNow !== media.filter.tag) ||
+    (colorNow && colorNow !== media.filter.color);
+  if (changed) syncFromUrlAndLoad();
+});
+
+// Reactividad cuando la query cambia mientras Media ya está activo
+watch(() => route.query, () => {
+  if (route.name !== 'media') return;
+  syncFromUrlAndLoad();
 });
 
 let debounce;
@@ -415,6 +438,10 @@ watch(sentinel, setupObserver);
         <button class="vt-btn" :class="{ on: viewMode === 'grid' }" @click="viewMode = 'grid'" title="Cuadrícula">⊞</button>
         <button class="vt-btn" :class="{ on: viewMode === 'list' }" @click="viewMode = 'list'" title="Lista">≡</button>
       </div>
+      <button v-if="media.items.length"
+        class="chip"
+        @click="$router.push({ name: 'slideshow', query: { ...(media.filter.folder >= 0 ? { folder: media.filter.folder } : {}), order: media.filter.order } })"
+        title="Modo presentación">▶ Slideshow</button>
     </div>
 
     <div class="grid" :class="{ 'list-view': viewMode === 'list' }">

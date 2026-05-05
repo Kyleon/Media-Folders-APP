@@ -1,9 +1,12 @@
 <script setup>
 import BottomNav from './BottomNav.vue';
-import { useRoute } from 'vue-router';
-import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted } from 'vue';
+import { useBrandStore } from '../stores/brand';
 
-const route = useRoute();
+const route  = useRoute();
+const router = useRouter();
+const brand  = useBrandStore();
 
 const titles = {
   dashboard: 'Inicio',
@@ -15,18 +18,48 @@ const titles = {
   'portfolio-new': 'Nuevo portfolio',
   'portfolio-detail': 'Portfolio',
   'portfolio-categories': 'Categorías',
+  'client-galleries': 'Galerías de cliente',
+  'client-gallery-detail': 'Galería de cliente',
+  users: 'Usuarios',
+  'user-detail': 'Usuario',
   map: 'Mapa',
   exif: 'Estadísticas EXIF',
   settings: 'Ajustes',
 };
-const title = computed(() => titles[route.name] || 'YPVA');
+const title = computed(() => titles[route.name] || brand.name || 'YPVA');
+
+const showBack = computed(() => {
+  // Mostrar back en sub-rutas; en raíces de cada tab (root paths) no.
+  const roots = ['/', '/media', '/portfolios', '/folders', '/map', '/upload', '/settings', '/client-galleries', '/users'];
+  return !roots.includes(route.path);
+});
+
+onMounted(() => {
+  // Hidrata desde localStorage para no parpadear, luego carga del server
+  brand.hydrateFromCache();
+  brand.load();
+});
+
+function isImageLogo() {
+  return !!brand.logoUrl;
+}
 </script>
 
 <template>
   <div class="shell">
     <header class="topbar safe-top">
-      <button class="topbar-back" v-if="$route.path !== '/' && $route.path !== '/media' && $route.path !== '/portfolios' && $route.path !== '/map' && $route.path !== '/upload' && $route.path !== '/settings'" @click="$router.back()">‹</button>
+      <button class="topbar-back" v-if="showBack" @click="router.back()">‹</button>
+
+      <button class="brand-mark" @click="router.push({ name: 'dashboard' })" title="Ir al inicio">
+        <img v-if="isImageLogo()" :src="brand.logoUrl" :alt="brand.name || 'Logo'" class="brand-logo" />
+        <span v-else class="brand-initials">{{ brand.initials }}</span>
+      </button>
+
       <h1 class="topbar-title">{{ title }}</h1>
+
+      <div class="topbar-actions">
+        <button class="topbar-icon" @click="router.push({ name: 'settings' })" title="Ajustes">⚙</button>
+      </div>
     </header>
     <main class="content"><slot /></main>
     <BottomNav />
@@ -58,12 +91,42 @@ const title = computed(() => titles[route.name] || 'YPVA');
   font-size: 28px;
   color: var(--text-mute);
 }
+.brand-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  background: var(--s2);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background .12s, transform .12s;
+}
+.brand-mark:hover { background: var(--s3); transform: scale(1.04); }
+.brand-logo { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.brand-initials { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
+
 .topbar-title {
   margin: 0;
   font-size: 17px;
   font-weight: 600;
   letter-spacing: .2px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.topbar-actions {
+  display: flex; gap: 4px;
+  margin-left: auto;
+}
+.topbar-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  font-size: 18px;
+  color: var(--text-mute);
+  transition: color .12s, background .12s;
+}
+.topbar-icon:hover { color: var(--accent); background: var(--s2); }
 .content {
   flex: 1;
   padding: 16px;

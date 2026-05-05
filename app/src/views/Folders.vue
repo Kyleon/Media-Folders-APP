@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onActivated } from 'vue';
 import { useRouter } from 'vue-router';
 import { useFoldersStore } from '../stores/folders';
 import { useUiStore } from '../stores/ui';
@@ -22,6 +22,10 @@ const dragId    = ref(null);
 onMounted(async () => {
   await folders.load();
 });
+
+// Refrescar al volver a la pestaña (los counts pueden haber cambiado tras
+// subidas, asignaciones o cambios desde otras vistas).
+onActivated(() => { folders.load(true); });
 
 const stats = computed(() => {
   const all  = folders.flat;
@@ -272,6 +276,9 @@ function browseFolder(id) {
           <span class="t-count muted small">{{ node.count }}</span>
 
           <div v-if="renaming?.id !== node.id" class="t-actions">
+            <button v-if="node.count > 0"
+              @click="$router.push({ name: 'slideshow', query: { folder: node.id } })"
+              title="Modo presentación">▶</button>
             <button @click="startCreate(node.id)" title="Subcarpeta">＋</button>
             <button @click="startRename(node)" title="Renombrar">✏</button>
             <button @click="startMove(node)" title="Mover a otra carpeta">📤</button>

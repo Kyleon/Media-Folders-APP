@@ -1,0 +1,206 @@
+7/*
+Theme Name: Yezrael Pérez Child
+Description: Yezrael Pérez Digital Artist
+Author: Yezrael Pérez
+Author URI: https://yezraelperez.es/
+Template: ypva
+Version: 1.2
+Text Domain: ypva-child
+*/ 
+/*******Add Your Css Below This Line*********/
+
+body h2 {
+    font-size: 2.1em;
+    font-weight: 700;
+    margin-top: 20px;
+    color: #a2a2a2;
+}
+
+.hero-slider_details_wrap {
+    background: #272729bf !important;
+}
+
+body, .main-header, .loader-wrap, .slider-counter_wrap, .bottom-panel, .search-input input, .scroll-nav-wrap, .fixed-bottom-content, .bottom-filter-wrap, .thumbnail-container, .thumb-img:before {
+    background: #000000;
+}
+
+
+
+@media only screen and (max-width: 640px) {
+    .home-main_container .follow-wrap {
+       top: 500px !important;
+    }
+}
+
+/*Barras de scroll*/
+
+
+::-webkit-scrollbar {
+    width: 8px;
+    background-color: #F5F5F5;
+}
+
+::-webkit-scrollbar-track {
+   background-color: #cccccc2b;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 0px;
+    background-color: #811d2f;
+   
+}
+
+ .logo-holder {
+    top: 22px !important;
+} 
+
+.hero-slider_details li span {
+    color: rgba(255,255,255,0.71);
+    padding-top: -1px;
+    float: left;
+    width: 100%;
+}
+
+.fs-slider_align_title {
+    top: 60% !important;
+	
+}
+
+
+	/*Medium devices (tablets, 768px and up)*/
+	@media (max-width: 768px) {
+		.fs-slider_align_title {
+			position: absolute;
+		top: 15% !important;
+	}
+	
+}
+
+.post-content img {
+    width: 100%;
+    height: auto;
+}
+
+.fs-slider_align_title h2 {
+    font-size: 18px !important;
+	line-height: 18px!important;
+}
+
+.fs-slider_align_title p {
+    font-size: 16px !important;
+}
+
+.hero-slider_details span{
+	line-height:10px;
+	
+}
+
+button.lg-icon {
+    background: none;
+    border: 0;
+}
+
+span.copyright-front {
+ bottom: 100px;
+    position: absolute;
+    width: 350px;
+    transform: rotate(270deg);
+    color: #9a9a9a;
+    height: auto;
+    left: -132px;
+    font-size: small;
+    /* padding: 53px 0px; */
+}
+
+.min-footer ul#menu-legal li {
+    display: inline;
+}
+
+ul.legal-ext {
+    text-align: left;
+    font-size: small;
+	color:#7e7e7e;
+}
+
+span.wpcf7-form-control-wrap.your-consent label {
+    padding: 30px 0px 0px;
+}
+
+img.alignnone.wp-image-9718.size-large {
+    mix-blend-mode: lighten;
+}
+
+.mwl .mwl__metadata p.visible {
+    text-align: center;
+}
+
+.grecaptcha-badge{
+    display: none;
+}
+
+a.box-media-zoom.popup-image {
+    display: none;
+}
+
+strong {
+    font-weight: 900 !important;
+    color: #bee5ff;
+}
+
+li.decl.shibtn.unvisthum2 {
+    background: brown;
+}
+
+.fa {
+    position: relative;
+    left: -10px;
+    top: 12px;
+}
+
+li#menu-item-9798 {
+     width: 60px;
+    height: 20px;
+}
+
+li#menu-item-9798 a {position: absolute;left: 0px;height: 10px;}
+
+.fa-expand-alt:before,.fa-compress-alt:before {
+    content: "\f424";
+    margin-left: -20px;
+}
+
+
+a.link-galeria.enlace {
+    display: table-cell !important;
+}
+
+.hlaf-slider-pag {
+
+    bottom: 0 !important;
+
+}
+
+.gallery-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+}
+.gallery-item {
+    scroll-snap-align: center;
+    flex: 0 0 auto;
+}
+
+.portfolio-item img {
+    transition: transform 0.3s ease-in-out;
+}
+.portfolio-item:hover img {
+    transform: scale(1.05);
+}
+
+.lazyload {
+    filter: blur(10px);
+    transition: filter 0.5s ease-in-out;
+}
+.lazyload.loaded {
+    filter: blur(0);
+}

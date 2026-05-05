@@ -8,6 +8,7 @@ import Toast from './components/Toast.vue';
 import UpdateBanner from './components/UpdateBanner.vue';
 import SearchPalette from './components/SearchPalette.vue';
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts';
+import { useAutoLogout } from './composables/useAutoLogout';
 
 const ui     = useUiStore();
 const auth   = useAuthStore();
@@ -16,7 +17,7 @@ const router = useRouter();
 
 onMounted(() => ui.applyTheme());
 
-const showShell    = computed(() => auth.isAuthed && !route.meta.public);
+const showShell    = computed(() => auth.isAuthed && !route.meta.public && !route.meta.fullscreen);
 const showPalette  = ref(false);
 
 // Atajos globales (sólo cuando hay sesión)
@@ -29,6 +30,14 @@ useKeyboardShortcuts({
   'u':      () => { if (auth.isAuthed) router.push({ name: 'upload' }); },
   'f':      () => { if (auth.isAuthed) router.push({ name: 'folders' }); },
   'shift+m':() => { if (auth.isAuthed) router.push({ name: 'map' }); },
+});
+
+// Auto-logout por inactividad (configurable en Ajustes)
+useAutoLogout(() => {
+  if (!auth.isAuthed) return;
+  ui.toast('🔒 Sesión cerrada por inactividad', 'ok');
+  auth.logout();
+  router.replace({ name: 'login' });
 });
 </script>
 
