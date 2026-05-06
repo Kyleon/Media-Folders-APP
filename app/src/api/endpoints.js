@@ -32,6 +32,10 @@ export const MediaAPI = {
   bulkGeo: (ids, body)        => api.post(NS + 'media/geo/bulk', { ids, ...body }),
   listGeo: (limit = 1000)     => api.get(NS + 'media/geo/all', { limit }),
   setPalette: (id, palette)   => api.put(NS + 'media/' + id + '/palette', { palette }),
+  bulkRenamePreview: (ids, operation, params) =>
+    api.post(NS + 'media/bulk-rename/preview', { ids, operation, params }),
+  bulkRename: (ids, operation, params) =>
+    api.post(NS + 'media/bulk-rename', { ids, operation, params }),
 };
 
 export const MapAPI = {

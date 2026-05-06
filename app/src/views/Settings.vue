@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
 import { useBrandStore } from '../stores/brand';
-import { AuthLogAPI, UsersAPI } from '../api/endpoints';
+import { AuthLogAPI, UsersAPI, MediaAPI } from '../api/endpoints';
 import ThemeSwitch from '../components/ThemeSwitch.vue';
 import MediaPicker from '../components/MediaPicker.vue';
 import Spinner from '../components/Spinner.vue';
@@ -21,6 +21,8 @@ const brandInitials = ref('');
 const showLogoPicker = ref(false);
 const savingBrand  = ref(false);
 const brandDirty   = ref(false);
+const logoFileInput = ref(null);
+const uploadingLogo = ref(false);
 
 function syncBrandLocal() {
   brandName.value     = brand.name || '';
@@ -50,6 +52,40 @@ async function pickLogo(image) {
   } catch (e) { ui.toast(e.message || 'Error', 'err'); }
 }
 
+function openLogoFilePicker() {
+  logoFileInput.value?.click();
+}
+
+async function onLogoFileSelected(e) {
+  const file = e.target.files?.[0];
+  // Resetear el input para que seleccionar el mismo archivo otra vez vuelva a disparar change
+  if (e.target) e.target.value = '';
+  if (!file) return;
+
+  // Validación básica
+  if (file.size > 5 * 1024 * 1024) {
+    ui.toast('El logo no puede pesar más de 5 MB', 'err');
+    return;
+  }
+  if (!/^image\//.test(file.type) && !/\.(svg|png|jpe?g|webp)$/i.test(file.name)) {
+    ui.toast('Solo se aceptan imágenes (SVG, PNG, JPG, WebP)', 'err');
+    return;
+  }
+
+  uploadingLogo.value = true;
+  try {
+    // Subir al media library (sin carpeta) y aplicar como logo
+    const att = await MediaAPI.upload(file, null);
+    if (!att?.id) throw new Error('La subida no devolvió un ID de attachment');
+    await brand.save({ logo_id: att.id });
+    ui.toast('✓ Logo subido y aplicado', 'ok');
+  } catch (err) {
+    ui.toast(err.message || 'Error al subir el logo', 'err');
+  } finally {
+    uploadingLogo.value = false;
+  }
+}
+
 async function clearLogo() {
   if (!confirm('¿Quitar el logo actual?')) return;
   try {
@@ -66,8 +102,12 @@ async function loadMe() {
   loadingMe.value = true;
   try {
     me.value = await UsersAPI.me();
-  } catch (e) { /* sin permisos: no pasa nada */ }
-  finally { loadingMe.value = false; }
+  } catch (e) {
+    // Si falla (401), probablemente el server no tiene activo el handler de
+    // Basic Auth para contraseñas regulares. La sesión sigue siendo válida
+    // para los endpoints de yz-media-folders. Mostramos un aviso suave.
+    me.value = null;
+  } finally { loadingMe.value = false; }
 }
 
 // ── Seguridad: actividad + lockouts + settings ─────────────────────
@@ -155,10 +195,19 @@ onMounted(async () => {
     <!-- 1. Identidad / Marca ─────────────────────────────────────── -->
     <div class="card">
       <h3 class="section">Marca</h3>
+
+      <input ref="logoFileInput" type="file"
+        accept="image/svg+xml,image/png,image/jpeg,image/webp,image/*"
+        hidden
+        @change="onLogoFileSelected" />
+
       <div class="brand-preview">
-        <div class="logo-slot" @click="showLogoPicker = true" title="Cambiar logo">
-          <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />
-          <span v-else class="logo-initials">{{ brand.initials }}</span>
+        <div class="logo-slot" @click="openLogoFilePicker" title="Subir logo desde tu dispositivo">
+          <Spinner v-if="uploadingLogo" :size="20" />
+          <template v-else>
+            <img v-if="brand.logoUrl" :src="brand.logoUrl" :alt="brand.name" />
+            <span v-else class="logo-initials">{{ brand.initials }}</span>
+          </template>
         </div>
         <div class="brand-text">
           <strong>{{ brand.name || 'YPVA' }}</strong>
@@ -166,14 +215,18 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="row" style="margin-top:10px">
-        <button class="btn pri sm" @click="showLogoPicker = true">
-          {{ brand.logoUrl ? 'Cambiar logo' : '+ Subir logo' }}
+      <div class="row" style="margin-top:10px; flex-wrap: wrap; gap: 6px">
+        <button class="btn pri sm" :disabled="uploadingLogo" @click="openLogoFilePicker">
+          <Spinner v-if="uploadingLogo" :size="14" />
+          <span v-else>{{ brand.logoUrl ? '↑ Subir nuevo' : '↑ Subir logo' }}</span>
         </button>
-        <button v-if="brand.logoUrl" class="btn sm ghost" @click="clearLogo">Quitar logo</button>
+        <button class="btn sm ghost" :disabled="uploadingLogo" @click="showLogoPicker = true" title="Reusar imagen ya subida">
+          📁 Galería
+        </button>
+        <button v-if="brand.logoUrl" class="btn sm ghost danger" :disabled="uploadingLogo" @click="clearLogo">Quitar</button>
       </div>
       <p class="muted small" style="margin-top:8px">
-        SVG, PNG o JPG. Recomendado cuadrado o con fondo transparente.
+        SVG, PNG, JPG o WebP. Hasta 5 MB. Recomendado cuadrado o con fondo transparente.
       </p>
 
       <div class="field" style="margin-top:14px">
@@ -213,10 +266,20 @@ onMounted(async () => {
       <h3 class="section">Sesión</h3>
       <div class="kv-row"><span class="muted">Sitio</span><span class="val">{{ auth.creds?.baseUrl }}</span></div>
       <div class="kv-row"><span class="muted">Usuario</span><span class="val">{{ auth.creds?.username }}</span></div>
+      <div class="kv-row">
+        <span class="muted">Tipo de sesión</span>
+        <span class="val">
+          <span v-if="auth.creds?.authMode === 'app'" class="auth-badge app">🔐 Application Password</span>
+          <span v-else class="auth-badge pwd">🔑 Contraseña de usuario</span>
+        </span>
+      </div>
       <div class="kv-row" v-if="me">
         <span class="muted">Roles</span>
         <span class="val">{{ (me.roles || []).join(', ') || '—' }}</span>
       </div>
+      <p v-if="auth.creds?.authMode !== 'app'" class="muted small auth-tip">
+        💡 Si usas el panel a menudo, crea una <button type="button" class="link" @click="$router.push({ name: 'user-detail', params: { id: me?.id || 'me' } })">Application Password</button> y cambia a ese modo en el próximo login. Así no perderás la sesión cuando cambies tu contraseña principal.
+      </p>
       <div class="field" style="margin-top:12px">
         <label>Auto-cerrar sesión por inactividad</label>
         <select v-model.number="autoLogoutMin" @change="saveAutoLogout">
@@ -394,6 +457,26 @@ onMounted(async () => {
 
 .color-row { display: flex; gap: 6px; align-items: center; }
 .color-pick { width: 36px; height: 36px; padding: 0; border-radius: 6px; cursor: pointer; flex-shrink: 0; border: 1px solid var(--border); }
+
+.auth-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--s2);
+}
+.auth-badge.app { background: var(--accent-lo); color: var(--accent); }
+.auth-tip { margin-top: 6px; font-size: 11px; line-height: 1.5; padding: 8px 10px; background: var(--s2); border-radius: 6px; }
+.link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+.link:hover { opacity: .8; }
 
 /* Auth stats */
 .auth-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }

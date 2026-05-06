@@ -8,6 +8,7 @@ import Spinner from '../components/Spinner.vue';
 import Skeleton from '../components/Skeleton.vue';
 import PullRefresh from '../components/PullRefresh.vue';
 import GeoTagger from '../components/GeoTagger.vue';
+import BulkRenameSheet from '../components/BulkRenameSheet.vue';
 import { StatsAPI } from '../api/endpoints';
 
 const router  = useRouter();
@@ -29,6 +30,7 @@ const dragFolderId     = ref(null);    // id de carpeta arrastrada (drag & drop 
 const showBulkGeo      = ref(false);   // sheet de geotag para seleccionados
 const showTagPicker    = ref(false);
 const showColorPicker  = ref(false);
+const showBulkRename   = ref(false);   // sheet de edición de títulos en lote
 const allTags          = ref([]);      // [{tag, count}]
 const allColors        = ref([]);      // [{color, count}]
 const viewMode         = ref(localStorage.getItem('ypva.media.view') || 'grid'); // 'grid' | 'list'
@@ -387,6 +389,7 @@ watch(sentinel, setupObserver);
       <button class="sel-act" @click="showMovePicker = true" :disabled="!media.selectedCount" title="Mover a carpeta">📁</button>
       <button class="sel-act" @click="showBulkGeo = true" :disabled="!media.selectedCount" title="Asignar ubicación">📍</button>
       <button class="sel-act" @click="bulkAI" :disabled="!media.selectedCount" title="Generar IA">✨</button>
+      <button class="sel-act" @click="showBulkRename = true" :disabled="!media.selectedCount" title="Editar títulos en lote">✏</button>
       <button class="sel-act" @click="bulkCopyUrls" :disabled="!media.selectedCount" title="Copiar URLs">📋</button>
       <button class="sel-act danger" @click="bulkDelete" :disabled="!media.selectedCount" title="Eliminar">🗑</button>
     </div>
@@ -654,6 +657,13 @@ watch(sentinel, setupObserver);
       :subtitle="media.selectedCount + ' imágenes seleccionadas'"
       :allow-clear="false"
       @pick="onBulkGeoPick" />
+
+    <!-- Edición de títulos en lote -->
+    <BulkRenameSheet v-model="showBulkRename"
+      :ids="media.selectedIds"
+      :items="media.items.filter(it => media.selectedIds.includes(it.id))
+        .map(it => ({ id: it.id, title: it.title, alt: it.alt, filename: it.filename }))"
+      @applied="async () => { await media.load(true); media.exitSelectMode(); }" />
 
     <!-- Sheet "Mover carpeta a..." (cambiar parent) -->
     <transition name="sheet">

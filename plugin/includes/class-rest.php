@@ -164,6 +164,18 @@ class YZMF_REST {
             'permission_callback' => [ __CLASS__, 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/media/bulk-rename', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'bulk_rename' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
+        register_rest_route( self::NS, '/media/bulk-rename/preview', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'bulk_rename_preview' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
         register_rest_route( self::NS, '/media/(?P<id>\d+)/ai', [
             'methods'             => 'POST',
             'callback'            => [ __CLASS__, 'media_ai' ],
@@ -502,6 +514,171 @@ class YZMF_REST {
             'total'   => count( $ids ),
             'errors'  => $errors,
         ] );
+    }
+
+    /* ─────────── BULK RENAME ─────────── */
+
+    /**
+     * Operaciones soportadas:
+     *  - replace          { find, replace, regex, case_sensitive }
+     *  - prefix           { value }
+     *  - suffix           { value }
+     *  - sequence         { pattern, start, padding, order }   pattern usa {n}
+     *  - from_filename    { strip_ext, separator_to_space }
+     *  - from_alt         {}
+     *  - case             { mode: lower|upper|title|sentence }
+     *  - trim             {}
+     *
+     * Devuelve cada cambio: { id, old, new }
+     */
+    public static function bulk_rename_preview( WP_REST_Request $req ) {
+        return rest_ensure_response( self::compute_bulk_rename( $req, false ) );
+    }
+
+    public static function bulk_rename( WP_REST_Request $req ) {
+        $changes = self::compute_bulk_rename( $req, true );
+        return rest_ensure_response( $changes );
+    }
+
+    private static function compute_bulk_rename( WP_REST_Request $req, $apply ) {
+        $ids       = array_values( array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ?: [] ) ) );
+        $operation = sanitize_key( (string) $req->get_param( 'operation' ) );
+        $params    = (array) ( $req->get_param( 'params' ) ?: [] );
+
+        if ( ! $ids ) return [ 'updated' => 0, 'changes' => [], 'errors' => [ 'Sin IDs' ] ];
+        if ( ! $operation ) return [ 'updated' => 0, 'changes' => [], 'errors' => [ 'Operación requerida' ] ];
+
+        // Para sequence necesitamos el orden. Si viene 'order=date_asc' o similar, lo aplicamos.
+        $order = (string) ( $params['order'] ?? '' );
+        if ( $operation === 'sequence' && in_array( $order, [ 'date_asc', 'date_desc', 'title_asc', 'title_desc' ], true ) ) {
+            $orderby_map = [
+                'date_asc'   => [ 'date', 'ASC' ],
+                'date_desc'  => [ 'date', 'DESC' ],
+                'title_asc'  => [ 'title', 'ASC' ],
+                'title_desc' => [ 'title', 'DESC' ],
+            ];
+            list( $orderby, $dir ) = $orderby_map[ $order ];
+            $q = new WP_Query( [
+                'post_type'      => 'attachment',
+                'post_status'    => 'inherit',
+                'post__in'       => $ids,
+                'orderby'        => $orderby,
+                'order'          => $dir,
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'no_found_rows'  => true,
+            ] );
+            $ids = array_map( 'intval', $q->posts );
+        }
+
+        $changes = [];
+        $errors  = [];
+        $i = 0;
+        foreach ( $ids as $id ) {
+            if ( get_post_type( $id ) !== 'attachment' ) {
+                $errors[] = [ 'id' => $id, 'error' => 'No attachment' ];
+                continue;
+            }
+            $post = get_post( $id );
+            $old  = (string) $post->post_title;
+            $new  = self::apply_rename_op( $old, $id, $operation, $params, $i );
+            if ( $new === null ) {
+                $errors[] = [ 'id' => $id, 'error' => 'Operación inválida' ];
+                continue;
+            }
+            $i++;
+            // Solo reportamos los cambios efectivos
+            if ( $new !== $old ) {
+                $changes[] = [ 'id' => $id, 'old' => $old, 'new' => $new ];
+                if ( $apply ) {
+                    wp_update_post( [ 'ID' => $id, 'post_title' => $new ] );
+                }
+            }
+        }
+
+        return [
+            'applied'  => $apply,
+            'updated'  => count( $changes ),
+            'total'    => count( $ids ),
+            'changes'  => $changes,
+            'errors'   => $errors,
+        ];
+    }
+
+    private static function apply_rename_op( $old, $id, $op, $params, $index ) {
+        switch ( $op ) {
+            case 'replace': {
+                $find    = (string) ( $params['find'] ?? '' );
+                $replace = (string) ( $params['replace'] ?? '' );
+                $regex   = ! empty( $params['regex'] );
+                $cs      = ! empty( $params['case_sensitive'] );
+                if ( $find === '' ) return $old;
+                if ( $regex ) {
+                    // Delimitador # con flags. Si el regex es inválido, devolvemos $old.
+                    $flags = $cs ? '' : 'i';
+                    $flags .= 'u';
+                    $pattern = '#' . str_replace( '#', '\\#', $find ) . '#' . $flags;
+                    $r = @preg_replace( $pattern, $replace, $old );
+                    return is_string( $r ) ? $r : $old;
+                }
+                return $cs ? str_replace( $find, $replace, $old ) : str_ireplace( $find, $replace, $old );
+            }
+            case 'prefix': {
+                $v = (string) ( $params['value'] ?? '' );
+                return $v . $old;
+            }
+            case 'suffix': {
+                $v = (string) ( $params['value'] ?? '' );
+                return $old . $v;
+            }
+            case 'sequence': {
+                $pattern = (string) ( $params['pattern'] ?? '{n}' );
+                $start   = (int) ( $params['start'] ?? 1 );
+                $pad     = (int) ( $params['padding'] ?? 0 );
+                $n = $index + $start;
+                $num = $pad > 0 ? str_pad( (string) $n, $pad, '0', STR_PAD_LEFT ) : (string) $n;
+                return str_replace( '{n}', $num, $pattern );
+            }
+            case 'from_filename': {
+                $path = get_attached_file( $id );
+                $name = $path ? basename( $path ) : '';
+                if ( ! empty( $params['strip_ext'] ) ) {
+                    $dot = strrpos( $name, '.' );
+                    if ( $dot !== false ) $name = substr( $name, 0, $dot );
+                }
+                if ( ! empty( $params['separator_to_space'] ) ) {
+                    $name = preg_replace( '/[_-]+/', ' ', $name );
+                    $name = preg_replace( '/\s+/', ' ', $name );
+                    $name = trim( $name );
+                }
+                return $name;
+            }
+            case 'from_alt': {
+                $alt = (string) get_post_meta( $id, '_wp_attachment_image_alt', true );
+                return $alt !== '' ? $alt : $old;
+            }
+            case 'case': {
+                $mode = (string) ( $params['mode'] ?? 'title' );
+                switch ( $mode ) {
+                    case 'lower':    return mb_strtolower( $old, 'UTF-8' );
+                    case 'upper':    return mb_strtoupper( $old, 'UTF-8' );
+                    case 'sentence': {
+                        $s = mb_strtolower( $old, 'UTF-8' );
+                        return mb_strtoupper( mb_substr( $s, 0, 1, 'UTF-8' ), 'UTF-8' ) . mb_substr( $s, 1, null, 'UTF-8' );
+                    }
+                    case 'title':
+                    default: {
+                        // Title Case respetando UTF-8
+                        return mb_convert_case( $old, MB_CASE_TITLE, 'UTF-8' );
+                    }
+                }
+            }
+            case 'trim': {
+                return trim( preg_replace( '/\s+/u', ' ', $old ) );
+            }
+            default:
+                return null;
+        }
     }
 
     /**

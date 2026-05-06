@@ -27,6 +27,7 @@ require_once YZMF_PATH . 'includes/class-schema.php';
 require_once YZMF_PATH . 'includes/class-lightroom.php';
 require_once YZMF_PATH . 'includes/class-brand.php';
 require_once YZMF_PATH . 'includes/class-auth-log.php';
+require_once YZMF_PATH . 'includes/class-basic-auth.php';
 
 add_action( 'plugins_loaded', function () {
     YZMF_Taxonomy::init();
@@ -39,6 +40,7 @@ add_action( 'plugins_loaded', function () {
     YZMF_Lightroom::init();
     YZMF_Brand::init();
     YZMF_Auth_Log::init();
+    YZMF_Basic_Auth::init();
 } );
 
 register_activation_hook( __FILE__, function () {

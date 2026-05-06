@@ -1,18 +1,40 @@
 /**
  * Cliente HTTP minimal para la API REST de WordPress (yzmf/v1).
  *
- * - Lee credenciales desde el store de auth (Application Password).
- * - Convierte 401 en logout automático.
+ * - Lee credenciales desde el store de auth (Application Password / contraseña).
+ * - 401 lanza error al caller para que decida (NO hace logout automático
+ *   global porque distintos endpoints pueden fallar por permisos sin que la
+ *   sesión esté realmente inválida).
+ * - Tras varios 401 SEGUIDOS contra el mismo dominio en poco tiempo, se
+ *   considera que la sesión sí está inválida y se cierra para evitar bucles.
  * - Maneja JSON y multipart (subida de archivos).
  */
 
 import { useAuthStore } from '../stores/auth';
+import { useUiStore } from '../stores/ui';
+import router from '../router';
 
 function buildAuthHeader(creds) {
   if (!creds || !creds.username || !creds.appPassword) return null;
   // App passwords vienen con espacios — los toleramos
   const pw = creds.appPassword.replace(/\s+/g, '');
   return 'Basic ' + btoa(creds.username + ':' + pw);
+}
+
+// Ventana corta de 401 consecutivos para detectar sesión realmente inválida.
+const AUTH_FAIL_WINDOW_MS  = 8000;
+const AUTH_FAIL_THRESHOLD  = 4;
+let authFailures = [];
+
+function recordAuthFailure() {
+  const now = Date.now();
+  authFailures = authFailures.filter(t => now - t < AUTH_FAIL_WINDOW_MS);
+  authFailures.push(now);
+  if (authFailures.length >= AUTH_FAIL_THRESHOLD) {
+    authFailures = [];
+    return true;
+  }
+  return false;
 }
 
 async function request(method, path, { params, body, isMultipart = false, signal } = {}) {
@@ -45,11 +67,6 @@ async function request(method, path, { params, body, isMultipart = false, signal
     credentials: 'omit',
   });
 
-  if (res.status === 401) {
-    auth.logout();
-    throw new Error('Sesión inválida — vuelve a iniciar sesión');
-  }
-
   let data = null;
   const text = await res.text();
   if (text) {
@@ -60,9 +77,25 @@ async function request(method, path, { params, body, isMultipart = false, signal
     const msg = (data && data.message) || (typeof data === 'string' ? data : 'Error ' + res.status);
     const err = new Error(msg);
     err.status = res.status;
+    err.code = data && data.code;
     err.data = data;
+
+    // Detección de sesión realmente inválida: muchos 401 consecutivos en
+    // pocos segundos contra distintos endpoints. En ese caso sí logout.
+    if (res.status === 401 && recordAuthFailure()) {
+      try {
+        useUiStore().toast('🔒 Sesión inválida — inicia de nuevo', 'err');
+        auth.logout();
+        router.replace({ name: 'login' });
+      } catch {}
+    }
+
     throw err;
   }
+
+  // Reset del contador en cualquier respuesta OK
+  if (authFailures.length) authFailures = [];
+
   return data;
 }
 
