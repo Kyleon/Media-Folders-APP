@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>YPVA Admin · Manual de uso</title>
+<style>
+  /* ── Reset y tipografía ─────────────────────────────────────── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: #1a1a1a;
+    background: #fff;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 30px 40px; }
+
+  h1, h2, h3, h4 { font-weight: 700; color: #111; line-height: 1.25; }
+  h1 { font-size: 32px; margin-bottom: 8px; }
+  h2 { font-size: 22px; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #c8a97e; }
+  h3 { font-size: 17px; margin: 22px 0 8px; color: #2a2a2a; }
+  h4 { font-size: 14px; margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .5px; color: #555; }
+  p, ul, ol { margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  strong { color: #111; }
+  em { color: #555; }
+  code {
+    background: #f3eee7;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    font-size: 12px;
+    color: #6b4f2c;
+  }
+  pre {
+    background: #1a1a1a;
+    color: #f0ece6;
+    padding: 12px 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: "SF Mono", Consolas, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 8px 0 14px;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
+
+  hr { border: 0; border-top: 1px solid #e0d8cc; margin: 26px 0; }
+
+  /* ── Cover page ─────────────────────────────────────────────── */
+  .cover {
+    text-align: center;
+    padding: 100px 40px 80px;
+    page-break-after: always;
+  }
+  .cover .logo {
+    width: 80px; height: 80px;
+    background: #c8a97e;
+    color: #1a1a1a;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 40px; font-weight: 700;
+    margin-bottom: 30px;
+  }
+  .cover h1 {
+    font-size: 42px;
+    border: 0;
+    margin-bottom: 12px;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #777;
+    margin-bottom: 40px;
+  }
+  .cover .meta {
+    font-size: 12px;
+    color: #999;
+    margin-top: 60px;
+    line-height: 1.8;
+  }
+  .cover .meta strong { color: #555; }
+
+  /* ── Table of contents ──────────────────────────────────────── */
+  .toc { page-break-after: always; }
+  .toc h2 { border: 0; margin-top: 0; }
+  .toc ol { padding-left: 0; counter-reset: toc; list-style: none; }
+  .toc li {
+    counter-increment: toc;
+    padding: 6px 0;
+    border-bottom: 1px dotted #ddd;
+    display: flex; justify-content: space-between;
+    font-size: 13px;
+  }
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero) ". ";
+    color: #c8a97e;
+    font-weight: 600;
+    margin-right: 10px;
+  }
+
+  /* ── Cards ──────────────────────────────────────────────────── */
+  .note, .tip, .warn {
+    border-left: 3px solid;
+    padding: 10px 14px;
+    border-radius: 0 4px 4px 0;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .note { background: #f4f0ea; border-color: #c8a97e; }
+  .tip  { background: #e8f4ec; border-color: #6da26d; }
+  .warn { background: #fbecea; border-color: #d0625e; }
+  .note strong, .tip strong, .warn strong { display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── Tables ─────────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 16px;
+    font-size: 12px;
+  }
+  th, td { padding: 8px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid #e0d8cc; }
+  th { background: #f7f3ec; font-weight: 600; color: #555; text-transform: uppercase; font-size: 11px; letter-spacing: .3px; }
+
+  /* ── Print-specific ─────────────────────────────────────────── */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+  @media print {
+    body { background: #fff; }
+    .wrap { padding: 0; max-width: none; }
+    h2 { page-break-after: avoid; break-after: avoid; }
+    h3 { page-break-after: avoid; break-after: avoid; }
+    pre, table, .note, .tip, .warn { page-break-inside: avoid; break-inside: avoid; }
+    .page-break { page-break-before: always; break-before: page; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── COVER ─────────────────────────────────────────────────── -->
+<div class="cover">
+  <div class="logo">Y</div>
+  <h1>YPVA Admin</h1>
+  <p class="subtitle">Manual de uso</p>
+  <p style="font-size: 14px; color: #555; max-width: 480px; margin: 0 auto;">
+    Panel de medios, portfolios, galerías de cliente y herramientas para
+    <strong>yezraelperez.es</strong>. Funciona como PWA en móvil, tablet y escritorio.
+  </p>
+  <div class="meta">
+    <strong>Versión PWA:</strong> 0.2.0 · <strong>Plugin:</strong> yz-media-folders 2.4.x<br>
+    <strong>Stack:</strong> WordPress + Vue 3 + Vite + Pinia<br>
+    <strong>Autor:</strong> Yezrael Pérez
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ── TOC ───────────────────────────────────────────────────── -->
+<section class="toc">
+  <h2>Índice</h2>
+  <ol>
+    <li><span>Introducción y arquitectura</span><span>3</span></li>
+    <li><span>Inicio de sesión</span><span>4</span></li>
+    <li><span>Pantalla principal: Dashboard</span><span>5</span></li>
+    <li><span>Medios: galería completa</span><span>6</span></li>
+    <li><span>Edición individual de imágenes</span><span>9</span></li>
+    <li><span>Subir fotos</span><span>10</span></li>
+    <li><span>Carpetas</span><span>11</span></li>
+    <li><span>Portfolios</span><span>12</span></li>
+    <li><span>Galerías de cliente</span><span>14</span></li>
+    <li><span>Mapa de ubicaciones</span><span>16</span></li>
+    <li><span>Estadísticas EXIF</span><span>17</span></li>
+    <li><span>Modo presentación (Slideshow)</span><span>18</span></li>
+    <li><span>Marca y personalización</span><span>19</span></li>
+    <li><span>Usuarios y Application Passwords</span><span>20</span></li>
+    <li><span>Seguridad y actividad de logins</span><span>21</span></li>
+    <li><span>Integraciones avanzadas (Schema.org, Lightroom, Hotlink)</span><span>22</span></li>
+    <li><span>Atajos de teclado</span><span>23</span></li>
+    <li><span>Resolución de problemas</span><span>24</span></li>
+  </ol>
+</section>
+
+<!-- ── 1. INTRODUCCIÓN ───────────────────────────────────────── -->
+<h2>1 · Introducción y arquitectura</h2>
+<p>
+  YPVA Admin es un panel de gestión profesional para fotógrafos, construido específicamente para
+  <strong>yezraelperez.es</strong>. Reemplaza la librería de medios estándar de WordPress con una
+  experiencia móvil-first que añade carpetas, IA, galerías privadas para clientes, mapa de
+  ubicaciones, slideshow profesional y mucho más.
+</p>
+
+<h3>Tres piezas acopladas</h3>
+<ul>
+  <li><strong>Plugin <code>yz-media-folders</code></strong> en el WordPress de yezraelperez.es. Aporta carpetas, REST API, IA, mapa, geolocalización, bridge con portfolios del tema kotlis, y los servicios de marca/seguridad.</li>
+  <li><strong>PWA en <code>app.yezraelperez.es</code></strong>: cliente Vue 3 que consume la REST API. Instalable como app en móvil/desktop. Funciona offline parcialmente.</li>
+  <li><strong>Plugins satélite</strong>: <code>yzmf-client-portal</code> (galerías privadas con token), <code>yzmf-hotlink-watermark</code> (marca de agua en hotlinking).</li>
+</ul>
+
+<h3>Modos de uso</h3>
+<p>
+  La PWA está pensada para usar a diario desde el móvil, pero todas sus pantallas se adaptan a
+  tablet y escritorio (con sidebar lateral en pantallas anchas). El plugin sigue accesible desde
+  <code>wp-admin</code> para tareas que requieran herramientas avanzadas de WordPress (editar HTML
+  crudo, gestionar plugins, usuarios complejos, etc.).
+</p>
+
+<div class="note">
+  <strong>Filosofía</strong>
+  El 95% del trabajo del día a día se hace en la PWA. El <code>wp-admin</code> queda para cosas
+  que pasan rara vez: instalar/actualizar plugins, ajustes globales del tema, etc.
+</div>
+
+<!-- ── 2. LOGIN ──────────────────────────────────────────────── -->
+<h2>2 · Inicio de sesión</h2>
+<p>
+  La pantalla de login ofrece <strong>dos modos</strong> que se eligen con tabs en la cabecera:
+</p>
+
+<h3>🔑 Usuario + contraseña (modo simple, por defecto)</h3>
+<p>
+  La contraseña habitual de tu usuario WordPress. Es la opción más rápida para empezar.
+  Funciona gracias al handler de Basic Auth integrado en el plugin
+  (<code>class-basic-auth.php</code>) que permite usar contraseñas regulares en la API REST.
+</p>
+
+<h3>🔐 Application Password (modo avanzado, recomendado para uso continuo)</h3>
+<p>
+  Token de 24 caracteres generado en tu perfil de WordPress. Aporta:
+</p>
+<ul>
+  <li>Si cambias tu contraseña principal, la sesión sigue válida.</li>
+  <li>Puedes revocar cada token individualmente sin afectar otros dispositivos.</li>
+  <li>Cada dispositivo o app puede tener el suyo con nombre identificativo.</li>
+  <li>No funciona para iniciar sesión en wp-admin; sólo para la API. Si te lo roban, tu cuenta principal sigue protegida.</li>
+</ul>
+
+<h4>Crear una Application Password</h4>
+<ol>
+  <li>Login en la PWA con tu contraseña normal.</li>
+  <li>Ajustes → Usuarios → tu usuario → sección "Application Passwords".</li>
+  <li>Botón "+ Nueva", ponle un nombre (ej. "iPhone PWA", "Lightroom").</li>
+  <li>Copia la contraseña generada — solo se muestra una vez.</li>
+  <li>Cierra sesión y vuelve a entrar con el modo "🔐 Application Password".</li>
+</ol>
+
+<h3>Otros campos del login</h3>
+<ul>
+  <li><strong>URL del sitio</strong>: por defecto <code>https://yezraelperez.es</code>. Solo cámbialo si conectas a otro WordPress.</li>
+  <li><strong>👁 mostrar/ocultar contraseña</strong>: para verificar lo que tecleas, especialmente con tokens largos.</li>
+</ul>
+
+<div class="warn">
+  <strong>Bloqueo por intentos fallidos</strong>
+  Tras 5 intentos fallidos en 15 minutos, tu IP se bloquea durante 30 minutos.
+  Configurable en Ajustes → Política de bloqueo. Si te bloqueas a ti mismo,
+  puedes liberar IPs desde otro dispositivo o desde wp-admin.
+</div>
+
+<!-- ── 3. DASHBOARD ──────────────────────────────────────────── -->
+<h2>3 · Pantalla principal: Dashboard</h2>
+<p>
+  La pantalla de inicio es un panorama visual de tu catálogo. Pull-to-refresh
+  (deslizar hacia abajo) refresca todos los widgets a la vez.
+</p>
+
+<h3>Widgets de un vistazo</h3>
+<ul>
+  <li><strong>Saludo + KPIs</strong>: Medios · Portfolios · Ubicaciones · Carpetas. Click en cada uno te lleva a su pantalla.</li>
+  <li><strong>Últimas subidas</strong>: tira con las 12 fotos más recientes. Click → MediaDetail.</li>
+  <li><strong>Heatmap calendario</strong>: tipo GitHub. Cada celda es un día del último año, intensidad según subidas. Etiquetas de mes y total + racha actual de días consecutivos.</li>
+  <li><strong>Salud del catálogo</strong>: anillo SVG con porcentaje 0-100% (verde/azul/ámbar/rojo) basado en alt + geo + tags + carpeta. Lista de tareas pendientes con click directo a la lista filtrada.</li>
+  <li><strong>Mini-mapa</strong>: preview Leaflet con últimas 120 fotos georreferenciadas. Click abre el Mapa completo.</li>
+  <li><strong>Almacenamiento</strong>: GB usados + total imágenes + subidas en 30 días.</li>
+  <li><strong>Top carpetas</strong>: las 5 con más imágenes.</li>
+  <li><strong>Top tags IA</strong>: chips con las 12 etiquetas más comunes; click filtra Media.</li>
+  <li><strong>Acciones rápidas</strong>: subir, gestionar carpetas, nuevo portfolio, galerías cliente, etc.</li>
+  <li><strong>Paleta global</strong>: 24 colores dominantes del catálogo entero. Click filtra Media por ese color.</li>
+</ul>
+
+<div class="tip">
+  <strong>Caché del Dashboard</strong>
+  Las estadísticas se cachean 5 minutos en el servidor para no machacar la BD.
+  Si acabas de subir fotos y los números no cambian, espera o haz pull-to-refresh
+  en bucle (cada refresh fuerza la regeneración después del cache).
+</div>
+
+<!-- ── 4. MEDIOS ─────────────────────────────────────────────── -->
+<h2>4 · Medios: galería completa</h2>
+<p>
+  La pantalla central de la app. Aquí está todo tu catálogo con filtros, búsqueda,
+  selección múltiple y acciones masivas.
+</p>
+
+<h3>Toolbar superior</h3>
+<ul>
+  <li><strong>Carpeta</strong>: pulsa el botón con el nombre de la carpeta para abrir el árbol y navegar.</li>
+  <li><strong>Búsqueda</strong>: por título, alt, caption. Búsqueda especial: <code>__NO_ALT__</code> filtra imágenes sin alt text.</li>
+  <li><strong>Filtros rápidos</strong>: 🆕 Hoy · ⚠ Sin alt · 📭 Sin carpeta · 🖼 Solo fotos · 🎬 Solo vídeos · 📦 Más pesadas.</li>
+  <li><strong>🏷 Tag</strong> y <strong>🎨 Color</strong>: filtros por etiqueta IA o color dominante.</li>
+  <li><strong>Orden</strong>: fecha / nombre / tamaño + dirección ascendente/descendente.</li>
+  <li><strong>Vista</strong>: ⊞ rejilla o ≡ lista (con info extendida).</li>
+  <li><strong>▶ Slideshow</strong>: lanza el modo presentación con la selección actual.</li>
+</ul>
+
+<h3>Modo selección y acciones masivas</h3>
+<p>
+  <strong>Mantén pulsado</strong> en cualquier foto (long-press de 450ms en táctil, o click derecho/contextual
+  en escritorio) para entrar en modo selección. Aparece el toolbar superior con:
+</p>
+
+<table>
+  <thead><tr><th>Botón</th><th>Acción</th></tr></thead>
+  <tbody>
+    <tr><td>☑</td><td>Seleccionar todas las visibles en pantalla</td></tr>
+    <tr><td>📁</td><td>Mover a otra carpeta (bottomsheet con árbol completo)</td></tr>
+    <tr><td>📍</td><td>Asignar ubicación geográfica a varias a la vez</td></tr>
+    <tr><td>✨</td><td>Generar alt + caption + tags con IA (Claude) en lote</td></tr>
+    <tr><td>✏</td><td><strong>Editar títulos en lote</strong> (ver abajo)</td></tr>
+    <tr><td>📋</td><td>Copiar al portapapeles las URLs públicas</td></tr>
+    <tr><td>🗑</td><td>Eliminar (con confirmación)</td></tr>
+  </tbody>
+</table>
+
+<h3>Editor de títulos en lote ✏</h3>
+<p>
+  El bottomsheet ofrece 8 operaciones distintas con previsualización en tiempo real:
+</p>
+<ul>
+  <li><strong>🔁 Buscar y reemplazar</strong>: literal o regex, con opción case-sensitive.</li>
+  <li><strong>◀ Añadir prefijo</strong>: añade texto al inicio (ej. "Boda María — ").</li>
+  <li><strong>▶ Añadir sufijo</strong>: añade texto al final (ej. " (© Yezrael)").</li>
+  <li><strong># Numerar</strong>: patrón con <code>{n}</code>, padding con ceros, orden por fecha o título. Ej. <code>Boda María #{n}</code> con padding 3 → "Boda María #001".</li>
+  <li><strong>📄 Desde nombre</strong>: pone como título el nombre del archivo en disco. Opciones para quitar extensión y convertir <code>_</code>/<code>-</code> en espacios.</li>
+  <li><strong>🤖 Desde alt</strong>: usa el alt text como título. Útil después de generar metadatos con IA.</li>
+  <li><strong>Aa Mayúsculas</strong>: Title Case · "Solo la primera" · todo minúsculas · TODO MAYÚSCULAS.</li>
+  <li><strong>⌫ Limpiar espacios</strong>: colapsa espacios duplicados y los del principio/final.</li>
+</ul>
+
+<div class="tip">
+  <strong>Workflow recomendado tras una sesión</strong>
+  1. Sube las fotos → 2. Selecciona todas las de la sesión → 3. Acción ✨ para generar
+  IA → 4. Acción ✏ con "🤖 Desde alt" para que los títulos sean descriptivos →
+  5. Otra acción ✏ con "Numerar" si quieres un código de sesión consistente.
+</div>
+
+<h3>Filtros rápidos predefinidos</h3>
+<table>
+  <thead><tr><th>Chip</th><th>Filtra</th></tr></thead>
+  <tbody>
+    <tr><td>🆕 Hoy</td><td>Más recientes (orden fecha desc).</td></tr>
+    <tr><td>⚠ Sin alt</td><td>Imágenes sin atributo alt — accesibilidad/SEO pendiente.</td></tr>
+    <tr><td>📭 Sin carpeta</td><td>Imágenes huérfanas que nadie ha clasificado.</td></tr>
+    <tr><td>🖼 Solo fotos</td><td>Excluye vídeos y otros media.</td></tr>
+    <tr><td>🎬 Solo vídeos</td><td>Solo vídeos.</td></tr>
+    <tr><td>📦 Más pesadas</td><td>Las que ocupan más disco — útiles para limpiar.</td></tr>
+  </tbody>
+</table>
+
+<!-- ── 5. EDICIÓN INDIVIDUAL ─────────────────────────────────── -->
+<h2>5 · Edición individual de imágenes</h2>
+<p>
+  Click en cualquier foto abre <strong>MediaDetail</strong>. Layout adaptable:
+  móvil apilado, desktop a 2 columnas (foto a la izquierda sticky, panel a la derecha).
+</p>
+
+<h3>Cabecera (zona de la foto)</h3>
+<ul>
+  <li><strong>‹ ›</strong>: navegar a la anterior/siguiente foto (también con flechas del teclado).</li>
+  <li><strong>Contador</strong>: posición / total dentro de la lista actual.</li>
+  <li><strong>Swipe</strong>: en móvil, deslizar el dedo izq/der cambia de foto.</li>
+  <li><strong>Atajos</strong>: ⬇ Descargar (fetch + blob, fuerza descarga real con nombre original) · 📤 Compartir (Web Share API o copy URL fallback) · 📋 Copiar URL · ↗ Abrir original.</li>
+</ul>
+
+<h3>Tab "Datos"</h3>
+<ul>
+  <li><strong>Título, alt, SEO title, caption, descripción</strong>.</li>
+  <li><strong>Carpeta</strong>: bottomsheet para cambiarla.</li>
+  <li><strong>Etiquetas IA</strong>: chips clicables que filtran Media por ese tag.</li>
+  <li><strong>✨ Generar alt+caption</strong>: llama Claude con la imagen y rellena los campos automáticamente.</li>
+  <li><strong>Guardar</strong>: persiste todos los cambios.</li>
+</ul>
+
+<h3>Tab "📍 Ubicación"</h3>
+<p>
+  Si la imagen tiene GPS (extraído del EXIF o asignado a mano), mini-mapa con marker.
+  Botón "📍 Cambiar" abre un GeoTagger con búsqueda Nominatim.
+</p>
+
+<h3>Tab "EXIF"</h3>
+<p>
+  Tarjetas con todos los metadatos extraídos: cámara, focal, apertura, ISO, velocidad, fecha,
+  dimensiones, peso, tipo MIME, archivo original.
+</p>
+
+<h3>Tab "⚒ Herramientas"</h3>
+<ul>
+  <li>📋 Copiar URL pública.</li>
+  <li>⚙️ Abrir en el editor de WordPress (link directo a wp-admin).</li>
+  <li>🗑 Eliminar la imagen (con confirmación).</li>
+</ul>
+
+<!-- ── 6. SUBIR ──────────────────────────────────────────────── -->
+<h2>6 · Subir fotos</h2>
+
+<h3>Elegir origen</h3>
+<ul>
+  <li><strong>📷 Hacer foto</strong>: en móvil abre la cámara directamente (capture="environment").</li>
+  <li><strong>🖼 Galería</strong>: explorador de archivos del sistema. Permite multi-selección.</li>
+  <li><strong>Carpeta destino</strong>: dropdown con árbol — selecciona dónde van las fotos. "— Sin carpeta —" para subir sueltas.</li>
+</ul>
+
+<h3>Cola de subida</h3>
+<p>
+  Cada archivo aparece como tarjeta con thumbnail (si es imagen), nombre, tamaño y
+  estado: ⏳ pendiente · ⚪ subiendo · ✓ ok · ✕ error.
+</p>
+<ul>
+  <li>Botón "↑ Subir N archivos" procesa la cola en serie.</li>
+  <li>Tras subir cada imagen, la PWA <strong>extrae la paleta dominante</strong> en cliente
+  (Canvas + cuantización a 5 bits/canal) y la guarda en el servidor.</li>
+  <li>Si tiene GPS en EXIF, se geolocaliza automáticamente.</li>
+  <li>"Limpiar OK" elimina las completadas, "Vaciar" descarta todas.</li>
+</ul>
+
+<div class="note">
+  <strong>Subir en otro idioma</strong>
+  La cola es secuencial (no paralela) para no saturar el servidor compartido.
+  Para sesiones grandes, usa el watcher de Lightroom (ver sección 16).
+</div>
+
+<!-- ── 7. CARPETAS ───────────────────────────────────────────── -->
+<h2>7 · Carpetas</h2>
+<p>
+  Estructura jerárquica de carpetas para clasificar tu catálogo. Las carpetas son una
+  taxonomía custom de WordPress (<code>yz_media_folder</code>); no afectan al árbol de
+  archivos en disco.
+</p>
+
+<h3>Header con stats</h3>
+<p>Total de carpetas y total de imágenes en el árbol. Botones globales:</p>
+<ul>
+  <li><strong>+ Nueva carpeta</strong>: crea una en la raíz.</li>
+  <li><strong>⊟</strong> expandir todo · <strong>⊞</strong> colapsar todo el árbol.</li>
+</ul>
+
+<h3>Acciones por carpeta</h3>
+<table>
+  <thead><tr><th>Botón</th><th>Acción</th></tr></thead>
+  <tbody>
+    <tr><td>▶</td><td>Abrir todas las imágenes de la carpeta en modo Slideshow</td></tr>
+    <tr><td>＋</td><td>Crear subcarpeta</td></tr>
+    <tr><td>✏</td><td>Renombrar (inline)</td></tr>
+    <tr><td>📤</td><td>Mover a otro padre (con bottomsheet de destinos válidos)</td></tr>
+    <tr><td>🗑</td><td>Eliminar (las imágenes NO se borran, sólo pierden la asignación)</td></tr>
+  </tbody>
+</table>
+
+<h3>Drag &amp; drop (escritorio)</h3>
+<p>
+  Arrastra una carpeta sobre otra para moverla. La PWA valida automáticamente que no estés
+  intentando meter un padre en su propio descendiente.
+</p>
+
+<h3>Click en el nombre de una carpeta</h3>
+<p>
+  Te lleva a Medios filtrado por esa carpeta. Cambia carpeta y la lista se actualiza
+  automáticamente (incluye keep-alive: vuelves al scroll exacto donde estabas).
+</p>
+
+<!-- ── 8. PORTFOLIOS ─────────────────────────────────────────── -->
+<h2>8 · Portfolios</h2>
+<p>
+  Los portfolios son entradas del CPT <code>portfolio</code> del tema kotlis. La PWA los
+  edita íntegros (galería, layout, categorías, configuración avanzada del tema) sin
+  necesidad de tocar wp-admin.
+</p>
+
+<h3>Listado</h3>
+<p>
+  Búsqueda + filtro por categoría + paginación. Cada tarjeta muestra título, layout,
+  estado, miniatura del hero. Click abre el detalle.
+</p>
+
+<h3>Detalle</h3>
+<p>Estructura vertical:</p>
+<ol>
+  <li><strong>Hero</strong> (imagen destacada, 16:9). Centrado en desktop con max-width.
+  Botón "Cambiar" abre el media picker; "Quitar" vuelve a usar la primera de la galería como fallback.</li>
+
+  <li><strong>Galería</strong>:
+    <ul>
+      <li>Pulsa una foto para abrirla en MediaDetail.</li>
+      <li>Mantén pulsado 1 segundo en táctil (o arrastra con ratón) para reordenar.</li>
+      <li>★ marca como hero (queda con borde dorado), ✕ quita de la galería.</li>
+      <li>"+ Añadir": MediaPicker para seleccionar más imágenes.</li>
+      <li>"💾 Guardar": al cambiar el orden, este botón aparece. Pulsa para persistir.</li>
+      <li>"▶ Slideshow": modo presentación con esta galería.</li>
+    </ul>
+  </li>
+
+  <li><strong>Form + Configuración avanzada</strong> (lado a lado en desktop):
+    <ul>
+      <li>Título, resumen, estado (borrador/publicar/privado/pendiente).</li>
+      <li>Layout: st1 Column Grid Sidebar · st2 Carousel · st3 Full Width · st4 Slider.</li>
+      <li>Categorías (multi-selección).</li>
+      <li>Configuración avanzada del tema kotlis: campos dinámicos según el layout activo (sidebar, secciones de contenido, datos del proyecto, prev/next, etc.).</li>
+      <li>Vincular carpeta YZMF para sincronizar la galería con todas las imágenes de una carpeta.</li>
+    </ul>
+  </li>
+
+  <li><strong>Acciones finales</strong>:
+    <ul>
+      <li>↗ Ver portfolio (URL pública).</li>
+      <li>⚙ Editor WP.</li>
+      <li>📋 Duplicar como plantilla (con opción de copiar también la galería).</li>
+      <li>🗑 Mover a papelera.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>Categorías de portfolio</h3>
+<p>
+  Pantalla independiente: <strong>Ajustes → Categorías de portfolio</strong>. CRUD completo
+  con árbol jerárquico (igual que las carpetas).
+</p>
+
+<!-- ── 9. GALERÍAS DE CLIENTE ────────────────────────────────── -->
+<h2>9 · Galerías de cliente</h2>
+<p>
+  Sistema completo para compartir selecciones privadas con clientes vía un enlace público
+  con token único. Sin necesidad de cuenta de WordPress para el cliente.
+</p>
+
+<h3>Crear una galería</h3>
+<ol>
+  <li>Ajustes → Galerías de cliente → "+ Nueva galería".</li>
+  <li>Pon un título (lo verá el cliente).</li>
+  <li>Configura los campos:
+    <ul>
+      <li><strong>Cliente</strong>: nombre + email (para notificaciones).</li>
+      <li><strong>Mensaje</strong>: texto que aparece encima de la galería para el cliente.</li>
+      <li><strong>Caducidad</strong>: fecha tras la cual el enlace deja de funcionar.</li>
+      <li><strong>Contraseña</strong>: opcional. Si la pones, el cliente la introduce antes de ver.</li>
+      <li><strong>Permisos</strong>: ⬇ permitir descarga · 💬 permitir comentarios.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>Añadir imágenes</h3>
+<p>Tres formas:</p>
+<ul>
+  <li><strong>+ Añadir</strong>: MediaPicker — explora carpetas y selecciona.</li>
+  <li><strong>↻ Importar</strong>: bottomsheet con dos opciones — desde una carpeta YZMF (importa todas), o desde un portfolio existente. Filtra duplicados automáticamente.</li>
+  <li><strong>Drag &amp; drop</strong>: reordena (mantén pulsado 600ms en touch).</li>
+  <li><strong>✕</strong> sobre cada thumb la quita de la galería (no la borra del catálogo).</li>
+</ul>
+
+<h3>Compartir el enlace</h3>
+<p>
+  La URL es <code>https://yezraelperez.es/g/<em>token</em></code>. Botón "📋" copia al portapapeles.
+  El token usa caracteres URL-safe (base64): no se puede adivinar.
+</p>
+
+<h3>Tab "Actividad"</h3>
+<p>3 stats grandes: ★ favoritas · 💬 comentarios · 👁 visitas.</p>
+<p>
+  Log cronológico con cada acción del cliente (favorita o comentario), miniatura, fecha exacta,
+  texto del comentario y link directo a MediaDetail.
+</p>
+
+<h3>Exportar selección del cliente</h3>
+<p>
+  Cuando el cliente marca favoritas, las puedes exportar para procesarlas en Lightroom/Capture One:
+</p>
+<ul>
+  <li><strong>📄 Descargar .txt</strong>: una línea por filename original. Pegas en el filtro de Lightroom (Library Filter → Filename → contains any of) y tienes esas mismas fotos seleccionadas en tu catálogo.</li>
+  <li><strong>📊 Descargar .csv</strong>: con id, filename, título y comentarios (concatenados con <code>|</code>). Excel-friendly con BOM UTF-8.</li>
+  <li><strong>📋 Copiar lista</strong>: al portapapeles para pegado rápido.</li>
+</ul>
+
+<h3>Vista del cliente</h3>
+<p>
+  El cliente abre <code>/g/token</code> en cualquier navegador. Ve un frontend standalone
+  (sin Vue, JS vanilla) con:
+</p>
+<ul>
+  <li>Login con contraseña si la galería está protegida.</li>
+  <li>Grid responsive con todas las imágenes.</li>
+  <li>Lightbox con flechas, botón ★ favorita, contador, botón comentar.</li>
+  <li>Si tiene permiso, botón "⬇ Descargar favoritas" (descarga en lote).</li>
+  <li>"🔗 Copiar enlace" para reenviarlo.</li>
+</ul>
+
+<div class="tip">
+  <strong>Notificaciones por email</strong>
+  Cada vez que el cliente marca una favorita o deja un comentario, recibes un email
+  (configurable en wp-admin → Galerías de cliente → Ajustes).
+</div>
+
+<!-- ── 10. MAPA ──────────────────────────────────────────────── -->
+<h2>10 · Mapa de ubicaciones</h2>
+<p>
+  Mapa Leaflet con dos capas: <strong>ubicaciones manuales</strong> (CPT
+  <code>yzmf_location</code>, p.ej. "Estudio Madrid") y <strong>fotos georreferenciadas</strong>
+  (extraídas del EXIF o asignadas a mano).
+</p>
+
+<h3>Acciones</h3>
+<ul>
+  <li>Click en mapa vacío: crear ubicación nueva con título + descripción.</li>
+  <li>Click en marcador existente: editar/eliminar.</li>
+  <li>Búsqueda: usa Nominatim (OpenStreetMap proxy) para encontrar direcciones por nombre.</li>
+  <li>Filtros: ver solo ubicaciones / solo fotos / ambas.</li>
+</ul>
+
+<!-- ── 11. EXIF ──────────────────────────────────────────────── -->
+<h2>11 · Estadísticas EXIF</h2>
+<p>
+  Histograma agregado de tus disparos. Útil para auto-conocimiento de tus hábitos:
+</p>
+<ul>
+  <li><strong>📷 Cámaras</strong>: ranking de cámaras usadas.</li>
+  <li><strong>🔍 Distancia focal</strong>: qué focales usas más.</li>
+  <li><strong>⊙ Aperturas</strong>: distribución de f-stops.</li>
+  <li><strong>🌗 ISO</strong>: ranking ISOs.</li>
+  <li><strong>⏱ Velocidades</strong>: ranking de tiempos de exposición.</li>
+</ul>
+<p>Cada barra es un valor; longitud relativa al máximo.</p>
+
+<!-- ── 12. SLIDESHOW ─────────────────────────────────────────── -->
+<h2>12 · Modo presentación (Slideshow)</h2>
+<p>
+  Pantalla completa (sin chrome de la app) para presentar a clientes, en stand de feria,
+  o para revisar tu propio trabajo con foco. Se lanza desde:
+</p>
+<ul>
+  <li>Media → toolbar → "▶ Slideshow" (con la lista filtrada actual).</li>
+  <li>Folders → botón ▶ por carpeta.</li>
+  <li>PortfolioDetail → cabecera de la galería → "▶ Slideshow".</li>
+  <li>URL directa: <code>/slideshow?folder=ID</code>, <code>?portfolio=ID</code> o <code>?ids=1,2,3</code>.</li>
+</ul>
+
+<h3>Controles</h3>
+<table>
+  <thead><tr><th>Tecla / botón</th><th>Acción</th></tr></thead>
+  <tbody>
+    <tr><td>← / →</td><td>Anterior / Siguiente foto</td></tr>
+    <tr><td>Espacio</td><td>Siguiente foto</td></tr>
+    <tr><td>P</td><td>Play / Pause auto-advance</td></tr>
+    <tr><td>F</td><td>Toggle fullscreen</td></tr>
+    <tr><td>I</td><td>Toggle overlay con título y caption</td></tr>
+    <tr><td>Esc</td><td>Salir</td></tr>
+    <tr><td>Swipe izq/der</td><td>Cambiar foto en táctil</td></tr>
+  </tbody>
+</table>
+
+<h3>Configuración</h3>
+<ul>
+  <li><strong>Intervalo</strong>: 3 · 5 · 8 · 12 · 20 segundos (recordado en localStorage).</li>
+  <li><strong>Ajuste</strong>: ⛶ contain (toda la foto visible, con borde) o ◱ cover (rellena pantalla, recorta).</li>
+  <li><strong>Transición</strong>: fade o slide.</li>
+</ul>
+<p>La UI se auto-oculta tras 3 segundos sin actividad para presentación inmersiva.</p>
+
+<!-- ── 13. MARCA ─────────────────────────────────────────────── -->
+<h2>13 · Marca y personalización</h2>
+<p>
+  Configurable en Ajustes → Marca. Lo que cambies aquí se aplica a la PWA, login y favicons internos.
+</p>
+
+<h3>Logo</h3>
+<ul>
+  <li><strong>↑ Subir logo</strong>: file picker nativo (cámara/galería/explorador). SVG, PNG, JPG, WebP. Máx 5 MB.</li>
+  <li><strong>📁 Galería</strong>: reusa una imagen ya en el media library.</li>
+  <li><strong>Quitar</strong>: vuelve a las iniciales.</li>
+</ul>
+
+<h3>Otros campos</h3>
+<ul>
+  <li><strong>Nombre de la marca</strong>: aparece en topbar y title de la página.</li>
+  <li><strong>Iniciales</strong>: fallback cuando no hay logo (calculadas auto del nombre, editables).</li>
+  <li><strong>Color principal</strong>: hex <code>#RRGGBB</code> con color picker. Sobreescribe la variable CSS <code>--accent</code> en toda la app.</li>
+</ul>
+
+<!-- ── 14. USUARIOS ──────────────────────────────────────────── -->
+<h2>14 · Usuarios y Application Passwords</h2>
+
+<h3>Listado</h3>
+<p>
+  Ajustes → Usuarios. Tarjetas con avatar, nombre, email, rol. Búsqueda por título/cliente/email.
+  Botón "+ Nuevo usuario" abre un sheet con username/email/nombre/contraseña/rol (admin/editor/author/contributor/subscriber).
+</p>
+
+<h3>Detalle de usuario</h3>
+<p>Layout 2 columnas en desktop con 3 secciones:</p>
+
+<h4>1 · Datos personales</h4>
+<p>Nombre, apellidos, nombre completo, email, web, biografía, rol, cambio de contraseña (opcional).</p>
+
+<h4>2 · Application Passwords</h4>
+<p>
+  Lista con nombre identificativo, fecha de creación, último uso e IP de origen.
+  Botón "+ Nueva" pide nombre (ej. "iPhone PWA") y muestra la contraseña generada
+  <strong>una sola vez</strong> con botón copiar. Cada token se puede revocar individualmente.
+</p>
+
+<h4>3 · Eliminar</h4>
+<p>Borrado total del usuario (irreversible). Confirmación obligatoria.</p>
+
+<!-- ── 15. SEGURIDAD ─────────────────────────────────────────── -->
+<h2>15 · Seguridad y actividad de logins</h2>
+
+<h3>Auto-cierre de sesión por inactividad</h3>
+<p>
+  En Ajustes → Sesión, selector con 0 (nunca) · 5 min · 15 min · 30 min · 1h · 4h · 12h.
+  Tras X min sin mover ratón ni pulsar teclas ni hacer scroll, sesión cerrada automáticamente.
+</p>
+
+<h3>Política de bloqueo de logins</h3>
+<p>3 parámetros configurables:</p>
+<ul>
+  <li><strong>Intentos máximos</strong>: 5 por defecto. 0 desactiva el lockout.</li>
+  <li><strong>Ventana</strong>: minutos en los que se cuentan los intentos. 15 por defecto.</li>
+  <li><strong>Penalización</strong>: minutos de bloqueo. 30 por defecto.</li>
+</ul>
+
+<h3>Actividad de logins</h3>
+<ul>
+  <li>3 stats: logins recientes · intentos fallidos · IPs bloqueadas activas.</li>
+  <li>Lista de IPs bloqueadas con timer de desbloqueo y botón "Liberar bloqueos".</li>
+  <li>Historial completo (200 eventos) con fecha exacta, usuario, IP, navegador detectado.</li>
+</ul>
+
+<div class="warn">
+  <strong>Si te bloqueas a ti mismo</strong>
+  Pulsa "Liberar bloqueos" desde otro dispositivo donde sigas dentro, o accede a wp-admin
+  por el navegador (la cookie de sesión es independiente del Basic Auth).
+</div>
+
+<!-- ── 16. INTEGRACIONES ─────────────────────────────────────── -->
+<h2>16 · Integraciones avanzadas</h2>
+
+<h3>Schema.org enrichment (siempre activo)</h3>
+<p>
+  El plugin inyecta JSON-LD automático en <code>&lt;head&gt;</code> para portfolios,
+  attachments y home page. Datos ricos: <code>ImageObject</code> con dimensiones,
+  <code>contentLocation</code>/geo si está geolocalizado, <code>keywords</code> con tags IA,
+  <code>color</code> con la paleta dominante, <code>exifData</code> con cámara/focal/ISO/etc.
+</p>
+<p>
+  Configurable en wp-admin (opciones <code>yzmf_default_license</code>, <code>yzmf_author_name</code>,
+  <code>yzmf_social_*</code>). Verifica con Google Rich Results Test.
+</p>
+
+<h3>Lightroom Publish Service</h3>
+<p>Endpoints REST para integrar Adobe Lightroom Classic:</p>
+<ul>
+  <li><code>GET /yzmf/v1/lightroom/check</code> — healthcheck.</li>
+  <li><code>GET /yzmf/v1/lightroom/folders</code> — lista de carpetas YZMF disponibles.</li>
+  <li><code>POST /yzmf/v1/lightroom/publish</code> — multipart con file + folder_id + metadata.</li>
+</ul>
+<p>
+  Tres estrategias de integración: plugin .lrplugin custom, plantilla XML-RPC nativa, o
+  Python watcher de carpeta exportada (la más simple). Documentación detallada en
+  <code>docs/lightroom.md</code>.
+</p>
+
+<h3>Hotlink Watermark</h3>
+<p>
+  Plugin <code>yzmf-hotlink-watermark</code>. Cuando alguien enlaza directamente una de tus
+  imágenes desde un dominio externo, el plugin reescribe la URL al vuelo y sirve una versión
+  con marca de agua (Imagick + GD fallback) cacheada en disco.
+</p>
+<p>Configurable en wp-admin → Settings → YZMF Hotlink:</p>
+<ul>
+  <li>Whitelist de dominios permitidos (incluye tu dominio por defecto).</li>
+  <li>Marca de agua: PNG con transparencia o texto con opacidad/posición.</li>
+  <li>Permitir motores de búsqueda y previsualizadores (Google, Facebook, etc.).</li>
+  <li>Botón "Vaciar caché" para regenerar todo tras cambiar la marca de agua.</li>
+</ul>
+
+<!-- ── 17. ATAJOS ────────────────────────────────────────────── -->
+<h2>17 · Atajos de teclado</h2>
+<p>Disponibles cuando hay sesión activa:</p>
+
+<table>
+  <thead><tr><th>Atajo</th><th>Acción</th></tr></thead>
+  <tbody>
+    <tr><td>Ctrl+K · /</td><td>Abrir paleta de búsqueda global</td></tr>
+    <tr><td>g h</td><td>Ir a Inicio (Dashboard)</td></tr>
+    <tr><td>m</td><td>Ir a Medios</td></tr>
+    <tr><td>p</td><td>Ir a Portfolios</td></tr>
+    <tr><td>u</td><td>Ir a Subir</td></tr>
+    <tr><td>f</td><td>Ir a Carpetas</td></tr>
+    <tr><td>Shift+M</td><td>Ir a Mapa</td></tr>
+  </tbody>
+</table>
+
+<p>En MediaDetail:</p>
+<table>
+  <tbody>
+    <tr><td>← →</td><td>Anterior / Siguiente foto</td></tr>
+    <tr><td>Esc</td><td>Volver</td></tr>
+  </tbody>
+</table>
+
+<p>En Slideshow: ver sección 12.</p>
+
+<!-- ── 18. TROUBLESHOOTING ───────────────────────────────────── -->
+<h2>18 · Resolución de problemas</h2>
+
+<h3>"Sesión inválida — vuelve a iniciar sesión"</h3>
+<p>
+  El cliente HTTP detecta 4 errores 401 consecutivos en menos de 8 segundos.
+  Causas habituales:
+</p>
+<ul>
+  <li>La contraseña ha cambiado en wp-admin (cambia tu Application Password).</li>
+  <li>Tu IP está bloqueada por intentos fallidos (libera bloqueos en Ajustes o wp-admin).</li>
+  <li>El plugin <code>yz-media-folders</code> está desactivado en el servidor.</li>
+</ul>
+
+<h3>El Dashboard no muestra estadísticas</h3>
+<p>
+  El endpoint <code>/stats</code> se cachea 5 minutos. Tras subir muchas fotos, espera o haz
+  pull-to-refresh. Si aún así no aparecen, asegúrate de que la última versión del plugin
+  esté desplegada (con <code>uploads_365d</code> y los counts de salud).
+</p>
+
+<h3>El logo nuevo no aparece</h3>
+<p>
+  El brand store cachea en localStorage para evitar parpadeo. Pull-to-refresh en Dashboard
+  o cierra/abre la app para ver el cambio.
+</p>
+
+<h3>Galería de cliente devuelve 404 al abrir</h3>
+<ul>
+  <li>WP Admin → Settings → Permalinks → Guardar (sin cambios). Esto fuerza el flush de rewrite rules.</li>
+  <li>Comprueba que Permalinks no es "Plain" — necesita estructura tipo <code>/%postname%/</code>.</li>
+  <li>El plugin tiene auto-flush por versión y un fallback en parse_request, pero algunos sistemas de caché agresiva (LiteSpeed) pueden necesitar purga manual.</li>
+</ul>
+
+<h3>El drag &amp; drop de la galería no inicia</h3>
+<p>
+  En táctil, requiere mantener pulsado <strong>1 segundo</strong> antes de empezar a arrastrar.
+  Esto es intencional para no romper el scroll. En desktop con ratón el drag es inmediato.
+</p>
+
+<h3>Las fotos no aparecen al cliente en una galería protegida</h3>
+<ul>
+  <li>Verifica en Ajustes → Galerías de cliente → la galería en cuestión que no haya caducado.</li>
+  <li>El sistema usa sessionStorage del navegador del cliente. Si el cliente borra cookies/storage, tendrá que volver a meter la contraseña.</li>
+</ul>
+
+<h3>Quiero forzar regeneración de paletas/tags retroactivos</h3>
+<p>
+  No hay UI todavía. Las imágenes nuevas (subidas tras la activación de cada feature) las
+  reciben automáticamente. Para retroactivos, se puede hacer un script de backfill bajo
+  demanda — pídelo y se monta como endpoint admin.
+</p>
+
+<hr>
+
+<p style="text-align:center; color: #999; font-size: 11px; margin-top: 30px;">
+  Manual generado · YPVA Admin · yezraelperez.es
+</p>
+
+</div>
+
+</body>
+</html>
