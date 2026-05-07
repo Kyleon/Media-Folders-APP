@@ -31,6 +31,7 @@ require_once YZMF_PATH . 'includes/class-basic-auth.php';
 require_once YZMF_PATH . 'includes/class-slider.php';
 require_once YZMF_PATH . 'includes/class-slider-rest.php';
 require_once YZMF_PATH . 'includes/class-slider-shortcode.php';
+require_once YZMF_PATH . 'includes/class-elementor-integration.php';
 
 add_action( 'plugins_loaded', function () {
     YZMF_Taxonomy::init();
@@ -47,6 +48,7 @@ add_action( 'plugins_loaded', function () {
     YZMF_Slider::init();
     YZMF_Slider_REST::init();
     YZMF_Slider_Shortcode::init();
+    YZMF_Elementor_Integration::init();
 } );
 
 register_activation_hook( __FILE__, function () {
