@@ -1,0 +1,211 @@
+/* ============================================================
+ *  yzmf-slider - estilos del shortcode/widget
+ *  Aislado bajo .yzmf-slider para no chocar con el slider del tema.
+ * ============================================================ */
+
+.yzmf-slider {
+    position: relative;
+    width: 100%;
+    height: var(--yzmf-slider-height, 100vh);
+    overflow: hidden;
+    background: #000;
+}
+
+.yzmf-slider .yzmf-swiper,
+.yzmf-slider .swiper-wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+.yzmf-slide {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+    color: #fff;
+}
+
+/* Background imagen */
+.yzmf-slide-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    will-change: transform;
+}
+
+/* Video MP4 nativo */
+.yzmf-slide-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Embed iframe */
+.yzmf-slide-iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    pointer-events: none; /* el slide gestiona los clicks, no el iframe */
+}
+
+/* Overlay de color */
+.yzmf-slide-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Kenburns suave (solo para imágenes) */
+.yzmf-slide.yzmf-kenburns .yzmf-slide-bg {
+    animation: yzmf-kenburns 18s ease-in-out infinite alternate;
+}
+
+@keyframes yzmf-kenburns {
+    0%   { transform: scale(1)    translate(0,    0);    }
+    100% { transform: scale(1.12) translate(-2%, -2%);   }
+}
+
+/* Contenido textual encima */
+.yzmf-slide-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 60px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+/* Alineación horizontal del texto dentro del bloque */
+.yzmf-slide.yzmf-align-start  .yzmf-slide-content { text-align: start; align-items: flex-start; }
+.yzmf-slide.yzmf-align-center .yzmf-slide-content { text-align: center; align-items: center; }
+.yzmf-slide.yzmf-align-end    .yzmf-slide-content { text-align: end;   align-items: flex-end; }
+
+/* Posición vertical del bloque dentro del slide */
+.yzmf-slide.yzmf-vpos-top    { align-items: flex-start; }
+.yzmf-slide.yzmf-vpos-center { align-items: center; }
+.yzmf-slide.yzmf-vpos-bottom { align-items: flex-end; }
+
+/* Tipografía interna */
+.yzmf-slide-subtitle {
+    font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+.yzmf-slide-title {
+    font-size: clamp(1.8rem, 5vw, 4rem);
+    line-height: 1.1;
+    margin: 0;
+    font-weight: 700;
+}
+
+.yzmf-slide-text {
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    line-height: 1.5;
+    max-width: 720px;
+    margin: 0;
+    opacity: 0.95;
+}
+
+.yzmf-slide-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    opacity: 0.8;
+}
+
+.yzmf-slide-button {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 14px 28px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background 0.2s ease, transform 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.yzmf-slide-button:hover {
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-1px);
+}
+
+/* ─────────── Navegación y paginación ─────────── */
+
+.yzmf-slider .yzmf-nav-prev,
+.yzmf-slider .yzmf-nav-next {
+    width: 48px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    z-index: 10;
+}
+
+.yzmf-slider .yzmf-nav-prev:hover,
+.yzmf-slider .yzmf-nav-next:hover {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.yzmf-slider .swiper-button-prev::after,
+.yzmf-slider .swiper-button-next::after {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* Pagination */
+.yzmf-slider .yzmf-pagination .swiper-pagination-bullet {
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+    width: 10px;
+    height: 10px;
+    transition: all 0.2s ease;
+}
+
+.yzmf-slider .yzmf-pagination .swiper-pagination-bullet-active {
+    background: #fff;
+    width: 30px;
+    border-radius: 5px;
+}
+
+.yzmf-slider .yzmf-pagination.swiper-pagination-progressbar {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.yzmf-slider .yzmf-pagination.swiper-pagination-progressbar .swiper-pagination-progressbar-fill {
+    background: #fff;
+}
+
+/* Móvil */
+@media (max-width: 768px) {
+    .yzmf-slide-content {
+        padding: 40px 24px;
+        gap: 14px;
+    }
+    .yzmf-slider .yzmf-nav-prev,
+    .yzmf-slider .yzmf-nav-next {
+        width: 36px;
+        height: 36px;
+    }
+}
