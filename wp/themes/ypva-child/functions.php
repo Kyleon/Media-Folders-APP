@@ -210,11 +210,15 @@ add_action('wp_footer', 'fix_kotlis_gallery');
  *  5. OPTIMIZACIÓN DE IMÁGENES
  * ============================================================ */
 
-/* Servir imágenes en WebP automáticamente */
-function serve_webp_images($content) {
-    return preg_replace('/\.(jpg|png)/', '.webp', $content);
-}
-add_filter('the_content', 'serve_webp_images');
+/*
+ * NOTA: la función serve_webp_images() se eliminó el 2026-05-08.
+ * El filtro reemplazaba ciegamente .jpg/.png por .webp en todo
+ * the_content sin verificar que el archivo .webp existiera, lo que
+ * rompía cualquier imagen sin versión WebP generada (incluido el
+ * shortcode [yzmf_slider]). LiteSpeed Cache ya hace conversión a
+ * WebP en frontend con verificación correcta, así que esta función
+ * era redundante y peligrosa.
+ */
 
 /* Agregar Datos Estructurados para SEO (Schema Markup)*/
 function add_image_schema() {
