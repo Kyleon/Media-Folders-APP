@@ -306,6 +306,60 @@ function generar_meta_imagen_con_IA($metadata, $attachment_id) {
 
 
 /* ============================================================
+ *  8. PLANTILLA "ELEMENTOR PANTALLA COMPLETA"
+ * ============================================================ */
+
+/**
+ * Carga el CSS de la plantilla Elementor Wide solo cuando se usa.
+ * Prioridad 100 para asegurar que se aplica después del CSS del padre.
+ */
+function ypva_child_elementor_wide_styles() {
+    if ( is_page_template( 'page-elementor-wide.php' ) ) {
+        wp_enqueue_style(
+            'ypva-elementor-wide',
+            get_stylesheet_directory_uri() . '/assets/css/elementor-wide.css',
+            array(),
+            wp_get_theme()->get( 'Version' )
+        );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'ypva_child_elementor_wide_styles', 100 );
+
+
+/* ============================================================
+ *  9. EXPONER METAS DEL TEMA EN REST API
+ * ============================================================ */
+
+/**
+ * Registra metas del tema YPVA con prefijo rnr_ como REST-accessible.
+ * Permite editarlos vía /wp/v2/pages/{id} pasando el campo "meta".
+ *
+ * - rnr_page_layout: st1 sidebar derecha, st2 sidebar izquierda, st3 full, vacío default
+ * - rnr_page_header_block: 'no' oculta la cabecera con título e imagen destacada
+ * - rnr_wr_pagetype: st1 default, st2 sideblock (imagen lateral fija)
+ */
+function ypva_child_register_theme_meta_rest() {
+    $meta_keys = array(
+        'rnr_page_layout',
+        'rnr_page_header_block',
+        'rnr_wr_pagetype',
+    );
+
+    foreach ($meta_keys as $key) {
+        register_post_meta('page', $key, array(
+            'show_in_rest'  => true,
+            'single'        => true,
+            'type'          => 'string',
+            'auth_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ));
+    }
+}
+add_action('init', 'ypva_child_register_theme_meta_rest');
+
+
+/* ============================================================
  *  ✅ FIN DEL ARCHIVO
  * ============================================================ */
 ?>

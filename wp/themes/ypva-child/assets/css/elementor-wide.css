@@ -1,0 +1,42 @@
+/* ============================================================
+ *  Plantilla "Elementor Pantalla Completa"
+ *  Reset de wrappers del tema YPVA para que Elementor llene el
+ *  espacio entre header y footer sin sidebars ni .container.
+ * ============================================================ */
+
+/* El #wrapper del tema (header.php) ya es full ancho por defecto,
+   pero forzamos por si algún CSS del padre lo limita. */
+.page-template-page-elementor-wide #wrapper {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Contenedor propio: sin restricciones de ancho ni padding */
+.page-template-page-elementor-wide .ypva-elementor-wide {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Ocultar share-wrapper que footer.php inyecta entre el contenido
+   y el cierre de #wrapper. En una página Elementor no aporta. */
+.page-template-page-elementor-wide .share-wrapper {
+    display: none;
+}
+
+/* Permitir que secciones Elementor con "Stretch Section" lleguen
+   a ancho de viewport completo aunque el padre tenga padding. */
+.page-template-page-elementor-wide .elementor-section-stretched {
+    width: 100vw !important;
+    margin-left: calc(50% - 50vw) !important;
+}
+
+/* Garantizar que los containers Elementor V3 (elType: container)
+   no hereden max-width del tema. */
+.page-template-page-elementor-wide .e-con,
+.page-template-page-elementor-wide .e-con-inner {
+    max-width: 100%;
+}
