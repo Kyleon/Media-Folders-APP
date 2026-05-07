@@ -135,3 +135,16 @@ export const ClientPortalAPI = {
   remove:  (id)       => api.del(NS + 'cp/admin/galleries/' + id),
   actions: (id)       => api.get(NS + 'cp/admin/galleries/' + id + '/actions'),
 };
+
+/**
+ * Sliders: CPT yzmf_slider con meta JSON (settings + slides).
+ * Detalle del modelo en docs/SLIDER_DESIGN.md.
+ */
+export const SlidersAPI = {
+  list:      (params)         => api.get(NS + 'sliders', params),
+  detail:    (id)             => api.get(NS + 'sliders/' + id),
+  create:    (body)           => api.post(NS + 'sliders', body),
+  update:    (id, body)       => api.put(NS + 'sliders/' + id, body),
+  remove:    (id, force=false)=> api.del(NS + 'sliders/' + id, { force: force ? 1 : 0 }),
+  duplicate: (id)             => api.post(NS + 'sliders/' + id + '/duplicate'),
+};

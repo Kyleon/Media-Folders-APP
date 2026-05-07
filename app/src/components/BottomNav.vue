@@ -10,6 +10,7 @@ const items = [
   { name: 'media',      label: 'Medios',     icon: '▦' },
   { name: 'folders',    label: 'Carpetas',   icon: '▤' },
   { name: 'portfolios', label: 'Portfolios', icon: '◇' },
+  { name: 'sliders',    label: 'Sliders',    icon: '⊞' },
   { name: 'upload',     label: 'Subir',      icon: '↑' },
   { name: 'map',        label: 'Mapa',       icon: '◈' },
   { name: 'settings',   label: 'Ajustes',    icon: '⚙' },
@@ -19,6 +20,7 @@ const activeName = computed(() => {
   // Mapear sub-rutas a su tab principal
   if (route.name === 'media-detail')   return 'media';
   if (route.name?.startsWith('portfolio')) return 'portfolios';
+  if (route.name?.startsWith('slider'))    return 'sliders';
   return route.name;
 });
 </script>
@@ -40,7 +42,7 @@ const activeName = computed(() => {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   background: var(--s1);
   border-top: 1px solid var(--border);
   z-index: 50;
