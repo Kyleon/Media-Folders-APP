@@ -2,7 +2,7 @@
 
 > Documento de diseño previo a implementación.
 > Última actualización: 2026-05-07.
-> Estado: borrador para validar con Yezrael antes de codear.
+> Estado: aprobado, decisiones cerradas con Yezrael. Listo para Fase 1.
 
 ---
 
@@ -79,13 +79,15 @@ register_post_type('yzmf_slider', [
     "pagination": "bullets",
     "loop": true,
     "kenburns": true,
-    "height": "100vh",
-    "overlay_opacity": 0.3
+    "height": "100vh"
   },
   "slides": [
     {
       "id": "slide_a3f7c2",
+      "type": "image",
       "image_id": 12345,
+      "video_id": null,
+      "video_embed_url": null,
       "title": "Auroras boreales en Islandia",
       "subtitle": "Octubre 2025",
       "text": "Una semana persiguiendo el cielo verde",
@@ -94,11 +96,28 @@ register_post_type('yzmf_slider', [
       "lng": -19.0067,
       "button_text": "Ver galería",
       "button_url": "/portfolio/auroras-islandia",
-      "alignment": "center"
+      "style": {
+        "overlay_color": "#000000",
+        "overlay_opacity": 0.3,
+        "text_color": "#ffffff",
+        "text_alignment": "center",
+        "vertical_position": "center",
+        "kenburns": true
+      }
     }
   ]
 }
 ```
+
+**Campos de tipo:**
+
+- `type: "image"` → usa `image_id` (attachment ID).
+- `type: "video_file"` → usa `video_id` (attachment ID de un MP4). Reproduce con `<video autoplay loop muted playsinline>`.
+- `type: "video_embed"` → usa `video_embed_url` (YouTube/Vimeo). Renderiza con iframe responsive.
+
+**Estilos por slide** (`style`): cada slide controla su overlay, color del texto, alineación horizontal, posición vertical y kenburns. Si quieres mantener consistencia visual, la PWA puede ofrecer un botón "Aplicar estilos a todos los slides".
+
+**Multi-idioma:** el JSON está versionado (`version: 1`). Una eventual migración a multi-idioma sería `version: 2` con strings como objetos `{es: "...", en: "..."}`. No implementado ahora.
 
 ### 3.3 Meta global por slider
 
@@ -346,20 +365,17 @@ getters:  { byId, count, dirty }
 
 ---
 
-## 9. Cuestiones abiertas para discutir
+## 9. Decisiones cerradas (2026-05-07)
 
-1. **¿Visibilidad pública del CPT?** Si `public: false` no se puede acceder a `/?p=N` ni a un permalink. ¿Quieres permalink propio (`/slider/nombre/`) o solo embed?
-
-2. **¿Versionado del slider?** Si guardas y luego deshaces, ¿quieres histórico (revisiones de WordPress) o no?
-
-3. **¿Soporte vídeo en slides?** El slider del tema acepta vídeos. ¿Lo incluimos en este o solo imágenes en V1?
-
-4. **¿Multi-idioma?** Actualmente el sitio es solo español. Si en el futuro hay WPML, el JSON tendría que ser por idioma. Decisión: ahora no, dejamos hueco en el JSON con `version: 1` para migrar.
-
-5. **¿Estilos por slide?** ¿Permitir overlay/color/posición de texto distinta por slide o todo según settings globales del slider?
-
-6. **¿Importar el slider actual de portada (rnr_bl_multi_slide_1)?** Como utility one-shot al implementar la fase 4, para no perder el contenido actual.
+| # | Cuestión | Decisión |
+|---|---|---|
+| 1 | Visibilidad CPT | **Privado** (`public: false`). Solo embed por shortcode/widget. Sin permalink propio. |
+| 2 | Vídeo en slides | **Sí, los tres tipos**: imagen, MP4 nativo (attachment), embed YouTube/Vimeo. Campo `type` en cada slide. |
+| 3 | Estilos por slide | **Por slide individualmente**. Cada slide tiene su objeto `style`. La PWA puede ofrecer "Aplicar a todos" como atajo. |
+| 4 | Importar slider portada actual | **No**. Empezar de cero al configurar el slider de portada desde la PWA. |
+| 5 | Versionado / revisiones | **Sin revisiones**. El JSON se sobrescribe en cada save. WordPress Trash recupera el slider entero si se borra. |
+| 6 | Multi-idioma | **Hueco para futuro**. JSON con `version: 1`. Migración eventual a `version: 2` con strings como objetos por idioma. No implementar ahora. |
 
 ---
 
-*Fin del documento. Validar con Yezrael antes de implementar.*
+*Fin del documento. Listo para Fase 1.*
