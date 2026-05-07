@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
 import draggable from 'vuedraggable';
 import { useSlidersStore } from '../stores/sliders';
+import { usePortfoliosStore } from '../stores/portfolios';
 import { useUiStore } from '../stores/ui';
 import Spinner from '../components/Spinner.vue';
 import SliderSettings from '../components/SliderSettings.vue';
@@ -13,6 +14,7 @@ const props = defineProps({
 });
 
 const sliders = useSlidersStore();
+const portfolios = usePortfoliosStore();
 const ui = useUiStore();
 const router = useRouter();
 
@@ -30,7 +32,12 @@ const settings = computed({
 });
 
 onMounted(async () => {
-  await sliders.fetchOne(Number(props.id));
+  await Promise.all([
+    sliders.fetchOne(Number(props.id)),
+    // Carga portfolios para el selector de enlace del botón. No bloqueante:
+    // si tarda o falla, el SlideForm hará fallback al input de URL libre.
+    portfolios.items.length ? Promise.resolve() : portfolios.load(true).catch(() => null),
+  ]);
   titleInput.value = sliders.current?.title || '';
 });
 
@@ -175,6 +182,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
           <template #item="{ element: slide }">
             <SlideForm
               :slide="slide"
+              :portfolios="portfolios.items"
               @update="(patch) => sliders.updateSlide(slide.id, patch)"
               @update-style="(patch) => sliders.updateSlideStyle(slide.id, patch)"
               @remove="removeSlide(slide.id)"

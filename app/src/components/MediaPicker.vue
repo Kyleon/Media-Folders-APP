@@ -195,20 +195,36 @@ function loadMore() {
   gap: 4px;
   flex: 1;
   overflow-y: auto;
+  align-content: start;
 }
 .item {
   display: flex; flex-direction: column;
+  width: 100%;
   background: var(--s2); border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
   text-align: left;
   position: relative;
   transition: border-color .15s;
+  padding: 0;
 }
 .item:active { transform: scale(.97); }
 .item.is-sel { border-color: var(--accent); }
-.thumb { aspect-ratio: 1; background: var(--s3); position: relative; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Truco padding-bottom para mantener ratio 1:1 sin depender de aspect-ratio,
+   que puede colapsar dentro de flex/grid en algunos navegadores móviles. */
+.thumb {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100%;       /* ratio 1:1 fiable */
+  background: var(--s3);
+  overflow: hidden;
+}
+.thumb img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .check {
   position: absolute; top: 4px; right: 4px;
   width: 22px; height: 22px;

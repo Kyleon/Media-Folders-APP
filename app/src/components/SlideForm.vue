@@ -1,10 +1,12 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import MediaPicker from './MediaPicker.vue';
 import GeoTagger from './GeoTagger.vue';
+import { MediaAPI } from '../api/endpoints';
 
 const props = defineProps({
-  slide: { type: Object, required: true },
+  slide:      { type: Object, required: true },
+  portfolios: { type: Array,  default: () => [] },
 });
 const emit = defineEmits(['update', 'updateStyle', 'remove', 'duplicate']);
 
@@ -12,15 +14,38 @@ const showPicker = ref(false);
 const showGeo = ref(false);
 const expanded = ref(false);
 
-const thumbUrl = computed(() => {
-  if (props.slide.type === 'image' && props.slide.image_id) {
-    // Marcador: el server tiene la URL real, aquí no podemos resolver attachment_id sin pedir.
-    // Mostramos un placeholder con el id y se resuelve al guardar (server guarda thumbnail).
-    return null;
+/* ─────── Thumbnail de la imagen seleccionada ─────── */
+const imageThumb = ref('');
+const imageMedium = ref('');
+
+async function loadImageInfo(id) {
+  if (!id) {
+    imageThumb.value = '';
+    imageMedium.value = '';
+    return;
   }
-  return null;
+  try {
+    const data = await MediaAPI.detail(id);
+    imageThumb.value  = data.thumb  || data.url || '';
+    imageMedium.value = data.medium || data.url || data.thumb || '';
+  } catch {
+    imageThumb.value = '';
+    imageMedium.value = '';
+  }
+}
+
+watch(() => [props.slide.image_id, props.slide.type], ([id, type]) => {
+  if (type === 'image' && id) loadImageInfo(id);
+  else { imageThumb.value = ''; imageMedium.value = ''; }
+}, { immediate: false });
+
+onMounted(() => {
+  if (props.slide.type === 'image' && props.slide.image_id) {
+    loadImageInfo(props.slide.image_id);
+  }
 });
 
+/* ─────── Helpers de mutación ─────── */
 function patch(field, value) {
   emit('update', { [field]: value });
 }
@@ -31,6 +56,10 @@ function patchStyle(field, value) {
 
 function onPickImage(image) {
   showPicker.value = false;
+  // Aprovechamos las URLs ya disponibles del picker para evitar refetch
+  if (image.thumb)  imageThumb.value  = image.thumb;
+  if (image.medium) imageMedium.value = image.medium;
+  if (image.url)    imageMedium.value = imageMedium.value || image.url;
   patch('image_id', image.id);
 }
 
@@ -44,6 +73,50 @@ function onClearGeo() {
   emit('update', { lat: null, lng: null });
 }
 
+/* ─────── Selector de portfolio para el botón ─────── */
+// Detecta si la button_url actual coincide con la URL de un portfolio
+const buttonLinkMode = ref('url');   // 'url' | 'portfolio'
+const selectedPortfolioId = ref(0);
+
+function detectButtonMode() {
+  const url = props.slide.button_url || '';
+  if (!url) {
+    buttonLinkMode.value = 'url';
+    selectedPortfolioId.value = 0;
+    return;
+  }
+  // Buscar en portfolios por link o slug
+  const match = props.portfolios.find(p => {
+    if (p.link && url === p.link) return true;
+    if (p.slug && url === '/portfolio/' + p.slug + '/') return true;
+    if (p.slug && url === '/portfolio/' + p.slug) return true;
+    return false;
+  });
+  if (match) {
+    buttonLinkMode.value = 'portfolio';
+    selectedPortfolioId.value = match.id;
+  } else {
+    buttonLinkMode.value = 'url';
+    selectedPortfolioId.value = 0;
+  }
+}
+
+watch(() => [props.slide.button_url, props.portfolios.length], detectButtonMode, { immediate: true });
+
+function onPortfolioPick(idStr) {
+  const id = Number(idStr);
+  selectedPortfolioId.value = id;
+  if (!id) {
+    patch('button_url', '');
+    return;
+  }
+  const p = props.portfolios.find(x => x.id === id);
+  if (!p) return;
+  // Preferimos la URL pública real si la API la expone; fallback a /portfolio/slug/
+  const url = p.link || (p.slug ? '/portfolio/' + p.slug + '/' : '');
+  patch('button_url', url);
+}
+
 function typeLabel(t) {
   return { image: '🖼️ Imagen', video_file: '🎬 Vídeo MP4', video_embed: '▶ Embed' }[t] || t;
 }
@@ -55,7 +128,8 @@ function typeLabel(t) {
     <div class="sf-head" @click="expanded = !expanded">
       <span class="drag" title="Arrastrar para reordenar">⋮⋮</span>
       <div class="sf-thumb">
-        <span class="sf-type">{{ typeLabel(slide.type) }}</span>
+        <img v-if="slide.type === 'image' && imageThumb" :src="imageThumb" :alt="slide.title" />
+        <span v-else class="sf-type">{{ typeLabel(slide.type) }}</span>
       </div>
       <div class="sf-meta">
         <span class="sf-title">{{ slide.title || 'Slide sin título' }}</span>
@@ -86,9 +160,14 @@ function typeLabel(t) {
       <!-- Selector de medio según tipo -->
       <div v-if="slide.type === 'image'" class="field">
         <span class="muted small">Imagen</span>
+        <div class="image-preview" v-if="imageMedium || imageThumb">
+          <img :src="imageMedium || imageThumb" :alt="slide.title" />
+        </div>
         <div class="row">
-          <span class="muted">{{ slide.image_id ? 'ID #' + slide.image_id : 'Sin imagen' }}</span>
-          <button class="btn" @click="showPicker = true">📷 Elegir</button>
+          <span class="muted small" style="flex:1">
+            {{ slide.image_id ? 'ID #' + slide.image_id : 'Sin imagen' }}
+          </span>
+          <button class="btn" @click="showPicker = true">📷 {{ slide.image_id ? 'Cambiar' : 'Elegir' }}</button>
         </div>
       </div>
 
@@ -172,15 +251,49 @@ function typeLabel(t) {
             @input="patch('button_text', $event.target.value)"
           />
         </label>
-        <label class="field">
-          <span class="muted small">Enlace</span>
-          <input
-            type="text"
-            :value="slide.button_url"
-            placeholder="/portfolio/..."
-            @input="patch('button_url', $event.target.value)"
-          />
-        </label>
+      </div>
+
+      <div class="field">
+        <span class="muted small">Enlace del botón</span>
+        <div class="link-tabs" role="tablist">
+          <button
+            class="tab"
+            :class="{ active: buttonLinkMode === 'url' }"
+            @click="buttonLinkMode = 'url'"
+            type="button"
+          >🔗 URL</button>
+          <button
+            class="tab"
+            :class="{ active: buttonLinkMode === 'portfolio' }"
+            @click="buttonLinkMode = 'portfolio'"
+            type="button"
+            :disabled="!portfolios.length"
+            :title="portfolios.length ? '' : 'Cargando portfolios…'"
+          >◇ Portfolio</button>
+        </div>
+
+        <input
+          v-if="buttonLinkMode === 'url'"
+          type="text"
+          :value="slide.button_url"
+          placeholder="/contacto, https://otro.com, #ancla, etc."
+          @input="patch('button_url', $event.target.value)"
+        />
+
+        <select
+          v-else
+          :value="selectedPortfolioId"
+          @change="onPortfolioPick($event.target.value)"
+        >
+          <option :value="0">— Selecciona un portfolio —</option>
+          <option v-for="p in portfolios" :key="p.id" :value="p.id">
+            {{ p.title }}
+          </option>
+        </select>
+
+        <span v-if="slide.button_url" class="muted small">
+          → {{ slide.button_url }}
+        </span>
       </div>
 
       <!-- Estilos -->
@@ -304,8 +417,13 @@ function typeLabel(t) {
   font-size: 11px;
   color: var(--text-mute);
   flex: 0 0 60px;
+  overflow: hidden;
 }
-
+.sf-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .sf-type { font-size: 10px; }
 
 .sf-meta { flex: 1; min-width: 0; }
@@ -329,6 +447,20 @@ function typeLabel(t) {
   background: var(--bg);
 }
 
+.image-preview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--s2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.image-preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
 .field input, .field select, .field textarea {
@@ -345,6 +477,35 @@ function typeLabel(t) {
 
 .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
 .check input { accent-color: var(--accent); }
+
+/* Tabs URL / Portfolio */
+.link-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 4px;
+  width: fit-content;
+}
+.link-tabs .tab {
+  background: transparent;
+  border: 0;
+  color: var(--text-mute);
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.link-tabs .tab.active {
+  background: var(--accent);
+  color: #0f0f0f;
+}
+.link-tabs .tab:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
 
 .style-block {
   margin-top: 4px;
