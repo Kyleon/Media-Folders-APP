@@ -342,42 +342,42 @@ add_action( 'wp_enqueue_scripts', 'ypva_child_elementor_wide_styles', 100 );
  * slider de portada y de los layouts del intro section, aunque ya
  * no se renderizan en frontend.
  *
- * Cuando la plantilla activa es 'page-elementor-wide.php', filtramos
- * los metaboxes del tema que dependen de esos modos para que no
- * estorben en el editor.
+ * Kotlis registra los metaboxes con `new RW_Meta_Box(...)` directamente
+ * (sin pasar por el filtro rwmb_meta_boxes), por lo que tenemos que
+ * eliminarlos con `remove_meta_box()` después del registro.
+ *
+ * Lista de IDs extraída de kotlis-plugin/metaboxes.php — todos los
+ * paneles condicionados por intro section o page type del tema.
  */
-add_filter( 'rwmb_meta_boxes', 'ypva_child_hide_theme_metaboxes_in_elementor_wide', 999 );
-function ypva_child_hide_theme_metaboxes_in_elementor_wide( $metaboxes ) {
-    if ( ! is_admin() ) return $metaboxes;
+add_action( 'add_meta_boxes', 'ypva_child_hide_theme_metaboxes_in_elementor_wide', 999 );
+function ypva_child_hide_theme_metaboxes_in_elementor_wide() {
+    global $post;
+    if ( ! $post || $post->post_type !== 'page' ) return;
 
-    // Detectar la página actual del editor (post.php o post-new.php)
-    $post_id = 0;
-    if ( ! empty( $_GET['post'] ) ) {
-        $post_id = (int) $_GET['post'];
-    } elseif ( ! empty( $_POST['post_ID'] ) ) {
-        $post_id = (int) $_POST['post_ID'];
-    }
-    if ( ! $post_id ) return $metaboxes;
+    $template = get_post_meta( $post->ID, '_wp_page_template', true );
+    if ( $template !== 'page-elementor-wide.php' ) return;
 
-    $template = get_post_meta( $post_id, '_wp_page_template', true );
-    if ( $template !== 'page-elementor-wide.php' ) return $metaboxes;
-
-    $hide_keys = array(
-        '#rnr_wr_intro_sc_opt',
-        '#rnr_wr_pagetype',
+    $hide_ids = array(
+        // Page type (rnr_wr_pagetype)
+        'th_default_page_header_opt',
+        'th_default_page_sideblock_opt',
+        'th_default_page_header2_opt',
+        // Intro section (rnr_wr_intro_sc_opt)
+        'intro_half_slider_opt',         // st1
+        'multi_slideshow_kotlis',        // st2
+        'intro_carousel_kotlish',        // st3 (sic, así está en el plugin)
+        'intro_rev_kotlis',              // st4
+        'intro_fullscreen_image_kotlis', // st5
+        'intro_full_slider_opt',         // st6
+        'intro_slideshow_kotlis',        // st7
+        'intro_video_kotlis',            // st8
     );
 
-    return array_values( array_filter( $metaboxes, function ( $mb ) use ( $hide_keys ) {
-        $show = isset( $mb['show']['input_value'] ) && is_array( $mb['show']['input_value'] )
-            ? $mb['show']['input_value']
-            : array();
-        foreach ( $show as $key => $value ) {
-            if ( in_array( $key, $hide_keys, true ) ) {
-                return false;
-            }
-        }
-        return true;
-    } ) );
+    foreach ( $hide_ids as $id ) {
+        remove_meta_box( $id, 'page', 'normal' );
+        remove_meta_box( $id, 'page', 'advanced' );
+        remove_meta_box( $id, 'page', 'side' );
+    }
 }
 
 
