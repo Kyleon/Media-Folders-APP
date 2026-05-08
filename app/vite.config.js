@@ -6,7 +6,11 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'prompt',
+      // autoUpdate: el SW activa la nueva versión sin esperar confirmación.
+      // Cambiado desde 'prompt' tras varios despliegues en los que el
+      // banner de actualización no se mostraba en algunos clientes y
+      // dejaba la PWA atascada en una versión antigua.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt'],
       manifest: {
         name: 'Yezrael Pérez · Admin',
