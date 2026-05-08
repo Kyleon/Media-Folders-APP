@@ -197,8 +197,13 @@ function loadMore() {
   overflow-y: auto;
   align-content: start;
 }
+/* IMPORTANTE: el <button> aquí NO usa flex column. Algunos navegadores
+   (Chromium en Android entre ellos) calculan mal padding-bottom:100%
+   cuando el hijo está dentro de un flex container columnar y colapsan
+   la altura del .thumb. Con display:block todo se comporta como un
+   flujo de bloque normal. */
 .item {
-  display: flex; flex-direction: column;
+  display: block;
   width: 100%;
   background: var(--s2); border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -207,20 +212,28 @@ function loadMore() {
   position: relative;
   transition: border-color .15s;
   padding: 0;
+  /* Reset propio de <button> para que no fuerce min-height ni line-height */
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 .item:active { transform: scale(.97); }
 .item.is-sel { border-color: var(--accent); }
-/* Truco padding-bottom para mantener ratio 1:1 sin depender de aspect-ratio,
-   que puede colapsar dentro de flex/grid en algunos navegadores móviles. */
+
+/* Cuadrado fiable: padding-bottom 100% relativo al width del .item */
 .thumb {
   position: relative;
+  display: block;
   width: 100%;
-  padding-bottom: 100%;       /* ratio 1:1 fiable */
+  padding-bottom: 100%;
   background: var(--s3);
   overflow: hidden;
 }
 .thumb img {
-  position: absolute; inset: 0;
+  position: absolute;
+  top: 0; left: 0;
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
@@ -233,6 +246,7 @@ function loadMore() {
   border: 2px solid white;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; color: white;
+  z-index: 2;
 }
 .check.on {
   background: var(--accent);
@@ -240,6 +254,7 @@ function loadMore() {
   color: #0f0f0f;
 }
 .name {
+  display: block;
   padding: 4px 6px;
   font-size: 10px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
