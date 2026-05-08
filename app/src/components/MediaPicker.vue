@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue';
 import { useFoldersStore } from '../stores/folders';
 import { MediaAPI } from '../api/endpoints';
 import FolderPicker from './FolderPicker.vue';
@@ -8,6 +8,8 @@ import Spinner from './Spinner.vue';
 /**
  * Picker de imágenes en bottomsheet con browser de carpetas.
  * Soporta selección simple o múltiple y excluir IDs (ya añadidos).
+ * Carga con scroll infinito (IntersectionObserver sobre un sentinel
+ * al final del grid).
  */
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -29,6 +31,9 @@ const loading   = ref(false);
 const search    = ref('');
 const selected  = ref([]);
 
+const sentinel  = ref(null);
+let observer    = null;
+
 const folderName = computed(() => {
   if (folder.value === -1) return 'Todos los medios';
   if (folder.value === 0)  return 'Sin carpeta';
@@ -38,19 +43,29 @@ const folderName = computed(() => {
 let debounce;
 function onSearch() {
   clearTimeout(debounce);
-  debounce = setTimeout(load, 300);
+  debounce = setTimeout(() => { resetAndLoad(); }, 300);
 }
 
-watch(folder, load);
-watch(() => props.modelValue, (v) => {
+watch(folder, () => { resetAndLoad(); });
+watch(() => props.modelValue, async (v) => {
   if (v) {
     selected.value = [];
-    page.value = 1;
-    load();
+    resetAndLoad();
+    await nextTick();
+    setupObserver();
+  } else {
+    teardownObserver();
   }
 });
 
+function resetAndLoad() {
+  page.value = 1;
+  items.value = [];
+  load();
+}
+
 async function load() {
+  if (loading.value) return;
   loading.value = true;
   try {
     const res = await MediaAPI.list({
@@ -62,13 +77,52 @@ async function load() {
       order: 'DESC',
       mime: 'image',
     });
-    items.value = res.images.filter(i => !props.exclude.includes(i.id));
+    const fresh = res.images.filter(i => !props.exclude.includes(i.id));
+    if (page.value === 1) {
+      items.value = fresh;
+    } else {
+      // Concatenar evitando duplicados por id (defensa por carreras)
+      const existing = new Set(items.value.map(i => i.id));
+      items.value = items.value.concat(fresh.filter(i => !existing.has(i.id)));
+    }
     total.value = res.total;
     pages.value = res.pages;
   } finally {
     loading.value = false;
   }
 }
+
+function loadMore() {
+  if (loading.value) return;
+  if (page.value >= pages.value) return;
+  page.value++;
+  load();
+}
+
+/* ─────── IntersectionObserver para scroll infinito ─────── */
+function setupObserver() {
+  teardownObserver();
+  if (!sentinel.value) return;
+  observer = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) loadMore();
+  }, {
+    // El observer se asocia al viewport; el sheet tiene su propio scroll
+    // pero el viewport del browser cubre el sheet completo, así que
+    // visible = a punto de aparecer al hacer scroll dentro del sheet.
+    rootMargin: '300px 0px',
+    threshold: 0,
+  });
+  observer.observe(sentinel.value);
+}
+
+function teardownObserver() {
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+}
+
+onBeforeUnmount(() => teardownObserver());
 
 function toggle(img) {
   if (props.multiple) {
@@ -89,12 +143,6 @@ function confirmMulti() {
 }
 
 function close() { emit('update:modelValue', false); }
-
-function loadMore() {
-  if (page.value >= pages.value || loading.value) return;
-  page.value++;
-  load();
-}
 </script>
 
 <template>
@@ -119,10 +167,6 @@ function loadMore() {
         <div v-else-if="!items.length" class="empty muted">📭 Sin imágenes</div>
 
         <div v-else class="grid">
-          <!-- Usamos <div role=button> en lugar de <button> porque Firefox
-               (incluido Firefox de Android) aplica un flex container interno
-               al <button> que rompe el cálculo de padding-bottom:100% del
-               hijo .thumb y deja la card aplastada. -->
           <div v-for="img in items" :key="img.id"
             role="button"
             tabindex="0"
@@ -131,19 +175,20 @@ function loadMore() {
             @click="toggle(img)"
             @keydown.enter.prevent="toggle(img)"
             @keydown.space.prevent="toggle(img)">
-            <div class="thumb">
-              <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" />
-              <div v-if="multiple" class="check" :class="{ on: isSelected(img.id) }">
-                <span v-if="isSelected(img.id)">✓</span>
-              </div>
+            <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" class="thumb-img" />
+            <div v-if="multiple" class="check" :class="{ on: isSelected(img.id) }">
+              <span v-if="isSelected(img.id)">✓</span>
             </div>
             <span class="name">{{ img.title || img.filename }}</span>
           </div>
         </div>
 
-        <button v-if="page < pages" class="more-btn" @click="loadMore" :disabled="loading">
-          <Spinner v-if="loading" :size="14" /><span v-else>Cargar más ({{ items.length }} / {{ total }})</span>
-        </button>
+        <!-- Sentinel para scroll infinito -->
+        <div ref="sentinel" class="sentinel" aria-hidden="true">
+          <Spinner v-if="loading && items.length" :size="14" />
+          <span v-else-if="page < pages" class="muted small">Cargando más… ({{ items.length }} / {{ total }})</span>
+          <span v-else-if="items.length" class="muted small">{{ items.length }} / {{ total }}</span>
+        </div>
 
         <div v-if="multiple" class="footer">
           <span class="muted small">{{ selected.length }} seleccionadas</span>
@@ -158,14 +203,14 @@ function loadMore() {
   <FolderPicker v-model="showFP"
     :selected="folder"
     title="Filtrar por carpeta"
-    @pick="(id) => { folder = id; page = 1; }" />
+    @pick="(id) => { folder = id; }" />
 </template>
 
 <style scoped>
 .sheet-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.5);
-  z-index: 1350;  /* por encima de Leaflet (1000) y de cualquier mapa embebido */
+  z-index: 1350;
   display: flex; align-items: flex-end;
 }
 .sheet {
@@ -201,59 +246,49 @@ function loadMore() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 4px;
-  flex: 1;
-  overflow-y: auto;
   align-content: start;
 }
-/* Card de cada imagen. Usamos <div role=button> (no <button>) para
-   evitar el flex container interno que Firefox aplica a button y que
-   rompía el cálculo de padding-bottom:100% en el .thumb. */
+
+/* CARDS CUADRADAS — fix definitivo:
+   - aspect-ratio en el .item (el grid cell completo) garantiza
+     que cada celda es 1:1 sin importar lo que tenga dentro.
+   - El .name es overlay absoluto sobre la imagen (no añade altura).
+   - La imagen llena el .item al 100%. */
 .item {
-  display: block;
+  position: relative;
   width: 100%;
+  aspect-ratio: 1 / 1;
   background: var(--s2); border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  text-align: left;
-  position: relative;
-  transition: border-color .15s;
-  padding: 0;
   cursor: pointer;
   user-select: none;
+  transition: border-color .15s, transform .12s;
 }
+/* Fallback para navegadores sin aspect-ratio: padding-bottom hack
+   sobre un pseudo, con la imagen absoluta encima */
+@supports not (aspect-ratio: 1 / 1) {
+  .item::before {
+    content: "";
+    display: block;
+    padding-bottom: 100%;
+  }
+}
+.item:active { transform: scale(.97); }
+.item.is-sel { border-color: var(--accent); }
 .item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.item:active { transform: scale(.97); }
-.item.is-sel { border-color: var(--accent); }
 
-/* Cuadrado fiable: triple defensa
-   1) aspect-ratio (Chrome 88+, Safari 15+, Firefox 89+)
-   2) padding-bottom 100% como fallback si aspect-ratio falla
-   3) min-height por seguridad final
-   El pseudo-elemento ::before garantiza altura aunque el padding-bottom
-   se ignore en algún contexto raro. */
-.thumb {
-  position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background: var(--s3);
-  overflow: hidden;
-}
-.thumb::before {
-  content: "";
-  display: block;
-  padding-bottom: 100%;
-}
-.thumb img {
+.thumb-img {
   position: absolute;
-  top: 0; left: 0;
+  inset: 0;
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
 }
+
 .check {
   position: absolute; top: 4px; right: 4px;
   width: 22px; height: 22px;
@@ -269,17 +304,23 @@ function loadMore() {
   border-color: var(--accent);
   color: #0f0f0f;
 }
+
 .name {
-  display: block;
-  padding: 4px 6px;
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 14px 6px 4px;
   font-size: 10px;
+  color: white;
+  background: linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0));
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  z-index: 1;
 }
-.more-btn {
-  width: 100%; margin-top: 10px;
-  padding: 10px; background: var(--s2);
-  border-radius: var(--radius);
-  font-size: 13px; color: var(--text-mute);
+
+.sentinel {
+  display: flex; justify-content: center; align-items: center;
+  gap: 8px;
+  padding: 14px 8px;
+  min-height: 36px;
 }
 
 .footer {
