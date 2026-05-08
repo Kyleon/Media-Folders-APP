@@ -455,6 +455,11 @@ function typeLabel(t) {
   overflow: hidden;
   margin-bottom: 6px;
 }
+@media (min-width: 768px) {
+  .image-preview {
+    max-width: 50%;
+  }
+}
 .image-preview img {
   width: 100%; height: 100%;
   object-fit: cover;
