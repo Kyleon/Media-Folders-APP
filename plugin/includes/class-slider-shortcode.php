@@ -33,6 +33,20 @@ class YZMF_Slider_Shortcode {
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'register_assets' ] );
         // Marca el JS como module en el <script> tag
         add_filter( 'script_loader_tag', [ __CLASS__, 'add_type_module' ], 10, 3 );
+
+        // En el preview de Elementor (iframe del editor) los widgets se
+        // insertan por AJAX, así que un wp_enqueue dentro del callback del
+        // shortcode llega tarde y los assets no se aplican. Forzamos el
+        // enqueue cuando estamos en preview o en el editor.
+        add_action( 'elementor/preview/enqueue_styles',  [ __CLASS__, 'force_enqueue_assets' ] );
+        add_action( 'elementor/preview/enqueue_scripts', [ __CLASS__, 'force_enqueue_assets' ] );
+        add_action( 'elementor/editor/before_enqueue_scripts', [ __CLASS__, 'force_enqueue_assets' ] );
+    }
+
+    /** Encola los assets sin condiciones; útil en el preview de Elementor. */
+    public static function force_enqueue_assets() {
+        wp_enqueue_style( self::HANDLE_CSS );
+        wp_enqueue_script( self::HANDLE_JS );
     }
 
     public static function register_shortcode() {
