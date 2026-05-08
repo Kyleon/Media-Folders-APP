@@ -331,7 +331,58 @@ add_action( 'wp_enqueue_scripts', 'ypva_child_elementor_wide_styles', 100 );
 
 
 /* ============================================================
- *  9. EXPONER METAS DEL TEMA EN REST API
+ *  9. OCULTAR METABOXES DEL TEMA EN PÁGINAS "ELEMENTOR WIDE"
+ * ============================================================ */
+
+/**
+ * El plugin Kotlis registra metaboxes condicionados por el valor de
+ * meta keys como rnr_wr_intro_sc_opt o rnr_wr_pagetype, no por la
+ * plantilla activa. Resultado: en la portada (que usa la plantilla
+ * Elementor Pantalla Completa) siguen apareciendo los paneles del
+ * slider de portada y de los layouts del intro section, aunque ya
+ * no se renderizan en frontend.
+ *
+ * Cuando la plantilla activa es 'page-elementor-wide.php', filtramos
+ * los metaboxes del tema que dependen de esos modos para que no
+ * estorben en el editor.
+ */
+add_filter( 'rwmb_meta_boxes', 'ypva_child_hide_theme_metaboxes_in_elementor_wide', 999 );
+function ypva_child_hide_theme_metaboxes_in_elementor_wide( $metaboxes ) {
+    if ( ! is_admin() ) return $metaboxes;
+
+    // Detectar la página actual del editor (post.php o post-new.php)
+    $post_id = 0;
+    if ( ! empty( $_GET['post'] ) ) {
+        $post_id = (int) $_GET['post'];
+    } elseif ( ! empty( $_POST['post_ID'] ) ) {
+        $post_id = (int) $_POST['post_ID'];
+    }
+    if ( ! $post_id ) return $metaboxes;
+
+    $template = get_post_meta( $post_id, '_wp_page_template', true );
+    if ( $template !== 'page-elementor-wide.php' ) return $metaboxes;
+
+    $hide_keys = array(
+        '#rnr_wr_intro_sc_opt',
+        '#rnr_wr_pagetype',
+    );
+
+    return array_values( array_filter( $metaboxes, function ( $mb ) use ( $hide_keys ) {
+        $show = isset( $mb['show']['input_value'] ) && is_array( $mb['show']['input_value'] )
+            ? $mb['show']['input_value']
+            : array();
+        foreach ( $show as $key => $value ) {
+            if ( in_array( $key, $hide_keys, true ) ) {
+                return false;
+            }
+        }
+        return true;
+    } ) );
+}
+
+
+/* ============================================================
+ *  10. EXPONER METAS DEL TEMA EN REST API
  * ============================================================ */
 
 /**
