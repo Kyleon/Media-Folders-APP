@@ -1,8 +1,9 @@
 # Diseño del módulo Slider (yzmf_slider)
 
-> Documento de diseño previo a implementación.
-> Última actualización: 2026-05-07.
-> Estado: aprobado, decisiones cerradas con Yezrael. Listo para Fase 1.
+> Documento de diseño y bitácora de implementación.
+> Última actualización: 2026-05-08.
+> Estado: **Fases 1, 2, 3 y 5 implementadas y desplegadas.** Fase 4 (override
+> portada del tema) la asume Yezrael manualmente. Fase 6 cerrada.
 
 ---
 
@@ -319,49 +320,53 @@ getters:  { byId, count, dirty }
 
 ## 8. Plan de implementación
 
-### Fase 1: backend mínimo (1 sesión)
+### Fase 1: backend mínimo ✅
 
-- [ ] Crear `plugin/includes/class-slider.php` con CPT y helpers
-- [ ] Registrar el CPT desde `yz-media-folders.php`
-- [ ] Añadir endpoints REST en `class-rest.php` o en clase aparte `class-slider-rest.php`
-- [ ] Validar con curl/Postman: crear, listar, actualizar, borrar
+- [x] `plugin/includes/class-slider.php` con CPT y helpers (get_data, save_data, validate, normalize_slide, duplicate, summary).
+- [x] Registro del CPT desde `yz-media-folders.php`.
+- [x] Endpoints REST en `class-slider-rest.php` (list, create, get, update, delete, duplicate).
+- [x] Validado con curl + MCP REST en producción.
 
-### Fase 2: shortcode y assets (1 sesión)
+### Fase 2: shortcode y assets ✅
 
-- [ ] Implementar `YZMF_Slider::render($id)` que devuelve HTML
-- [ ] Crear assets: `yzmf-slider.css` + `yzmf-slider.js` (Swiper init)
-- [ ] Registrar shortcode `[yzmf_slider]`
-- [ ] Enqueue condicional (solo si hay shortcode o widget en la página)
-- [ ] Probar inserción manual del shortcode en una página
+- [x] `YZMF_Slider_Shortcode::render_html()` con HTML Swiper-friendly.
+- [x] Assets `yzmf-slider.css` + `yzmf-slider.js` (Swiper 11 como módulo ES desde jsDelivr).
+- [x] Shortcode `[yzmf_slider id="N"]` con atributos override.
+- [x] Enqueue condicional dentro del callback del shortcode.
+- [x] Probado en `/test-wide/` con un slider real.
 
-### Fase 3: PWA editor (2 sesiones)
+### Fase 3: PWA editor ✅
 
-- [ ] Store Pinia `sliders.js`
-- [ ] Vista `Sliders.vue` (listado)
-- [ ] Vista `SliderDetail.vue` con `SliderEditor` + `SliderSettings`
-- [ ] Integración con MediaPicker y GeoTagger existentes
-- [ ] Drag & drop de slides
-- [ ] Probar flujo completo desde la PWA
+- [x] Store Pinia `sliders.js` (CRUD + mutaciones locales).
+- [x] Vistas `Sliders.vue` (listado) y `SliderDetail.vue` (editor).
+- [x] Componentes `SliderSettings.vue` y `SlideForm.vue`.
+- [x] MediaPicker para imágenes, GeoTagger para ubicación, dropdown de portfolios para el botón.
+- [x] Drag & drop de slides con vuedraggable.
+- [x] Atajo Ctrl/Cmd+S, aviso al salir si hay cambios sin guardar, banner de actualización del SW (después cambiado a autoUpdate).
 
-### Fase 4: integración portada (1 sesión)
+### Fase 4: integración portada ⏭️
 
-- [ ] Override `wp/themes/ypva-child/intro/multi-slideshow.php`
-- [ ] Endpoint y botón "Asignar a portada" en la PWA
-- [ ] Verificar que el fallback al slider del tema sigue funcionando
+- [ ] Asumida por Yezrael manualmente. Cuando quiera podemos retomarla aquí.
 
-### Fase 5: widget Elementor (1 sesión)
+### Fase 5: widget Elementor ✅
 
-- [ ] Widget en `plugin/includes/elementor/widget-slider.php`
-- [ ] Registro condicional (solo si Elementor está activo)
-- [ ] Probar drag & drop del widget en una página Elementor
+- [x] `class-elementor-integration.php` registra categoría "Yezrael" condicional a Elementor.
+- [x] `includes/elementor/class-widget-slider.php` con select de slider y overrides; render delega en el shortcode.
+- [x] Probado vía sanity check del sitio + verificación de carga del plugin.
 
-### Fase 6: pulido y docs (1 sesión)
+### Fase 6: pulido y docs ✅
 
-- [ ] Documentar en `plugin/README.md` los nuevos endpoints
-- [ ] Capturas en `app/README.md`
-- [ ] Sincronizar con `scripts/sync-wp.ps1` y subir a Hostinger
+- [x] `plugin/README.md` con sección "Sliders" (modelo de datos, endpoints, shortcode, widget, ejemplos curl).
+- [x] `app/README.md` con pantallas "Sliders" y "Detalle slider" descritas.
+- [x] `README.md` raíz con tabla de endpoints actualizada y lista de pantallas a 13.
+- [x] Bump del plugin de v2.4.0 a v2.5.0.
 
-**Total estimado:** 6 sesiones de trabajo (~12 a 18 horas).
+### Mejoras y fixes que se sumaron sobre la marcha
+
+- Fix WebP del child que rompía imágenes sin conversión.
+- MediaPicker reconstruido: aspect-ratio en grid item, scroll infinito con IntersectionObserver, paginación corregida (concatena en lugar de reemplazar), miniatura del slide, selector URL/Portfolio para el botón.
+- Plantilla `page-elementor-wide.php` en el child (sesión previa, no parte de este módulo).
+- PWA con `registerType: 'autoUpdate'` para evitar que los clientes queden atascados en una build vieja.
 
 ---
 

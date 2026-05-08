@@ -15,9 +15,12 @@ Panel móvil PWA para gestionar medios y portfolios de **yezraelperez.es** vía 
 - **Medios** — galería con filtro por carpeta, búsqueda, orden, scroll infinito.
 - **Detalle medio** — editar título/alt/SEO/caption/descripción/carpeta. Generar alt+caption con IA. Ver EXIF. Copiar URL. Eliminar.
 - **Subir** — captura de cámara o picker múltiple del móvil, cola de subidas con estado por archivo.
+- **Carpetas** — gestión completa con árbol expansible y drag & drop.
 - **Portfolios** — lista paginada, búsqueda, filtro por categoría.
 - **Detalle portfolio** — editar campos, ver galería, vincular y sincronizar carpeta YZMF.
 - **Nuevo portfolio** — formulario con auto-sync de carpeta opcional.
+- **Sliders** — listado con miniatura, contador de slides y acciones (duplicar, eliminar).
+- **Detalle slider** — editor con título editable, panel de settings globales y lista de slides con drag & drop. Cada slide soporta imagen / vídeo MP4 / embed YouTube-Vimeo, textos, ubicación con GeoTagger, botón cuyo enlace puede ser URL libre o un portfolio elegido por dropdown, y bloque de estilo individual (overlay, color de texto, alineación, posición vertical, kenburns). Atajo `Ctrl/Cmd+S` para guardar y aviso al salir si hay cambios sin guardar.
 - **Mapa** — Leaflet con CRUD de ubicaciones, búsqueda de lugares (Nominatim vía proxy), reverse geocoding.
 - **Ajustes** — sesión, theme switch, limpiar cachés.
 
@@ -111,11 +114,11 @@ yezraelperez-app/
 │   ├── App.vue
 │   ├── api/
 │   │   ├── client.js       ← fetch con Basic Auth
-│   │   └── endpoints.js    ← Folders, Media, Map, Geo, Portfolios…
-│   ├── stores/             ← Pinia: auth, ui (theme/toast), folders, media, portfolios, locations
+│   │   └── endpoints.js    ← Folders, Media, Map, Geo, Portfolios, Sliders…
+│   ├── stores/             ← Pinia: auth, ui (theme/toast), folders, media, portfolios, locations, sliders
 │   ├── router/index.js
-│   ├── components/         ← AppShell, BottomNav, Toast, Spinner, ThemeSwitch
-│   ├── views/              ← 10 pantallas
+│   ├── components/         ← AppShell, BottomNav, Toast, Spinner, ThemeSwitch, MediaPicker, GeoTagger, SliderSettings, SlideForm
+│   ├── views/              ← Sliders.vue, SliderDetail.vue + el resto de pantallas
 │   └── styles/             ← tokens.css (dark/light), base.css
 └── README.md
 ```
@@ -128,4 +131,4 @@ yezraelperez-app/
 - **401 al login**: la Application Password se invalidó (al cambiar la contraseña principal del usuario, por ejemplo). Genera una nueva.
 - **Imágenes no cargan en la PWA pero sí en el sitio**: probablemente bloquea LiteSpeed. Comprueba que tu sitio sirve los archivos `wp-content/uploads/*` con `Access-Control-Allow-Origin: *` o que están servidos desde el mismo dominio raíz (que sí lo están).
 - **El mapa no muestra tiles en móvil offline**: las tiles de CARTO requieren internet; el cache del SW no las cachea. Comportamiento esperado.
-- **PWA no se actualiza**: la actualización del SW puede tardar hasta una recarga. En Ajustes → "Limpiar cachés" o hard refresh.
+- **PWA no se actualiza**: desde la v0.22 está en `registerType: 'autoUpdate'`, así que el nuevo SW activa solo al cerrar y reabrir la app. Si sigues atascado en una build muy antigua (anterior al cambio), limpia datos del sitio una sola vez en el navegador (Configuración → Sitios → `app.yezraelperez.es` → Borrar).

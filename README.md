@@ -59,14 +59,15 @@ el WP local de pruebas, y luego SFTP a Hostinger para producción.
 - **Generación de alt text + caption con IA**: integración con la API de Claude (Anthropic). Modos URL y base64.
 - **Mapa fotográfico**: CPT `yzmf_location` con coordenadas, vinculado a carpetas y fotos individuales. Shortcode `[yz_photo_map]` para frontend.
 - **Geolocalización de fotos**: meta keys `_yzmf_geo_lat/lng/place/source`. Auto-detección de GPS desde EXIF al subir.
-- **REST API completa** (namespace `yzmf/v1`): folders, media, portfolios, map, geo, stats, geocode (proxy de Nominatim).
+- **Sliders configurables**: CPT `yzmf_slider` con meta JSON (settings + slides). Cada slide soporta imagen, vídeo MP4 nativo o embed YouTube/Vimeo, textos, ubicación, botón y estilo propio (overlay, color, alineación, posición). Renderizado vía Swiper 11. Disponible como **shortcode** `[yzmf_slider id="N"]` y **widget Elementor** propio (categoría "Yezrael").
+- **REST API completa** (namespace `yzmf/v1`): folders, media, portfolios, sliders, map, geo, stats, geocode (proxy de Nominatim).
 - **Bridge con portfolios del tema kotlis**: lee y escribe correctamente los meta keys del tema (`rnr_*`) según el layout activo (st1/st2/st3/st4).
 - **CORS configurable** por orígenes para consumir la API desde una app externa.
 - **Backfill** de tamaños de archivo y schema GET/PUT para meta avanzada del tema.
 
 ### PWA (`app/`)
 
-11 pantallas:
+13 pantallas:
 
 1. **Login** — autenticación con Application Password
 2. **Dashboard** — KPIs, sparkline 30d, top carpetas, salud del catálogo
@@ -78,7 +79,9 @@ el WP local de pruebas, y luego SFTP a Hostinger para producción.
 8. **Detalle portfolio** — galería con **drag & drop reordenable**, imagen destacada (selector global o de la galería), sincronización con carpetas, **configuración avanzada** del tema kotlis (campos dinámicos según layout)
 9. **Crear portfolio** — formulario con auto-sync de carpeta opcional
 10. **Categorías de portfolio** — CRUD jerárquico
-11. **Mapa** — Leaflet con CRUD de ubicaciones, capa de fotos georreferenciadas, búsqueda con Nominatim
+11. **Sliders** — listado con miniatura y contador de slides
+12. **Detalle slider** — editor con drag & drop de slides, panel de settings globales, formulario por slide con tipo (imagen/vídeo MP4/embed), MediaPicker, GeoTagger, selector de portfolio para el botón y estilos por slide. `Ctrl/Cmd+S` para guardar.
+13. **Mapa** — Leaflet con CRUD de ubicaciones, capa de fotos georreferenciadas, búsqueda con Nominatim
 
 Características transversales:
 - Tema **dark/light** con selector
@@ -159,6 +162,9 @@ Namespace: `/wp-json/yzmf/v1/`
 | POST | `/portfolios/{id}/sync-folder` | Vincular carpeta como galería |
 | GET/PUT | `/portfolios/{id}/meta` | Schema dinámico + valores de meta del tema |
 | GET/POST | `/portfolio-categories` | Categorías |
+| GET/POST | `/sliders` | Listar / crear sliders |
+| GET/PUT/DELETE | `/sliders/{id}` | CRUD slider (data JSON con settings + slides) |
+| POST | `/sliders/{id}/duplicate` | Clonar slider |
 | GET | `/map/data` | Datos públicos del mapa (cacheable) |
 | GET/POST/PUT/DELETE | `/map/locations` | CRUD ubicaciones |
 | GET | `/geocode/search?q=` | Búsqueda Nominatim (proxy) |
