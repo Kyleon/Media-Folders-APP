@@ -119,10 +119,18 @@ function loadMore() {
         <div v-else-if="!items.length" class="empty muted">📭 Sin imágenes</div>
 
         <div v-else class="grid">
-          <button v-for="img in items" :key="img.id"
+          <!-- Usamos <div role=button> en lugar de <button> porque Firefox
+               (incluido Firefox de Android) aplica un flex container interno
+               al <button> que rompe el cálculo de padding-bottom:100% del
+               hijo .thumb y deja la card aplastada. -->
+          <div v-for="img in items" :key="img.id"
+            role="button"
+            tabindex="0"
             class="item"
             :class="{ 'is-sel': isSelected(img.id) }"
-            @click="toggle(img)">
+            @click="toggle(img)"
+            @keydown.enter.prevent="toggle(img)"
+            @keydown.space.prevent="toggle(img)">
             <div class="thumb">
               <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" />
               <div v-if="multiple" class="check" :class="{ on: isSelected(img.id) }">
@@ -130,7 +138,7 @@ function loadMore() {
               </div>
             </div>
             <span class="name">{{ img.title || img.filename }}</span>
-          </button>
+          </div>
         </div>
 
         <button v-if="page < pages" class="more-btn" @click="loadMore" :disabled="loading">
@@ -197,11 +205,9 @@ function loadMore() {
   overflow-y: auto;
   align-content: start;
 }
-/* IMPORTANTE: el <button> aquí NO usa flex column. Algunos navegadores
-   (Chromium en Android entre ellos) calculan mal padding-bottom:100%
-   cuando el hijo está dentro de un flex container columnar y colapsan
-   la altura del .thumb. Con display:block todo se comporta como un
-   flujo de bloque normal. */
+/* Card de cada imagen. Usamos <div role=button> (no <button>) para
+   evitar el flex container interno que Firefox aplica a button y que
+   rompía el cálculo de padding-bottom:100% en el .thumb. */
 .item {
   display: block;
   width: 100%;
@@ -212,12 +218,12 @@ function loadMore() {
   position: relative;
   transition: border-color .15s;
   padding: 0;
-  /* Reset propio de <button> para que no fuerce min-height ni line-height */
-  font: inherit;
-  color: inherit;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
+  user-select: none;
+}
+.item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .item:active { transform: scale(.97); }
 .item.is-sel { border-color: var(--accent); }
