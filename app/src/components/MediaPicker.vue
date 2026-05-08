@@ -228,14 +228,24 @@ function loadMore() {
 .item:active { transform: scale(.97); }
 .item.is-sel { border-color: var(--accent); }
 
-/* Cuadrado fiable: padding-bottom 100% relativo al width del .item */
+/* Cuadrado fiable: triple defensa
+   1) aspect-ratio (Chrome 88+, Safari 15+, Firefox 89+)
+   2) padding-bottom 100% como fallback si aspect-ratio falla
+   3) min-height por seguridad final
+   El pseudo-elemento ::before garantiza altura aunque el padding-bottom
+   se ignore en algún contexto raro. */
 .thumb {
   position: relative;
   display: block;
   width: 100%;
-  padding-bottom: 100%;
+  aspect-ratio: 1 / 1;
   background: var(--s3);
   overflow: hidden;
+}
+.thumb::before {
+  content: "";
+  display: block;
+  padding-bottom: 100%;
 }
 .thumb img {
   position: absolute;
