@@ -4,6 +4,20 @@ Guía para replicar el entorno de desarrollo del proyecto **Media-Folders-APP** 
 
 ---
 
+## Rutas por equipo
+
+El proyecto se desarrolla en 3 equipos. Cada uno usa una unidad distinta — los ejemplos de esta guía usan `L:` por ser el equipo intermedio, pero **sustituye la letra por la que corresponda a tu equipo**:
+
+| Equipo | Ruta del proyecto |
+|---|---|
+| Equipo C | `C:\dev\Media-Folders-APP` |
+| Equipo L (este) | `L:\dev\Media-Folders-APP` |
+| Equipo F | `F:\dev\Media-Folders-APP` |
+
+> Importante: la carpeta de Claude Code en `~/.claude/projects/` se nombra a partir de la ruta absoluta del proyecto (ej. `l--dev-Media-Folders-APP`), así que **cada equipo tiene su propia carpeta de sesiones**. La sincronización via Dropbox de `~/.claude/` mantiene visibles todas las sesiones de los 3 equipos a la vez (cada una bajo su carpeta de origen).
+
+---
+
 ## 1. Pre-requisitos a instalar
 
 | Software | Para qué | Cómo |
@@ -40,12 +54,12 @@ Cierra y abre una PowerShell nueva (sin admin) para los siguientes pasos.
 
 ## 3. Clonar el repo y arrancar el setup
 
-Usa **la misma ruta** que en el equipo principal — así Claude Code reutiliza tus sesiones sincronizadas via Dropbox sin reinventar carpetas:
+Cada equipo usa su propia letra de unidad (ver tabla "Rutas por equipo" arriba). El ejemplo de abajo usa `L:` — sustitúyela por la tuya (`C:` o `F:`):
 
 ```powershell
-# Asegúrate de que F:\dev\proyectos\ existe (ajusta a tu unidad)
-mkdir -Force F:\dev\proyectos
-cd F:\dev\proyectos
+# Asegúrate de que <UNIDAD>:\dev\ existe (sustituye la letra)
+mkdir -Force L:\dev
+cd L:\dev
 
 # Clonar (pide credenciales de GitHub la primera vez si el repo es privado)
 git clone https://github.com/Kyleon/Media-Folders-APP.git
@@ -64,7 +78,7 @@ cd Media-Folders-APP\scripts
 - **Más fácil**: instala [Git Credential Manager](https://github.com/git-ecosystem/git-credential-manager) (suele venir con Git for Windows). Te abrirá el navegador para login con tu cuenta de GitHub. Una sola vez.
 - **Alternativa**: usa un [Personal Access Token](https://github.com/settings/tokens) con scope `repo`. Cuando Git te pida la password, pega el token.
 
-> **Si tu portátil no tiene unidad `F:`** y no quieres pelearte con letras: usa `subst F: D:\` (donde `D:\` es donde tengas tus proyectos) para crear una letra virtual cada arranque. O cambia la letra de la unidad de datos en Administración de discos.
+> **Si el equipo no tiene la letra de unidad esperada** y no quieres pelearte con letras: usa `subst L: D:\` (sustituye `L:` por la letra que necesites y `D:\` por donde tengas tus proyectos) para crear una letra virtual cada arranque. O cambia la letra de la unidad de datos en Administración de discos.
 
 ---
 
@@ -90,7 +104,7 @@ Get-Item "$env:USERPROFILE\.claude" | Select Name, LinkType, Target
 A partir de aquí, abrir Claude Code en el directorio del proyecto te dará acceso a todo el historial:
 
 ```powershell
-cd F:\dev\proyectos\Media-Folders-APP
+cd L:\dev\Media-Folders-APP
 claude
 # dentro: /resume — verás todas las sesiones sincronizadas
 ```
@@ -102,7 +116,7 @@ claude
 ## 5. Instalar dependencias de la PWA
 
 ```powershell
-cd F:\dev\proyectos\Media-Folders-APP\app
+cd L:\dev\Media-Folders-APP\app
 npm install
 ```
 
@@ -123,7 +137,7 @@ npm run dev
 
 **Este paso es por equipo** — el archivo `sftp.json` no se sincroniza por seguridad (contiene la contraseña FTP).
 
-Crea `F:\dev\proyectos\Media-Folders-APP\app\.vscode\sftp.json`:
+Crea `L:\dev\Media-Folders-APP\app\.vscode\sftp.json`:
 
 ```json
 {
@@ -149,7 +163,7 @@ Reemplaza `TU_PASSWORD_FTP` por la contraseña real (la tienes en el equipo prin
 A partir de ahí, deploy a producción:
 
 ```powershell
-cd F:\dev\proyectos\Media-Folders-APP\app
+cd L:\dev\Media-Folders-APP\app
 .\deploy.ps1
 ```
 
@@ -166,7 +180,7 @@ Si quieres también probar el plugin contra un WordPress en el portátil (no sol
    ```powershell
    $wp = "C:\ruta\a\tu\wp-local\wp-content\plugins"
    cd $wp
-   cmd /c mklink /J yz-media-folders "F:\dev\proyectos\Media-Folders-APP\plugin"
+   cmd /c mklink /J yz-media-folders "L:\dev\Media-Folders-APP\plugin"
    ```
 5. Activa el plugin en `wp-admin → Plugins`.
 
@@ -187,7 +201,7 @@ Para tener las mismas extensiones, atajos, settings, theme, etc:
 ## 9. Comprobación final
 
 ```powershell
-cd F:\dev\proyectos\Media-Folders-APP
+cd L:\dev\Media-Folders-APP
 
 # Repo en orden
 git status                  # working tree clean
@@ -211,7 +225,7 @@ Cada vez que cambies de equipo:
 
 ```powershell
 # Antes de empezar a trabajar
-cd F:\dev\proyectos\Media-Folders-APP
+cd L:\dev\Media-Folders-APP
 git pull
 
 # Trabaja normalmente...
@@ -246,7 +260,7 @@ npm install
 
 - Verifica que Dropbox haya bajado completamente la carpeta `.claude` (no en modo "online only").
 - Comprueba que el junction está bien: `Get-Item ~/.claude | Select LinkType, Target` debe mostrar `Junction`.
-- Asegúrate de abrir Claude Code en **la misma ruta absoluta** del proyecto (`F:\dev\proyectos\Media-Folders-APP`).
+- Asegúrate de abrir Claude Code en la **ruta absoluta del proyecto en este equipo** (la que corresponda según la tabla "Rutas por equipo": `C:\dev\Media-Folders-APP`, `L:\dev\Media-Folders-APP` o `F:\dev\Media-Folders-APP`). Cada equipo tiene su propia carpeta de sesiones bajo `~/.claude/projects/`, todas visibles via Dropbox.
 
 ### Conflictos de Dropbox en `.claude/`
 
