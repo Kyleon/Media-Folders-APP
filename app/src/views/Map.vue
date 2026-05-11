@@ -82,6 +82,7 @@ function togglePhotos() {
   renderPhotoLayer();
 }
 
+
 onBeforeUnmount(() => {
   if (map.value) map.value.remove();
 });
@@ -258,7 +259,10 @@ function toggleFolder(id) {
     <div v-if="photoPreview" class="photo-preview" @click.self="photoPreview = null">
       <div class="pp-card">
         <button class="pp-close" @click="photoPreview = null">✕</button>
-        <img v-if="photoPreview.thumb" :src="photoPreview.thumb" :alt="photoPreview.title" />
+        <img v-if="photoPreview.large || photoPreview.medium || photoPreview.thumb"
+          :src="photoPreview.large || photoPreview.medium || photoPreview.thumb"
+          :alt="photoPreview.alt || photoPreview.title"
+          loading="lazy" />
         <div class="pp-body">
           <div class="pp-title">{{ photoPreview.title }}</div>
           <div v-if="photoPreview.place" class="pp-place muted small">📍 {{ photoPreview.place }}</div>
@@ -388,7 +392,7 @@ function toggleFolder(id) {
   padding: 20px;
 }
 .pp-card {
-  width: 100%; max-width: 320px;
+  width: 100%; max-width: 360px;
   background: var(--s1);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -396,6 +400,8 @@ function toggleFolder(id) {
   position: relative;
   box-shadow: var(--shadow);
 }
+@media (min-width: 768px)  { .pp-card { max-width: 520px; } }
+@media (min-width: 1280px) { .pp-card { max-width: 720px; } }
 .pp-close {
   position: absolute; top: 8px; right: 8px;
   width: 28px; height: 28px;
@@ -405,7 +411,13 @@ function toggleFolder(id) {
   font-size: 14px;
   z-index: 1;
 }
-.pp-card img { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+.pp-card img {
+  width: 100%;
+  max-height: min(60vh, 480px);
+  object-fit: contain;
+  background: var(--s2);
+  display: block;
+}
 .pp-body { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
 .pp-title { font-size: 14px; font-weight: 500; }
 .pp-place { font-size: 11px; }

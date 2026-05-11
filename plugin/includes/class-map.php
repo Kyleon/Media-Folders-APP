@@ -205,7 +205,7 @@ class YZMF_Map {
         // Primero fotos individuales (prioridad visual)
         foreach ( $photo_ids as $id ) {
             if ( count($urls) >= $limit ) break;
-            $url = wp_get_attachment_image_url( $id, 'medium' );
+            $url = wp_get_attachment_image_url( $id, 'thumbnail' );
             if ( $url ) { $urls[] = $url; $seen[$id] = 1; }
         }
 
@@ -219,7 +219,7 @@ class YZMF_Map {
             foreach ( $atts as $a ) {
                 if ( count($urls) >= $limit ) break;
                 if ( isset($seen[$a->ID]) ) continue;
-                $url = wp_get_attachment_image_url( $a->ID, 'medium' );
+                $url = wp_get_attachment_image_url( $a->ID, 'thumbnail' );
                 if ( $url ) $urls[] = $url;
             }
         }

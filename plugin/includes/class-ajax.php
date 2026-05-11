@@ -223,6 +223,10 @@ class YZMF_Ajax {
         if ( is_int( $att ) ) $att = get_post( $att );
         $thumb = wp_get_attachment_image_src( $att->ID, 'thumbnail' );
         $med   = wp_get_attachment_image_src( $att->ID, 'medium_large' );
+        // 'large' (1024x1024 WP por defecto) para pantallas grandes en la PWA.
+        // Si la imagen es más pequeña que 'large', WP devuelve el original.
+        $large = wp_get_attachment_image_src( $att->ID, 'large' );
+        $full  = wp_get_attachment_image_src( $att->ID, 'full' );
         $meta  = wp_get_attachment_metadata( $att->ID ) ?: [];
         $path  = get_attached_file( $att->ID );
         $size  = ( $path && file_exists( $path ) ) ? filesize( $path ) : 0;
@@ -259,9 +263,11 @@ class YZMF_Ajax {
             'title'      => $att->post_title,
             'filename'   => basename( $path ?: '' ),
             'mime'       => $att->post_mime_type,
-            'thumb'      => $thumb  ? $thumb[0]  : '',
-            'medium'     => $med    ? $med[0]    : '',
-            'url'        => wp_get_attachment_url( $att->ID ),
+            'thumb'      => $thumb  ? $thumb[0]  : '',           // 150x150
+            'medium'     => $med    ? $med[0]    : '',           // ~768
+            'large'      => $large  ? $large[0]  : '',           // ~1024
+            'full'       => $full   ? $full[0]   : wp_get_attachment_url( $att->ID ), // tamaño original
+            'url'        => wp_get_attachment_url( $att->ID ),   // tamaño original (alias)
             'width'      => (int) ( $meta['width']  ?? 0 ),
             'height'     => (int) ( $meta['height'] ?? 0 ),
             'filesize'   => $size,

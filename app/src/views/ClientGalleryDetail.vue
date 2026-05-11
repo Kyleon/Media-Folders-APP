@@ -385,7 +385,7 @@ async function copyFavoritesToClipboard() {
         @end="onReorder">
         <template #item="{ element: img }">
           <div class="img-card">
-            <img :src="img.thumb" :alt="img.alt || img.title" loading="lazy" draggable="false" />
+            <img :src="img.full || img.url || img.thumb" :alt="img.alt || img.title" loading="lazy" draggable="false" />
             <button class="img-rm" @click="removeImage(img.id)" title="Quitar de galería">✕</button>
           </div>
         </template>
@@ -450,7 +450,7 @@ async function copyFavoritesToClipboard() {
 
         <div v-else class="act-list">
           <div v-for="a in actions" :key="a.id" class="act-row">
-            <img v-if="a.thumb" :src="a.thumb" class="act-thumb" />
+            <img v-if="a.thumb || a.full" :src="a.full || a.url || a.thumb" class="act-thumb" />
             <div class="act-icon" v-else>{{ a.type === 'favorite' ? '★' : '💬' }}</div>
             <div class="act-body">
               <div class="act-line">

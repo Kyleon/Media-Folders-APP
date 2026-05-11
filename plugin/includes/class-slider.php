@@ -271,7 +271,7 @@ class YZMF_Slider {
         $data       = self::get_data( $id );
         $slide_cnt  = count( $data['slides'] );
         $thumb_id   = (int) get_post_meta( $id, self::META_THUMB, true );
-        $thumb_url  = $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium' ) : null;
+        $thumb_url  = $thumb_id ? wp_get_attachment_url( $thumb_id ) : null;
 
         return [
             'id'           => $id,

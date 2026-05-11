@@ -51,6 +51,30 @@ add_action( 'plugins_loaded', function () {
     YZMF_Elementor_Integration::init();
 } );
 
+/**
+ * Invalida los transients de stats/tags/colors cuando hay cambios que
+ * afectan a sus números. Así DashLatest, DashHeatmap y los KPIs reflejan
+ * al instante una subida, borrado, edición o asignación a carpeta.
+ */
+if ( ! function_exists( 'yzmf_bust_stats_cache' ) ) {
+    function yzmf_bust_stats_cache() {
+        delete_transient( 'yzmf_stats_cache' );
+        delete_transient( 'yzmf_stats_exif_cache' );
+        delete_transient( 'yzmf_tags_cache' );
+        delete_transient( 'yzmf_colors_cache' );
+    }
+}
+add_action( 'add_attachment',      'yzmf_bust_stats_cache' );
+add_action( 'delete_attachment',   'yzmf_bust_stats_cache' );
+add_action( 'edit_attachment',     'yzmf_bust_stats_cache' );
+add_action( 'save_post_portfolio', 'yzmf_bust_stats_cache' );
+add_action( 'edited_term', function ( $term_id, $tt_id, $taxonomy ) {
+    if ( $taxonomy === YZMF_TAXONOMY ) yzmf_bust_stats_cache();
+}, 10, 3 );
+add_action( 'created_term', function ( $term_id, $tt_id, $taxonomy ) {
+    if ( $taxonomy === YZMF_TAXONOMY ) yzmf_bust_stats_cache();
+}, 10, 3 );
+
 register_activation_hook( __FILE__, function () {
     // La taxonomía se registra en init; aquí solo refrescamos rewrite rules.
     flush_rewrite_rules();
