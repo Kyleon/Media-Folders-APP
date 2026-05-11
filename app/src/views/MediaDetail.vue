@@ -212,6 +212,7 @@ onBeforeUnmount(() => {
 
 const exifEntries = computed(() => Object.entries(item.value?.exif || {}));
 
+
 const folderName = computed(() => {
   if (!folderId.value) return '— Sin carpeta —';
   return folders.byId[folderId.value]?.name || '?';
@@ -295,7 +296,10 @@ watch(() => props.id, async (newId) => {
   <div v-else-if="item" class="md-layout">
     <div class="md-col md-col-left">
       <div class="hero" @touchstart.passive="onTouchStart" @touchend="onTouchEnd">
-        <img v-if="(item.mime || '').startsWith('image/')" :src="item.medium || item.url" :alt="item.title" />
+        <img v-if="(item.mime || '').startsWith('image/')"
+          :src="item.full || item.url"
+          :alt="item.alt || item.title"
+          loading="eager" />
         <div v-else class="hero-icon">📎</div>
 
         <!-- Botones flotantes prev/next -->

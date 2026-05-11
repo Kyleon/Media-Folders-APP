@@ -173,13 +173,16 @@ class YZMF_CP_REST {
     }
 
     private static function format_image( $att_id ) {
+        $full = wp_get_attachment_url( $att_id );
         return [
             'id'      => (int) $att_id,
             'title'   => get_the_title( $att_id ),
             'alt'     => (string) get_post_meta( $att_id, '_wp_attachment_image_alt', true ),
-            'thumb'   => wp_get_attachment_image_url( $att_id, 'medium' ),
-            'medium'  => wp_get_attachment_image_url( $att_id, 'large' ),
-            'url'     => wp_get_attachment_url( $att_id ),
+            'thumb'   => wp_get_attachment_image_url( $att_id, 'thumbnail' ) ?: $full,  // mosaicos
+            'medium'  => wp_get_attachment_image_url( $att_id, 'medium' )    ?: $full,
+            'large'   => wp_get_attachment_image_url( $att_id, 'large' )     ?: $full,
+            'full'    => $full,
+            'url'     => $full,                                                          // alias
         ];
     }
 
@@ -432,12 +435,15 @@ class YZMF_CP_REST {
             $payload = $a->post_content;
             $decoded = $payload ? @json_decode( $payload, true ) : null;
             $att_path = $att_id ? get_attached_file( $att_id ) : '';
+            $att_full = $att_id ? wp_get_attachment_url( $att_id ) : '';
             $out[] = [
                 'id'        => $a->ID,
                 'date'      => get_the_date( 'c', $a ),
                 'type'      => $type,
                 'att_id'    => $att_id,
-                'thumb'     => wp_get_attachment_image_url( $att_id, 'thumbnail' ),
+                'thumb'     => wp_get_attachment_image_url( $att_id, 'thumbnail' ) ?: $att_full,
+                'full'      => $att_full,
+                'url'       => $att_full,
                 'filename'  => $att_path ? basename( $att_path ) : '',
                 'att_title' => get_the_title( $att_id ),
                 'payload'   => is_array( $decoded ) ? $decoded : $payload,

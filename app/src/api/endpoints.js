@@ -67,7 +67,7 @@ export const PortfoliosAPI = {
 };
 
 export const StatsAPI = {
-  get:    () => api.get(NS + 'stats'),
+  get:    (opts = {}) => api.get(NS + 'stats', opts.fresh ? { fresh: 1 } : {}),
   exif:   () => api.get(NS + 'stats/exif'),
   tags:   () => api.get(NS + 'tags'),
   colors: () => api.get(NS + 'colors'),

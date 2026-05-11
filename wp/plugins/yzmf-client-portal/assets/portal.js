@@ -206,7 +206,7 @@
       <div class="cp-lb-img-wrap">
         <button class="cp-lb-close" id="lb-close">✕</button>
         <button class="cp-lb-nav prev" id="lb-prev">‹</button>
-        <img class="cp-lb-img" id="lb-img" src="${img.medium}" alt="" />
+        <img class="cp-lb-img" id="lb-img" src="${img.full || img.url || img.medium}" alt="" />
         <button class="cp-lb-nav next" id="lb-next">›</button>
       </div>
       <div class="cp-lb-bar">
@@ -248,7 +248,7 @@
     const newIdx = (state.lightboxIdx + delta + state.images.length) % state.images.length;
     state.lightboxIdx = newIdx;
     const img = state.images[newIdx];
-    document.getElementById('lb-img').src = img.medium;
+    document.getElementById('lb-img').src = img.full || img.url || img.medium;
     document.getElementById('lb-counter').textContent = `${newIdx + 1} / ${state.images.length}`;
     const fav = document.getElementById('lb-fav');
     if (fav) fav.textContent = state.favs.has(img.id) ? '★ Favorita' : '☆ Marcar favorita';

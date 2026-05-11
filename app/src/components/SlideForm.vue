@@ -26,8 +26,10 @@ async function loadImageInfo(id) {
   }
   try {
     const data = await MediaAPI.detail(id);
-    imageThumb.value  = data.thumb  || data.url || '';
-    imageMedium.value = data.medium || data.url || data.thumb || '';
+    // El usuario quiere preview a máxima resolución (archivo original).
+    const fullUrl = data.full || data.url || '';
+    imageThumb.value  = fullUrl;
+    imageMedium.value = fullUrl;
   } catch {
     imageThumb.value = '';
     imageMedium.value = '';
@@ -56,10 +58,12 @@ function patchStyle(field, value) {
 
 function onPickImage(image) {
   showPicker.value = false;
-  // Aprovechamos las URLs ya disponibles del picker para evitar refetch
-  if (image.thumb)  imageThumb.value  = image.thumb;
-  if (image.medium) imageMedium.value = image.medium;
-  if (image.url)    imageMedium.value = imageMedium.value || image.url;
+  // Preview a máxima resolución desde el picker
+  const fullUrl = image.full || image.url || '';
+  if (fullUrl) {
+    imageThumb.value  = fullUrl;
+    imageMedium.value = fullUrl;
+  }
   patch('image_id', image.id);
 }
 

@@ -745,12 +745,24 @@ class YZMF_REST {
             $lat = get_post_meta( $id, '_yzmf_geo_lat', true );
             $lng = get_post_meta( $id, '_yzmf_geo_lng', true );
             if ( $lat === '' || $lng === '' ) continue;
+            // Servimos varios tamaños:
+            //  - thumb (150) para mosaicos
+            //  - medium (~768) y large (~1024) intermedios
+            //  - full = archivo original tal cual lo subió el usuario
+            // Cuando un tamaño intermedio no existe, WP devuelve el original,
+            // así que los fallbacks se gestionan en el cliente.
+            $full = wp_get_attachment_url( $id );
             $out[] = [
                 'id'     => $id,
                 'lat'    => (float) $lat,
                 'lng'    => (float) $lng,
-                'thumb'  => wp_get_attachment_image_url( $id, 'thumbnail' ),
+                'thumb'  => wp_get_attachment_image_url( $id, 'thumbnail' ) ?: $full,
+                'medium' => wp_get_attachment_image_url( $id, 'medium' )    ?: $full,
+                'large'  => wp_get_attachment_image_url( $id, 'large' )     ?: $full,
+                'full'   => $full,
+                'url'    => $full,                                                        // alias
                 'title'  => get_the_title( $id ),
+                'alt'    => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
                 'place'  => get_post_meta( $id, '_yzmf_geo_place', true ),
                 'source' => get_post_meta( $id, '_yzmf_geo_source', true ) ?: 'manual',
             ];
@@ -828,10 +840,14 @@ class YZMF_REST {
     public static function get_stats( WP_REST_Request $req ) {
         global $wpdb;
 
-        // Cache 5 min — los stats no necesitan ser exactos al segundo
-        $cache = get_transient( 'yzmf_stats_cache' );
-        if ( $cache !== false ) {
-            return rest_ensure_response( $cache );
+        // Cache corto. Si llega ?fresh=1 (PullRefresh en la PWA), saltamos
+        // el cache para devolver datos al instante.
+        $force_fresh = (bool) $req->get_param( 'fresh' );
+        if ( ! $force_fresh ) {
+            $cache = get_transient( 'yzmf_stats_cache' );
+            if ( $cache !== false ) {
+                return rest_ensure_response( $cache );
+            }
         }
 
         $totals = [
@@ -964,7 +980,8 @@ class YZMF_REST {
             ],
         ];
 
-        set_transient( 'yzmf_stats_cache', $stats, 5 * MINUTE_IN_SECONDS );
+        // Cache corto (60s) — el PullRefresh con ?fresh=1 lo salta
+        set_transient( 'yzmf_stats_cache', $stats, 60 );
         return rest_ensure_response( $stats );
     }
 

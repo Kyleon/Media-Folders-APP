@@ -510,7 +510,7 @@ class YZMF_Portfolio_Bridge {
             'edit_url'     => get_edit_post_link( $p->ID, 'raw' ),
             'layout'       => $layout,
             'hero_id'      => $hero_id,
-            'hero_url'     => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium_large' ) : '',
+            'hero_url'     => $thumb_id ? wp_get_attachment_url( $thumb_id ) : '',
             'thumb_source' => $hero_id ? 'featured' : ( $thumb_id ? 'gallery' : 'none' ),
             'categories'   => $cats_arr,
             'linked_folder' => $linked ?: null,

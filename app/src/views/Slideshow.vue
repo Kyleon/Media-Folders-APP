@@ -33,8 +33,9 @@ async function loadItems() {
 
     if (portfolio) {
       const r = await PortfoliosAPI.gallery(portfolio);
+      // Portfolio gallery: g.url ya es el archivo original
       items.value = (r.gallery || []).map(g => ({
-        id: g.id, src: g.url || g.medium || g.thumb,
+        id: g.id, src: g.url,
         title: g.title, alt: g.alt, caption: g.caption,
       }));
     } else if (ids) {
@@ -49,8 +50,11 @@ async function loadItems() {
       const params = { per_page: 200, mime: 'image', orderby: 'date', order: orderQ };
       if (folder !== undefined && folder !== '') params.folder = parseInt(folder, 10);
       const r = await MediaAPI.list(params);
+      // Slideshow siempre a máxima resolución (archivo original)
       items.value = (r.images || []).map(it => ({
-        id: it.id, src: it.medium || it.url, title: it.title, alt: it.alt, caption: it.caption,
+        id: it.id,
+        src: it.full || it.url,
+        title: it.title, alt: it.alt, caption: it.caption,
       }));
     }
   } finally {

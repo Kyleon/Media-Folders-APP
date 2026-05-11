@@ -27,12 +27,12 @@ const latestRef  = ref(null);
 const miniMapRef = ref(null);
 const paletteRef = ref(null);
 
-async function load() {
+async function load(fresh = false) {
   loading.value = true;
   statsError.value = false;
   try {
     const [s, t] = await Promise.all([
-      StatsAPI.get(),
+      StatsAPI.get({ fresh }),
       StatsAPI.tags().catch(() => []),
     ]);
     stats.value = s;
@@ -48,7 +48,7 @@ async function load() {
 }
 
 async function refreshAll() {
-  await load();
+  await load(true); // bypass del cache server-side
   latestRef.value?.refresh?.();
   miniMapRef.value?.refresh?.();
   paletteRef.value?.refresh?.();
