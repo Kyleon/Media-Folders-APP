@@ -110,6 +110,11 @@ class YZMF_Map {
         update_post_meta( $id, '_yzmf_photo_ids',  array_map( 'intval', (array)( $d['photo_ids']   ?? [] ) ) );
         if ( ! empty( $d['hero_id'] ) ) set_post_thumbnail( $id, intval( $d['hero_id'] ) );
 
+        // Portfolios vinculados (escribe el meta location_id en cada portfolio)
+        if ( isset( $d['portfolio_ids'] ) && class_exists( 'YZMF_Portfolio_Bridge' ) ) {
+            YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $d['portfolio_ids'] );
+        }
+
         delete_transient( 'yzmf_map_public_data' );
         wp_send_json_success( [ 'id' => $id ] );
     }
@@ -150,20 +155,34 @@ class YZMF_Map {
                 $u = wp_get_attachment_image_url( $pid, 'thumbnail' );
                 if ( $u ) $photo_thumbs[] = [ 'id' => $pid, 'url' => $u ];
             }
+            // Portfolios vinculados (relación viceversa, derivada del meta del portfolio)
+            $portfolio_ids = class_exists( 'YZMF_Portfolio_Bridge' )
+                ? YZMF_Portfolio_Bridge::get_portfolios_by_location( $p->ID )
+                : [];
+            $portfolios_brief = [];
+            foreach ( $portfolio_ids as $pid ) {
+                $portfolios_brief[] = [
+                    'id'       => $pid,
+                    'title'    => get_the_title( $pid ),
+                    'hero_url' => get_the_post_thumbnail_url( $pid, 'thumbnail' ) ?: '',
+                ];
+            }
             $out[] = [
-                'id'           => $p->ID,
-                'name'         => $p->post_title,
-                'tag'          => get_post_meta( $p->ID, '_yzmf_tag',         true ),
-                'description'  => get_post_meta( $p->ID, '_yzmf_description', true ),
-                'gallery_url'  => get_post_meta( $p->ID, '_yzmf_gallery_url', true ),
-                'lat'          => (float) get_post_meta( $p->ID, '_yzmf_lat', true ),
-                'lng'          => (float) get_post_meta( $p->ID, '_yzmf_lng', true ),
-                'folder_ids'   => $folder_ids,
-                'photo_ids'    => $photo_ids,
-                'photo_thumbs' => $photo_thumbs,
-                'hero_id'      => $hero_id,
-                'hero_url'     => $hero_id ? wp_get_attachment_image_url( $hero_id, 'thumbnail' ) : '',
-                'count'        => self::count_images( $folder_ids, $photo_ids ),
+                'id'            => $p->ID,
+                'name'          => $p->post_title,
+                'tag'           => get_post_meta( $p->ID, '_yzmf_tag',         true ),
+                'description'   => get_post_meta( $p->ID, '_yzmf_description', true ),
+                'gallery_url'   => get_post_meta( $p->ID, '_yzmf_gallery_url', true ),
+                'lat'           => (float) get_post_meta( $p->ID, '_yzmf_lat', true ),
+                'lng'           => (float) get_post_meta( $p->ID, '_yzmf_lng', true ),
+                'folder_ids'    => $folder_ids,
+                'photo_ids'     => $photo_ids,
+                'photo_thumbs'  => $photo_thumbs,
+                'portfolio_ids' => $portfolio_ids,
+                'portfolios'    => $portfolios_brief,
+                'hero_id'       => $hero_id,
+                'hero_url'      => $hero_id ? wp_get_attachment_image_url( $hero_id, 'thumbnail' ) : '',
+                'count'         => self::count_images( $folder_ids, $photo_ids ),
             ];
         }
         return $out;

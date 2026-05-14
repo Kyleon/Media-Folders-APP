@@ -25,7 +25,8 @@ class YZMF_Portfolio_Bridge {
     const NS    = 'yzmf/v1';
     const CPT   = 'portfolio';
     const TAX   = 'portfolio_category';
-    const META_LINKED_FOLDER = '_yzmf_linked_folder';
+    const META_LINKED_FOLDER   = '_yzmf_linked_folder';
+    const META_LINKED_LOCATION = '_yzmf_location_id';
 
     /** Mapa layout → meta key de galería. */
     public static function gallery_meta_key( $layout ) {
@@ -166,6 +167,12 @@ class YZMF_Portfolio_Bridge {
         register_rest_route( self::NS, '/portfolios/(?P<id>\d+)/duplicate', [
             'methods'             => 'POST',
             'callback'            => [ __CLASS__, 'duplicate_portfolio' ],
+            'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+        ] );
+
+        register_rest_route( self::NS, '/portfolios/geo/all', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'list_portfolios_with_geo' ],
             'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
         ] );
 
@@ -328,6 +335,16 @@ class YZMF_Portfolio_Bridge {
             if ( $f > 0 ) update_post_meta( $id, self::META_LINKED_FOLDER, $f );
             else          delete_post_meta( $id, self::META_LINKED_FOLDER );
         }
+        // Ubicación vinculada (mapa). 0/'' la quita; valida que sea un yzmf_location existente.
+        if ( $req->get_param( 'location_id' ) !== null ) {
+            $loc = intval( $req->get_param( 'location_id' ) );
+            if ( $loc > 0 && class_exists( 'YZMF_Map' ) && get_post_type( $loc ) === YZMF_Map::CPT ) {
+                update_post_meta( $id, self::META_LINKED_LOCATION, $loc );
+            } else {
+                delete_post_meta( $id, self::META_LINKED_LOCATION );
+            }
+            delete_transient( 'yzmf_map_public_data' );
+        }
     }
 
     /* ─────────── GALLERY ─────────── */
@@ -427,6 +444,118 @@ class YZMF_Portfolio_Bridge {
         ] );
     }
 
+    /* ─────────── GEO (mapa) ─────────── */
+
+    /**
+     * Devuelve todos los portfolios asociados a una ubicación, con coordenadas
+     * resueltas desde la propia ubicación. Para pintar en el mapa.
+     * Estructura por item: { id, title, hero_url, location_id, location_name, lat, lng, permalink, status }
+     */
+    public static function list_portfolios_with_geo( WP_REST_Request $req ) {
+        $q = new WP_Query( [
+            'post_type'      => self::CPT,
+            'post_status'    => [ 'publish', 'draft', 'private', 'pending' ],
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'meta_query'     => [ [ 'key' => self::META_LINKED_LOCATION, 'compare' => 'EXISTS' ] ],
+            'no_found_rows'  => true,
+        ] );
+
+        if ( empty( $q->posts ) ) return rest_ensure_response( [] );
+
+        update_meta_cache( 'post', $q->posts );
+
+        // Cache de coords por location_id para no rehacer el get_post_meta por cada portfolio
+        $coord_cache = [];
+
+        $out = [];
+        foreach ( $q->posts as $pid ) {
+            $loc = (int) get_post_meta( $pid, self::META_LINKED_LOCATION, true );
+            if ( ! $loc ) continue;
+            if ( ! isset( $coord_cache[ $loc ] ) ) {
+                if ( get_post_type( $loc ) !== ( class_exists( 'YZMF_Map' ) ? YZMF_Map::CPT : 'yzmf_location' ) ) {
+                    $coord_cache[ $loc ] = false;
+                } else {
+                    $lat = get_post_meta( $loc, '_yzmf_lat', true );
+                    $lng = get_post_meta( $loc, '_yzmf_lng', true );
+                    $coord_cache[ $loc ] = ( $lat === '' || $lng === '' ) ? false : [
+                        'lat'  => (float) $lat,
+                        'lng'  => (float) $lng,
+                        'name' => get_the_title( $loc ),
+                    ];
+                }
+            }
+            $c = $coord_cache[ $loc ];
+            if ( ! $c ) continue;
+
+            $hero_id = (int) get_post_thumbnail_id( $pid );
+            $thumb_id = $hero_id;
+            if ( ! $thumb_id ) {
+                $layout = get_post_meta( $pid, 'rnr_wr_port_dt_opt', true ) ?: 'st1';
+                $gal    = self::read_gallery_meta( $pid, self::gallery_meta_key( $layout ) );
+                $thumb_id = $gal[0] ?? 0;
+            }
+
+            $out[] = [
+                'id'            => $pid,
+                'title'         => get_the_title( $pid ),
+                'permalink'     => get_permalink( $pid ),
+                'status'        => get_post_status( $pid ),
+                'lat'           => $c['lat'],
+                'lng'           => $c['lng'],
+                'location_id'   => $loc,
+                'location_name' => $c['name'],
+                'hero_url'      => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'medium' ) : '',
+                'thumb'         => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'thumbnail' ) : '',
+            ];
+        }
+        return rest_ensure_response( $out );
+    }
+
+    /**
+     * Lista los IDs de portfolios vinculados a una ubicación dada.
+     * Lo usa YZMF_Map para exponer la relación viceversa.
+     */
+    public static function get_portfolios_by_location( $location_id ) {
+        $location_id = intval( $location_id );
+        if ( ! $location_id ) return [];
+        $q = new WP_Query( [
+            'post_type'      => self::CPT,
+            'post_status'    => [ 'publish', 'draft', 'private', 'pending' ],
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'meta_query'     => [ [
+                'key'   => self::META_LINKED_LOCATION,
+                'value' => $location_id,
+                'type'  => 'NUMERIC',
+            ] ],
+            'no_found_rows'  => true,
+        ] );
+        return array_map( 'intval', $q->posts );
+    }
+
+    /**
+     * Vincula/desvincula una lista de portfolios a una ubicación.
+     * - Cada portfolio en $ids quedará apuntando a $location_id (intval).
+     * - Los que estaban previamente vinculados a esta ubicación pero ya no
+     *   aparecen en $ids, quedan desvinculados (delete del meta).
+     */
+    public static function set_portfolios_for_location( $location_id, $ids ) {
+        $location_id = intval( $location_id );
+        if ( ! $location_id ) return;
+        $new = array_values( array_unique( array_filter( array_map( 'intval', (array) $ids ) ) ) );
+        $current = self::get_portfolios_by_location( $location_id );
+
+        foreach ( array_diff( $current, $new ) as $pid ) {
+            delete_post_meta( $pid, self::META_LINKED_LOCATION );
+        }
+        foreach ( $new as $pid ) {
+            if ( get_post_type( $pid ) === self::CPT ) {
+                update_post_meta( $pid, self::META_LINKED_LOCATION, $location_id );
+            }
+        }
+    }
+
     /* ─────────── CATEGORIES ─────────── */
 
     public static function list_categories( WP_REST_Request $req ) {
@@ -486,6 +615,7 @@ class YZMF_Portfolio_Bridge {
         $hero_id  = (int) get_post_thumbnail_id( $p->ID );
         $layout   = get_post_meta( $p->ID, 'rnr_wr_port_dt_opt', true ) ?: 'st1';
         $linked   = (int) get_post_meta( $p->ID, self::META_LINKED_FOLDER, true );
+        $loc_id   = (int) get_post_meta( $p->ID, self::META_LINKED_LOCATION, true );
 
         $cats = wp_get_object_terms( $p->ID, self::TAX, [ 'fields' => 'all' ] );
         $cats_arr = is_wp_error( $cats ) ? [] : array_map( function( $t ) {
@@ -514,6 +644,7 @@ class YZMF_Portfolio_Bridge {
             'thumb_source' => $hero_id ? 'featured' : ( $thumb_id ? 'gallery' : 'none' ),
             'categories'   => $cats_arr,
             'linked_folder' => $linked ?: null,
+            'location_id'   => $loc_id ?: null,
         ];
 
         if ( $detailed ) {

@@ -64,6 +64,7 @@ export const PortfoliosAPI = {
   duplicate: (id, body = {}) => api.post(NS + 'portfolios/' + id + '/duplicate', body),
   getMeta:    (id)              => api.get(NS + 'portfolios/' + id + '/meta'),
   setMeta:    (id, values)      => api.put(NS + 'portfolios/' + id + '/meta', { values }),
+  listGeo:    ()                => api.get(NS + 'portfolios/geo/all'),
 };
 
 export const StatsAPI = {

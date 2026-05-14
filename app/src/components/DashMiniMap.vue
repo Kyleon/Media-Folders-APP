@@ -102,6 +102,13 @@ defineExpose({ refresh: load });
   overflow: hidden;
   background: var(--s2);
   pointer-events: none;
+  /* Leaflet usa z-index hasta 700 en sus tile/marker/popup panes y por defecto
+     no crea un stacking context (solo position:relative). Sin esto los tiles
+     se cuelan por encima del bottom-nav (z-index 50) cuando el card scrollea
+     hasta esa zona. isolation:isolate confina los z-index internos. */
+  isolation: isolate;
+  position: relative;
+  z-index: 0;
 }
 .empty { padding: 20px; text-align: center; }
 </style>

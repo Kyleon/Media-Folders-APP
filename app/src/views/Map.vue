@@ -4,8 +4,11 @@ import L from 'leaflet';
 import { useLocationsStore } from '../stores/locations';
 import { useFoldersStore } from '../stores/folders';
 import { useUiStore } from '../stores/ui';
-import { GeoAPI, MapAPI, MediaAPI } from '../api/endpoints';
+import { GeoAPI, MapAPI, MediaAPI, PortfoliosAPI } from '../api/endpoints';
 import Spinner from '../components/Spinner.vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const locations = useLocationsStore();
 const folders   = useFoldersStore();
@@ -28,18 +31,29 @@ const photos     = ref([]);
 const photoLayer = ref(null);   // L.layerGroup
 const photoPreview = ref(null); // foto activa para preview lateral
 
+const showPortfolios = ref(true);
+const portfolios     = ref([]);   // sólo los que tienen ubicación (para mapa)
+const allPortfolios  = ref([]);   // todos (para el selector del sheet)
+const portfolioLayer = ref(null);
+const portfolioPreview = ref(null);
+
 function makeEmptyForm() {
   return {
     id: 0, name: '', tag: '', description: '', gallery_url: '',
     lat: null, lng: null, hero_id: 0, folder_ids: [], photo_ids: [],
+    portfolio_ids: [],
   };
 }
 
 onMounted(async () => {
-  await Promise.all([locations.load(), folders.load(), loadPhotos()]);
+  await Promise.all([
+    locations.load(), folders.load(), loadPhotos(),
+    loadPortfolios(), loadAllPortfolios(),
+  ]);
   initMap();
   renderMarkers();
   renderPhotoLayer();
+  renderPortfolioLayer();
 });
 
 async function loadPhotos() {
@@ -80,6 +94,70 @@ function renderPhotoLayer() {
 function togglePhotos() {
   showPhotos.value = !showPhotos.value;
   renderPhotoLayer();
+}
+
+async function loadPortfolios() {
+  try {
+    portfolios.value = await PortfoliosAPI.listGeo();
+  } catch (e) {
+    console.warn('No se pudieron cargar portfolios geolocalizados', e);
+  }
+}
+
+async function loadAllPortfolios() {
+  try {
+    // Lista ligera para el selector del sheet — incluye los sin ubicación.
+    const res = await PortfoliosAPI.list({ per_page: 100, status: 'any' });
+    allPortfolios.value = res.items || [];
+  } catch (e) {
+    console.warn('No se pudieron cargar portfolios', e);
+  }
+}
+
+function renderPortfolioLayer() {
+  if (!map.value) return;
+  if (portfolioLayer.value) {
+    portfolioLayer.value.clearLayers();
+    map.value.removeLayer(portfolioLayer.value);
+    portfolioLayer.value = null;
+  }
+  if (!showPortfolios.value || !portfolios.value.length) return;
+
+  portfolioLayer.value = L.layerGroup();
+  // Agrupa por location_id para offsets en clusters pequeños (cuando varios portfolios comparten ubicación)
+  const byLoc = new Map();
+  for (const p of portfolios.value) {
+    const arr = byLoc.get(p.location_id) || [];
+    arr.push(p);
+    byLoc.set(p.location_id, arr);
+  }
+  for (const [, arr] of byLoc) {
+    arr.forEach((p, idx) => {
+      // Pequeño desplazamiento circular si hay varios en la misma coord
+      const step = arr.length > 1 ? (idx / arr.length) * Math.PI * 2 : 0;
+      const r    = arr.length > 1 ? 0.0006 : 0;
+      const lat  = p.lat + Math.cos(step) * r;
+      const lng  = p.lng + Math.sin(step) * r;
+      const m = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div class="portfolio-pin" style="width:12px;height:12px;border-radius:3px;background:#a78bfa;border:2px solid #0f0f0f;box-shadow:0 0 0 1px rgba(167,139,250,.5)"></div>',
+          iconSize: [12, 12], iconAnchor: [6, 6],
+        }),
+      });
+      m.on('click', (e) => {
+        L.DomEvent.stop(e);
+        portfolioPreview.value = p;
+      });
+      portfolioLayer.value.addLayer(m);
+    });
+  }
+  portfolioLayer.value.addTo(map.value);
+}
+
+function togglePortfolios() {
+  showPortfolios.value = !showPortfolios.value;
+  renderPortfolioLayer();
 }
 
 
@@ -138,6 +216,7 @@ function openLocation(id) {
     hero_id: loc.hero_id || 0,
     folder_ids: loc.folder_ids || [],
     photo_ids: loc.photo_ids || [],
+    portfolio_ids: loc.portfolio_ids || [],
   };
   editing.value = true;
   placePin(loc.lat, loc.lng);
@@ -145,6 +224,12 @@ function openLocation(id) {
 
   // Resaltar marker
   Object.entries(markers.value).forEach(([mid, m]) => m.setIcon(pinDiv(parseInt(mid) === id)));
+}
+
+function togglePortfolioLink(portfolioId) {
+  const idx = form.value.portfolio_ids.indexOf(portfolioId);
+  if (idx === -1) form.value.portfolio_ids.push(portfolioId);
+  else            form.value.portfolio_ids.splice(idx, 1);
 }
 
 function newLocation() {
@@ -192,6 +277,8 @@ function pickPlace(r) {
   placeQ.value = r.display_name.split(',').slice(0,3).join(',');
   placeResults.value = [];
   if (!form.value.name) form.value.name = placeQ.value;
+  // Resolve dirección estructurada para rellenar también la etiqueta
+  reverseGeocode(lat, lng);
 }
 
 async function reverseGeocode(lat, lng) {
@@ -213,7 +300,8 @@ async function save() {
   try {
     if (form.value.id) await MapAPI.update(form.value.id, form.value);
     else                await MapAPI.create(form.value);
-    await locations.load();
+    await Promise.all([locations.load(), loadPortfolios(), loadAllPortfolios()]);
+    renderPortfolioLayer();
     ui.toast('✓ Guardado', 'ok');
     editing.value = false;
     if (newMarker.value) { newMarker.value.remove(); newMarker.value = null; }
@@ -245,11 +333,15 @@ function toggleFolder(id) {
   <div class="map-wrap">
     <div ref="mapEl" class="map" />
 
-    <!-- Toggle de capa de fotos -->
+    <!-- Toggles de capas -->
     <div v-if="!editing" class="map-overlay-controls">
-      <button class="layer-toggle" :class="{ on: showPhotos }" @click="togglePhotos">
+      <button class="layer-toggle photos" :class="{ on: showPhotos }" @click="togglePhotos">
         📸 Fotos
         <span class="muted small">{{ photos.length }}</span>
+      </button>
+      <button class="layer-toggle portfolios" :class="{ on: showPortfolios }" @click="togglePortfolios">
+        🗂 Portfolios
+        <span class="muted small">{{ portfolios.length }}</span>
       </button>
     </div>
 
@@ -267,6 +359,22 @@ function toggleFolder(id) {
           <div class="pp-title">{{ photoPreview.title }}</div>
           <div v-if="photoPreview.place" class="pp-place muted small">📍 {{ photoPreview.place }}</div>
           <button class="btn pri sm" @click="$router.push({ name: 'media-detail', params: { id: photoPreview.id } })">Abrir imagen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview de portfolio al click sobre pin violeta -->
+    <div v-if="portfolioPreview" class="photo-preview" @click.self="portfolioPreview = null">
+      <div class="pp-card pp-card-portfolio">
+        <button class="pp-close" @click="portfolioPreview = null">✕</button>
+        <img v-if="portfolioPreview.hero_url"
+          :src="portfolioPreview.hero_url"
+          :alt="portfolioPreview.title"
+          loading="lazy" />
+        <div class="pp-body">
+          <div class="pp-title">🗂 {{ portfolioPreview.title }}</div>
+          <div v-if="portfolioPreview.location_name" class="pp-place muted small">📍 {{ portfolioPreview.location_name }}</div>
+          <button class="btn pri sm" @click="router.push({ name: 'portfolio-detail', params: { id: portfolioPreview.id } })">Abrir portfolio</button>
         </div>
       </div>
     </div>
@@ -323,6 +431,22 @@ function toggleFolder(id) {
             </div>
           </div>
 
+          <div class="field">
+            <label>Portfolios vinculados <span class="muted small">(opcional)</span></label>
+            <div class="checks">
+              <button
+                v-for="p in allPortfolios" :key="'pf-' + p.id"
+                class="folder-chip portfolio-chip"
+                :class="{ on: form.portfolio_ids.includes(p.id) }"
+                @click="togglePortfolioLink(p.id)"
+                :title="p.location_id && p.location_id !== form.id ? `Actualmente vinculado a otra ubicación (id ${p.location_id})` : ''">
+                🗂 {{ p.title }}
+                <span v-if="p.location_id && p.location_id !== form.id && !form.portfolio_ids.includes(p.id)" class="muted small">· otra ubicación</span>
+              </button>
+              <p v-if="!allPortfolios.length" class="muted small">Sin portfolios aún.</p>
+            </div>
+          </div>
+
           <p v-if="form.lat && form.lng" class="muted small coords">
             📍 {{ form.lat.toFixed(5) }}, {{ form.lng.toFixed(5) }}
           </p>
@@ -344,7 +468,29 @@ function toggleFolder(id) {
 </template>
 
 <style scoped>
-.map-wrap { position: relative; height: calc(100vh - 52px - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); margin: -16px; }
+/* Mapa anclado al viewport entre topbar (52/60 px) y bottom-nav (60 px + safe-bottom).
+   Usamos position: fixed para que sea inmune a paddings/overflows del flujo padre
+   y al cambio de viewport en móvil (barra URL oculta/visible, modo standalone PWA, etc.) */
+.map-wrap {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  right: 0;
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  margin: 0;
+  z-index: 5;  /* por debajo de topbar (10) y bottom-nav (50) */
+}
+@media (min-width: 768px) {
+  .map-wrap { top: 60px; }
+}
+@media (min-width: 1024px) {
+  /* Escritorio: sidebar fijo a la izquierda (220 px), sin bottom-nav */
+  .map-wrap {
+    top: 60px;
+    left: 220px;
+    bottom: 0;
+  }
+}
 .map { width: 100%; height: 100%; }
 
 .fab {
@@ -377,9 +523,13 @@ function toggleFolder(id) {
   font-weight: 500;
   border: 1px solid #2e2e2e;
 }
-.layer-toggle.on {
+.layer-toggle.photos.on {
   color: #4e8ef7;
   border-color: #4e8ef7;
+}
+.layer-toggle.portfolios.on {
+  color: #a78bfa;
+  border-color: #a78bfa;
 }
 .layer-toggle:active { background: rgba(15,15,15,1); }
 
@@ -469,6 +619,8 @@ function toggleFolder(id) {
   border: 1px solid var(--border);
 }
 .folder-chip.on { background: var(--accent-lo); color: var(--accent); border-color: var(--accent); }
+.portfolio-chip.on { background: rgba(167,139,250,.16); color: #a78bfa; border-color: #a78bfa; }
+.pp-card.pp-card-portfolio .pp-title { color: #a78bfa; }
 
 .coords { margin: 8px 0; }
 .small { font-size: 11px; }

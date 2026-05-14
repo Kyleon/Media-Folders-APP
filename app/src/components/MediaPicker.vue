@@ -32,6 +32,7 @@ const search    = ref('');
 const selected  = ref([]);
 
 const sentinel  = ref(null);
+const scrollRef = ref(null);   // contenedor scrollable (grid wrapper)
 let observer    = null;
 
 const folderName = computed(() => {
@@ -106,9 +107,9 @@ function setupObserver() {
   observer = new IntersectionObserver((entries) => {
     if (entries.some(e => e.isIntersecting)) loadMore();
   }, {
-    // El observer se asocia al viewport; el sheet tiene su propio scroll
-    // pero el viewport del browser cubre el sheet completo, así que
-    // visible = a punto de aparecer al hacer scroll dentro del sheet.
+    // El scroll está en .body (contenedor del grid). El sheet no scrollea,
+    // así el footer permanece fijo abajo y no se va con la lista.
+    root: scrollRef.value || null,
     rootMargin: '300px 0px',
     threshold: 0,
   });
@@ -163,31 +164,33 @@ function close() { emit('update:modelValue', false); }
           <input v-model="search" @input="onSearch" placeholder="Buscar…" class="search" />
         </div>
 
-        <div v-if="loading && !items.length" class="center muted"><Spinner /> Cargando…</div>
-        <div v-else-if="!items.length" class="empty muted">📭 Sin imágenes</div>
+        <div ref="scrollRef" class="body">
+          <div v-if="loading && !items.length" class="center muted"><Spinner /> Cargando…</div>
+          <div v-else-if="!items.length" class="empty muted">📭 Sin imágenes</div>
 
-        <div v-else class="grid">
-          <div v-for="img in items" :key="img.id"
-            role="button"
-            tabindex="0"
-            class="item"
-            :class="{ 'is-sel': isSelected(img.id) }"
-            @click="toggle(img)"
-            @keydown.enter.prevent="toggle(img)"
-            @keydown.space.prevent="toggle(img)">
-            <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" class="thumb-img" />
-            <div v-if="multiple" class="check" :class="{ on: isSelected(img.id) }">
-              <span v-if="isSelected(img.id)">✓</span>
+          <div v-else class="grid">
+            <div v-for="img in items" :key="img.id"
+              role="button"
+              tabindex="0"
+              class="item"
+              :class="{ 'is-sel': isSelected(img.id) }"
+              @click="toggle(img)"
+              @keydown.enter.prevent="toggle(img)"
+              @keydown.space.prevent="toggle(img)">
+              <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" class="thumb-img" />
+              <div v-if="multiple" class="check" :class="{ on: isSelected(img.id) }">
+                <span v-if="isSelected(img.id)">✓</span>
+              </div>
+              <span class="name">{{ img.title || img.filename }}</span>
             </div>
-            <span class="name">{{ img.title || img.filename }}</span>
           </div>
-        </div>
 
-        <!-- Sentinel para scroll infinito -->
-        <div ref="sentinel" class="sentinel" aria-hidden="true">
-          <Spinner v-if="loading && items.length" :size="14" />
-          <span v-else-if="page < pages" class="muted small">Cargando más… ({{ items.length }} / {{ total }})</span>
-          <span v-else-if="items.length" class="muted small">{{ items.length }} / {{ total }}</span>
+          <!-- Sentinel para scroll infinito (dentro del scroll container) -->
+          <div ref="sentinel" class="sentinel" aria-hidden="true">
+            <Spinner v-if="loading && items.length" :size="14" />
+            <span v-else-if="page < pages" class="muted small">Cargando más… ({{ items.length }} / {{ total }})</span>
+            <span v-else-if="items.length" class="muted small">{{ items.length }} / {{ total }}</span>
+          </div>
         </div>
 
         <div v-if="multiple" class="footer">
@@ -215,14 +218,23 @@ function close() { emit('update:modelValue', false); }
 }
 .sheet {
   width: 100%;
+  height: 92vh;
   max-height: 92vh;
   background: var(--s1);
   border-top-left-radius: 18px;
   border-top-right-radius: 18px;
   padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
-  overflow-y: auto;
+  /* El sheet NO scrollea; el scroll vive en .body. Así el footer queda
+     anclado al borde inferior y "Añadir" siempre es accesible. */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.body {
+  flex: 1 1 auto;
+  min-height: 0;        /* imprescindible para que flex permita scroll */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .sheet-handle { width: 40px; height: 4px; background: var(--border2); border-radius: 2px; margin: -4px auto 12px; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -324,11 +336,13 @@ function close() { emit('update:modelValue', false); }
 }
 
 .footer {
+  flex: 0 0 auto;
   display: flex; align-items: center; justify-content: space-between;
-  margin-top: 12px;
+  margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
   gap: 10px;
+  background: var(--s1);
 }
 
 .btn {

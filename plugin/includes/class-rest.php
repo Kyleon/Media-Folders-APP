@@ -821,6 +821,12 @@ class YZMF_REST {
         update_post_meta( $id, '_yzmf_photo_ids',   array_map( 'intval', (array) ( $req->get_param( 'photo_ids' ) ?: [] ) ) );
         if ( $req->get_param( 'hero_id' ) ) set_post_thumbnail( $id, intval( $req->get_param( 'hero_id' ) ) );
 
+        // Portfolios vinculados — viceversa: escribimos el meta location_id en cada portfolio.
+        $portfolio_ids = $req->get_param( 'portfolio_ids' );
+        if ( $portfolio_ids !== null && class_exists( 'YZMF_Portfolio_Bridge' ) ) {
+            YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $portfolio_ids );
+        }
+
         delete_transient( 'yzmf_map_public_data' );
         return rest_ensure_response( [ 'id' => $id ] );
     }

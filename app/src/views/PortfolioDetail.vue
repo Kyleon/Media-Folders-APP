@@ -3,11 +3,13 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePortfoliosStore } from '../stores/portfolios';
 import { useFoldersStore } from '../stores/folders';
+import { useLocationsStore } from '../stores/locations';
 import { useUiStore } from '../stores/ui';
 import { PortfoliosAPI } from '../api/endpoints';
 import Spinner from '../components/Spinner.vue';
 import draggable from 'vuedraggable';
 import MediaPicker from '../components/MediaPicker.vue';
+import LocationCreatorModal from '../components/LocationCreatorModal.vue';
 import PortfolioMetaForm from '../components/PortfolioMetaForm.vue';
 import { PORTFOLIO_LAYOUTS } from '../utils/portfolio';
 
@@ -15,6 +17,7 @@ const props = defineProps({ id: { type: [String, Number], required: true } });
 const router     = useRouter();
 const portfolios = usePortfoliosStore();
 const folders    = useFoldersStore();
+const locations  = useLocationsStore();
 const ui         = useUiStore();
 
 const item    = ref(null);
@@ -25,17 +28,18 @@ const reordering = ref(false);
 const galleryDirty = ref(false);
 const showAddPicker = ref(false);
 const showHeroPicker = ref(false);
+const showLocCreator = ref(false);
 const showAdvanced  = ref(false);
 const duplicating   = ref(false);
 
 const form = ref({
   title: '', excerpt: '', status: 'draft', layout: 'st1',
-  categories: [], linked_folder: 0,
+  categories: [], linked_folder: 0, location_id: 0,
 });
 const galleryItems = ref([]);
 
 onMounted(async () => {
-  await Promise.all([portfolios.loadCategories(), folders.load()]);
+  await Promise.all([portfolios.loadCategories(), folders.load(), locations.load()]);
   await reload();
 });
 
@@ -51,6 +55,7 @@ async function reload() {
       layout: detail.layout,
       categories: detail.categories.map(c => c.id),
       linked_folder: detail.linked_folder || 0,
+      location_id:   detail.location_id   || 0,
     };
     // Cargar galería con thumbs (endpoint dedicado que devuelve URLs de imagen)
     const gall = await PortfoliosAPI.gallery(props.id);
@@ -199,6 +204,21 @@ async function remove() {
 function openMedia(id) {
   router.push({ name: 'media-detail', params: { id } });
 }
+
+async function onLocationCreated(loc) {
+  // Recargamos la lista para que el <select> incluya la nueva entrada con
+  // los datos canónicos (la API formatea folder_ids/photo_ids, etc.).
+  await locations.load();
+  form.value.location_id = loc.id;
+  // Guardamos el portfolio para persistir el location_id de inmediato.
+  // Así, si el usuario sale sin pulsar Guardar, la asociación ya quedó hecha.
+  try {
+    await portfolios.update(props.id, { location_id: loc.id });
+    ui.toast('✓ Ubicación vinculada', 'ok');
+  } catch (e) {
+    ui.toast(e.message, 'err');
+  }
+}
 </script>
 
 <template>
@@ -327,6 +347,24 @@ function openMedia(id) {
           </div>
         </div>
 
+        <div class="field">
+          <label>📍 Ubicación en el mapa <span class="muted small">(opcional)</span></label>
+          <div class="loc-row">
+            <select v-model.number="form.location_id" class="loc-select">
+              <option :value="0">— Sin ubicación —</option>
+              <option v-for="l in locations.items" :key="l.id" :value="l.id">
+                {{ l.name }}{{ l.tag ? ' · ' + l.tag : '' }}
+              </option>
+            </select>
+            <button type="button" class="btn sm loc-new" @click="showLocCreator = true" title="Crear nueva ubicación">
+              + Nueva
+            </button>
+          </div>
+          <p v-if="!locations.items.length" class="muted small" style="margin:4px 0 0">
+            No hay ubicaciones creadas. Usa <strong>+ Nueva</strong> para crear una sobre el mapa.
+          </p>
+        </div>
+
         <button class="btn pri" :disabled="saving" @click="save" style="width:100%;margin-top:8px">
           <Spinner v-if="saving" :size="14" />
           <span v-else>Guardar cambios</span>
@@ -373,6 +411,10 @@ function openMedia(id) {
     :multiple="false"
     title="Elegir imagen destacada"
     @pick="onPickHero" />
+
+  <LocationCreatorModal v-model="showLocCreator"
+    title="Crear ubicación para el portfolio"
+    @created="onLocationCreated" />
 </template>
 
 <style scoped>
@@ -567,6 +609,10 @@ function openMedia(id) {
 .dz-grid .btn { width: 100%; justify-content: center; }
 @media (min-width: 600px)  { .dz-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1024px) { .dz-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; } }
+
+.loc-row { display: flex; gap: 8px; align-items: stretch; }
+.loc-select { flex: 1; min-width: 0; }
+.loc-new { flex: 0 0 auto; white-space: nowrap; }
 
 .checks { display: flex; flex-wrap: wrap; gap: 6px; }
 .cat-check {
