@@ -1,3 +1,12 @@
+# Desactiva LiteSpeed Cache para todo el subdominio app.yezraelperez.es
+# (Hostinger usa LSWS con el módulo LSCache; sin esto cachea respuestas
+# y deja la PWA atascada en builds antiguos.)
+<IfModule LiteSpeed>
+  CacheDisable public /
+  CacheLookup off
+</IfModule>
+
+# SPA fallback: cualquier ruta que no exista como archivo/carpeta cae a index.html
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
@@ -8,10 +17,19 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|woff2|svg|png|webp)$">
+  # Assets con hash en el nombre (Vite) — cache eterno
+  <FilesMatch "\.(css|woff2|svg|png|webp)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+  # JS: por defecto immutable, pero el service worker debe revalidarse siempre
+  <FilesMatch "\.js$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "^(sw|registerSW|workbox-.*)\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+  # Shell HTML + manifest deben ser frescos para que el SW detecte updates
   <FilesMatch "\.(html|webmanifest)$">
-    Header set Cache-Control "no-cache"
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
   </FilesMatch>
 </IfModule>

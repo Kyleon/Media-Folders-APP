@@ -176,9 +176,14 @@ class YZMF_Ajax {
             $search = '';
         }
         if ( $search ) $args['s'] = $search;
-        if ( $mime ) {
-            $map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
-            if ( isset( $map[ $mime ] ) ) $args['post_mime_type'] = $map[ $mime ];
+        // Si se filtra por mime, aplica ese tipo. Si no, pasamos la lista
+        // explícita de tipos soportados para forzar la cláusula WHERE
+        // post_mime_type — ver nota en YZMF_REST::list_media().
+        $mime_map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
+        if ( $mime && isset( $mime_map[ $mime ] ) ) {
+            $args['post_mime_type'] = $mime_map[ $mime ];
+        } else {
+            $args['post_mime_type'] = array_values( $mime_map );
         }
 
         // Filtro por tag IA (LIKE sobre el meta serializado)

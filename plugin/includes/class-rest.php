@@ -374,9 +374,17 @@ class YZMF_REST {
             $search = '';
         }
         if ( $search ) $args['s'] = $search;
-        if ( $mime_in ) {
-            $map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
-            if ( isset( $map[ $mime_in ] ) ) $args['post_mime_type'] = $map[ $mime_in ];
+        // Si se filtra por mime, aplica ese tipo. Si no, pasamos la lista
+        // explícita de tipos soportados — sin esto, WP_Query con
+        // post_type=attachment + tax_query SIN post_mime_type añade un
+        // LEFT JOIN sobre el post_parent que en algunos setups (cachés,
+        // hooks) acaba devolviendo 0 filas para el filtro "Todos". Forzar
+        // el WHERE de mime estabiliza el resultado.
+        $mime_map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
+        if ( $mime_in && isset( $mime_map[ $mime_in ] ) ) {
+            $args['post_mime_type'] = $mime_map[ $mime_in ];
+        } else {
+            $args['post_mime_type'] = array_values( $mime_map );
         }
         if ( $tag ) {
             $meta_q[] = [ 'key' => '_yzmf_ai_tags', 'value' => '"' . $tag . '"', 'compare' => 'LIKE' ];

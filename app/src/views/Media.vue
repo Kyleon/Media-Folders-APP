@@ -81,6 +81,15 @@ function onItemTap(img, evt) {
   }
 }
 
+// Limpia estado de filtros "invisibles" o ligados a una vista previa.
+// Se llama al cambiar de carpeta para que la nueva vista sea predecible
+// (no arrastrar __NO_ALT__ ni un QuickFilter activo que ya no aplica).
+function resetTransientFilters() {
+  if (media.filter.search === '__NO_ALT__') media.filter.search = '';
+  searchInput.value = media.filter.search || '';
+  activeQuickFilter.value = null;
+}
+
 async function syncFromUrlAndLoad() {
   // Sincronizar filtros desde la URL si vienen
   const f = route.query.folder;
@@ -89,6 +98,7 @@ async function syncFromUrlAndLoad() {
   }
   if (route.query.tag)   media.filter.tag   = String(route.query.tag);
   if (route.query.color) media.filter.color = String(route.query.color);
+  resetTransientFilters();
   await Promise.all([ folders.load(), media.load(true) ]);
 }
 
@@ -126,6 +136,7 @@ function onSearch() {
 
 function selectFolder(id) {
   media.setFilter({ folder: id });
+  resetTransientFilters();
   media.load(true);
   showFolderPicker.value = false;
   router.replace({ query: { ...route.query, folder: id } });
@@ -342,6 +353,13 @@ function changeOrderby(v) {
 }
 
 function changeMime(v) {
+  // Cambiar mime directamente desactiva cualquier QuickFilter activo
+  // y limpia el search invisible (__NO_ALT__) para que "Todos" muestre todo.
+  if (media.filter.search === '__NO_ALT__') {
+    media.filter.search = '';
+    searchInput.value = '';
+  }
+  activeQuickFilter.value = null;
   media.setFilter({ mime: v });
   media.load(true);
 }
