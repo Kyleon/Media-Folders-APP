@@ -287,7 +287,10 @@ async function bulkAI() {
 
 async function bulkCopyUrls() {
   const urls = media.bulkCopyUrls();
-  if (!urls.length) return;
+  if (!urls.length) {
+    ui.toast('Nada que copiar', 'err');
+    return;
+  }
   try {
     await navigator.clipboard.writeText(urls.join('\n'));
     ui.toast(`📋 ${urls.length} URLs copiadas`, 'ok');

@@ -594,6 +594,12 @@ class YZMF_Ajax {
         $mime = get_post_mime_type( $image_id );
         if ( ! in_array( $mime, [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ], true ) ) return null;
 
+        // Defensa contra OOM: si el JPG en disco pesa más de 3MB (~4MB en
+        // base64), abortamos antes de leerlo. Anthropic rechaza >20MB y
+        // file_get_contents + base64_encode infla 33%.
+        $size = (int) @filesize( $path );
+        if ( $size > 3 * 1024 * 1024 ) return null;
+
         $data = @file_get_contents( $path );
         if ( $data === false ) return null;
 

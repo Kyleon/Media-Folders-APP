@@ -126,4 +126,19 @@ Write-Host "Deploy OK: $total archivos · $mb MB" -ForegroundColor Green
 $origin = $remoteDir -replace '/domains/([^/]+)/public_html/app/?', 'https://app.$1'
 if ($origin -ne $remoteDir) {
     Write-Host "Visita: $origin" -ForegroundColor Cyan
+
+    # Health-check: pegamos GET al subdominio esperando 200. Si falla, el
+    # deploy se considera roto (exit 1 para que CI/wrapper lo detecte).
+    Write-Host "[health-check] $origin/" -ForegroundColor Cyan
+    try {
+        $resp = Invoke-WebRequest -Uri "$origin/" -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+        if ($resp.StatusCode -ne 200) {
+            Write-Host "Health-check FAILED: status $($resp.StatusCode)" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "Health-check OK ($($resp.StatusCode))" -ForegroundColor Green
+    } catch {
+        Write-Host "Health-check FAILED: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
 }

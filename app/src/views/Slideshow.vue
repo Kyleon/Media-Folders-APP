@@ -10,11 +10,19 @@ const route  = useRoute();
 const items   = ref([]);
 const idx     = ref(0);
 const loading = ref(true);
-const playing = ref(true);
+
+// Respeta la preferencia del SO de reducir movimiento — no arrancar autoplay
+// con transición de fade puede provocar mareos (vestibular disorder).
+const prefersReducedMotion = typeof window !== 'undefined'
+  && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const playing = ref(!prefersReducedMotion);
 const interval = ref(parseInt(localStorage.getItem('ypva.slideshow.interval') || '5', 10)); // segundos
 const showUI  = ref(true);
 const fit     = ref(localStorage.getItem('ypva.slideshow.fit') || 'contain'); // contain | cover
-const transition = ref(localStorage.getItem('ypva.slideshow.transition') || 'fade'); // fade | slide
+const transition = ref(prefersReducedMotion
+  ? 'none'
+  : (localStorage.getItem('ypva.slideshow.transition') || 'fade')); // fade | slide | none
 const showInfo = ref(false);
 
 let autoTimer  = null;

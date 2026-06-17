@@ -135,7 +135,7 @@ async function login() {
         </button>
       </form>
 
-      <p v-if="error" class="danger" style="margin-top:12px;font-size:13px">{{ error }}</p>
+      <p v-if="error" role="alert" aria-live="assertive" class="danger" style="margin-top:12px;font-size:13px">{{ error }}</p>
 
       <p class="muted small switch-hint">
         <template v-if="!isAppMode">

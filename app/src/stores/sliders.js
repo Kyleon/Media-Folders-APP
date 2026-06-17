@@ -169,7 +169,7 @@ export const useSlidersStore = defineStore('sliders', {
       if (!this.current) return;
       const idx = this.current.data.slides.findIndex((s) => s.id === slideId);
       if (idx < 0) return;
-      const copy = JSON.parse(JSON.stringify(this.current.data.slides[idx]));
+      const copy = structuredClone(this.current.data.slides[idx]);
       copy.id = newSlideLocalId();
       this.current.data.slides.splice(idx + 1, 0, copy);
       this.isDirty = true;

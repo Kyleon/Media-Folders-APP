@@ -77,7 +77,12 @@ class YZMF_Brand {
         return rest_ensure_response( self::current() );
     }
 
-    public static function current() {
+    /**
+     * Estado público de la marca. Por defecto omite logo_id (campo interno
+     * que no aporta nada al cliente y facilita fingerprinting). El admin
+     * UI lo necesita; pásale $include_internal=true para recuperarlo.
+     */
+    public static function current( $include_internal = false ) {
         $name     = (string) get_option( 'yzmf_brand_name', '' );
         $logo_id  = (int) get_option( 'yzmf_brand_logo_id', 0 );
         $color    = (string) get_option( 'yzmf_brand_primary_color', '' );
@@ -102,14 +107,15 @@ class YZMF_Brand {
             $initials = $ini ?: 'YZ';
         }
 
-        return [
+        $out = [
             'name'           => $name,
-            'logo_id'        => $logo_id,
             'logo_url'       => $logo_url,
             'logo_mime'      => $logo_mime,
             'primary_color'  => $color,
             'initials'       => $initials,
         ];
+        if ( $include_internal ) $out['logo_id'] = $logo_id;
+        return $out;
     }
 
     private static function sanitize_hex( $value ) {

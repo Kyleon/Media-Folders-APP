@@ -361,15 +361,16 @@ function toggleFolder(id) {
     <button v-if="!editing" class="fab" @click="newLocation">+ Nueva ubicación</button>
 
     <!-- Preview de foto al click sobre pin azul -->
-    <div v-if="photoPreview" class="photo-preview" @click.self="photoPreview = null">
-      <div class="pp-card">
-        <button class="pp-close" @click="photoPreview = null">✕</button>
+    <div v-if="photoPreview" class="photo-preview" @click.self="photoPreview = null"
+      @keydown.escape="photoPreview = null">
+      <div class="pp-card" role="dialog" aria-modal="true" aria-labelledby="pp-foto-title" tabindex="-1">
+        <button class="pp-close" @click="photoPreview = null" aria-label="Cerrar">✕</button>
         <img v-if="photoPreview.large || photoPreview.medium || photoPreview.thumb"
           :src="photoPreview.large || photoPreview.medium || photoPreview.thumb"
           :alt="photoPreview.alt || photoPreview.title"
           loading="lazy" />
         <div class="pp-body">
-          <div class="pp-title">{{ photoPreview.title }}</div>
+          <div id="pp-foto-title" class="pp-title">{{ photoPreview.title }}</div>
           <div v-if="photoPreview.place" class="pp-place muted small">📍 {{ photoPreview.place }}</div>
           <button class="btn pri sm" @click="$router.push({ name: 'media-detail', params: { id: photoPreview.id } })">Abrir imagen</button>
         </div>
@@ -377,15 +378,16 @@ function toggleFolder(id) {
     </div>
 
     <!-- Preview de portfolio al click sobre pin violeta -->
-    <div v-if="portfolioPreview" class="photo-preview" @click.self="portfolioPreview = null">
-      <div class="pp-card pp-card-portfolio">
-        <button class="pp-close" @click="portfolioPreview = null">✕</button>
+    <div v-if="portfolioPreview" class="photo-preview" @click.self="portfolioPreview = null"
+      @keydown.escape="portfolioPreview = null">
+      <div class="pp-card pp-card-portfolio" role="dialog" aria-modal="true" aria-labelledby="pp-port-title" tabindex="-1">
+        <button class="pp-close" @click="portfolioPreview = null" aria-label="Cerrar">✕</button>
         <img v-if="portfolioPreview.hero_url"
           :src="portfolioPreview.hero_url"
           :alt="portfolioPreview.title"
           loading="lazy" />
         <div class="pp-body">
-          <div class="pp-title">🗂 {{ portfolioPreview.title }}</div>
+          <div id="pp-port-title" class="pp-title">🗂 {{ portfolioPreview.title }}</div>
           <div v-if="portfolioPreview.location_name" class="pp-place muted small">📍 {{ portfolioPreview.location_name }}</div>
           <button class="btn pri sm" @click="router.push({ name: 'portfolio-detail', params: { id: portfolioPreview.id } })">Abrir portfolio</button>
         </div>

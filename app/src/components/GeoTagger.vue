@@ -146,7 +146,7 @@ function useMyLocation() {
   );
 }
 
-function confirm() {
+function emitPick() {
   if (lat.value === null || lng.value === null) return;
   emit('pick', { lat: lat.value, lng: lng.value, place: place.value });
   close();
@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
             class="btn danger" @click="doClear">🗑 Quitar ubicación</button>
           <span class="spacer" />
           <button class="btn ghost" @click="close">Cancelar</button>
-          <button class="btn pri" :disabled="lat === null || lng === null" @click="confirm">
+          <button class="btn pri" :disabled="lat === null || lng === null" @click="emitPick">
             💾 Guardar
           </button>
         </div>

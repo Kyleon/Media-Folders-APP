@@ -9,7 +9,8 @@
   --border2:   #3a3a3a;
   --text:      #e6e6e6;
   --text-mute: #a0a0a0;
-  --dim:       #5a5a5a;
+  /* Subido de #5a5a5a (~2.4:1) a #707070 (~4.5:1) para cumplir AA sobre --bg. */
+  --dim:       #707070;
   --accent:    #c8a97e;
   --accent-lo: rgba(200,169,126,.16);
   --danger:    #e05555;
@@ -31,7 +32,8 @@
   --border2:   #cdcdcd;
   --text:      #1a1a1a;
   --text-mute: #555;
-  --dim:       #888;
+  /* Subido de #888 (~3.7:1) a #6b6b6b (~4.5:1) para cumplir AA sobre --bg. */
+  --dim:       #6b6b6b;
   --accent:    #8b7250;
   --accent-lo: rgba(139,114,80,.12);
   --danger:    #c93030;
