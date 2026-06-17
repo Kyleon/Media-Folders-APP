@@ -630,11 +630,22 @@ class YZMF_REST {
                 $cs      = ! empty( $params['case_sensitive'] );
                 if ( $find === '' ) return $old;
                 if ( $regex ) {
+                    // Defensa contra ReDoS: limitamos longitud del patrón y
+                    // los límites PCRE de backtrack/recursion. Un patrón
+                    // adversarial (a+)+ sobre un title largo podría colgar
+                    // PHP minutos sin esto.
+                    if ( strlen( $find ) > 256 ) return $old;
+                    $prev_backtrack = ini_get( 'pcre.backtrack_limit' );
+                    $prev_recursion = ini_get( 'pcre.recursion_limit' );
+                    @ini_set( 'pcre.backtrack_limit', 100000 );
+                    @ini_set( 'pcre.recursion_limit', 100000 );
                     // Delimitador # con flags. Si el regex es inválido, devolvemos $old.
                     $flags = $cs ? '' : 'i';
                     $flags .= 'u';
                     $pattern = '#' . str_replace( '#', '\\#', $find ) . '#' . $flags;
                     $r = @preg_replace( $pattern, $replace, $old );
+                    @ini_set( 'pcre.backtrack_limit', $prev_backtrack );
+                    @ini_set( 'pcre.recursion_limit', $prev_recursion );
                     return is_string( $r ) ? $r : $old;
                 }
                 return $cs ? str_replace( $find, $replace, $old ) : str_ireplace( $find, $replace, $old );
@@ -805,6 +816,29 @@ class YZMF_REST {
         $cache = get_transient( 'yzmf_map_public_data' );
         if ( $cache === false ) {
             $cache = YZMF_Map::get_map_data();
+            // Filtra a SOLO locations marcadas como públicas (meta
+            // _yzmf_public_on_map = '1'). Para mantener compatibilidad con
+            // sitios existentes, si NO hay ninguna marcada como pública,
+            // expone todo el dataset como antes (default open). El admin
+            // puede ir marcando las que sí quiere ocultar.
+            $public = array_values( array_filter( $cache, function ( $loc ) {
+                return ! empty( $loc['public_on_map'] );
+            } ) );
+            if ( ! empty( $public ) ) $cache = $public;
+            // Subset mínimo de campos para no filtrar IDs internos ni rutas.
+            $cache = array_map( function ( $loc ) {
+                return [
+                    'id'       => $loc['id']       ?? 0,
+                    'name'     => $loc['name']     ?? '',
+                    'tag'      => $loc['tag']      ?? '',
+                    'lat'      => $loc['lat']      ?? 0,
+                    'lng'      => $loc['lng']      ?? 0,
+                    'count'    => $loc['count']    ?? 0,
+                    'hero'     => $loc['hero']     ?? '',
+                    'thumbs'   => array_slice( (array) ( $loc['thumbs'] ?? [] ), 0, 4 ),
+                    'gallery_url' => $loc['gallery_url'] ?? '',
+                ];
+            }, $cache );
             set_transient( 'yzmf_map_public_data', $cache, 15 * MINUTE_IN_SECONDS );
         }
         $resp = rest_ensure_response( $cache );
@@ -817,20 +851,24 @@ class YZMF_REST {
     }
 
     public static function save_location( WP_REST_Request $req ) {
+        $params = [
+            'name'          => $req->get_param( 'name' ),
+            'lat'           => $req->get_param( 'lat' ),
+            'lng'           => $req->get_param( 'lng' ),
+            'tag'           => $req->get_param( 'tag' ),
+            'description'   => $req->get_param( 'description' ),
+            'gallery_url'   => $req->get_param( 'gallery_url' ),
+            'folder_ids'    => $req->get_param( 'folder_ids' ),
+            'photo_ids'     => $req->get_param( 'photo_ids' ),
+            'hero_id'       => $req->get_param( 'hero_id' ),
+            'portfolio_ids' => $req->get_param( 'portfolio_ids' ),
+        ];
+        if ( $req->get_param( 'public_on_map' ) !== null ) {
+            $params['public_on_map'] = (bool) $req->get_param( 'public_on_map' );
+        }
         $id = YZMF_Map::persist_location(
             isset( $req['id'] ) ? intval( $req['id'] ) : 0,
-            [
-                'name'          => $req->get_param( 'name' ),
-                'lat'           => $req->get_param( 'lat' ),
-                'lng'           => $req->get_param( 'lng' ),
-                'tag'           => $req->get_param( 'tag' ),
-                'description'   => $req->get_param( 'description' ),
-                'gallery_url'   => $req->get_param( 'gallery_url' ),
-                'folder_ids'    => $req->get_param( 'folder_ids' ),
-                'photo_ids'     => $req->get_param( 'photo_ids' ),
-                'hero_id'       => $req->get_param( 'hero_id' ),
-                'portfolio_ids' => $req->get_param( 'portfolio_ids' ),
-            ]
+            $params
         );
         if ( is_wp_error( $id ) ) return $id;
         return rest_ensure_response( [ 'id' => $id ] );

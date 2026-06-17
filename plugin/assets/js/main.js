@@ -788,7 +788,13 @@ function uploadFiles(files, folderId) {
         fd.append('action',       'upload-attachment');
         fd.append('_wpnonce',     YZMF.upload_nonce);
         fd.append('async-upload', file);
-        if (folderId > 0) fd.append('yzmf_folder', folderId);
+        if (folderId > 0) {
+            fd.append('yzmf_folder',        folderId);
+            // Nonce específico del panel YZMF: solo nuestras subidas asignan
+            // carpeta automáticamente; un terceros que use add_attachment no
+            // dispara la auto-asignación.
+            fd.append('_yzmf_upload_nonce', YZMF.yzmf_upload_nonce);
+        }
 
         fetch(YZMF.upload_url, { method: 'POST', body: fd })
             .then(r => r.json())

@@ -179,6 +179,9 @@ class YZMF_Map {
         update_post_meta( $id, '_yzmf_gallery_url', esc_url_raw( $params['gallery_url'] ?? '' ) );
         update_post_meta( $id, '_yzmf_folder_ids',  array_map( 'intval', (array) ( $params['folder_ids'] ?? [] ) ) );
         update_post_meta( $id, '_yzmf_photo_ids',   array_map( 'intval', (array) ( $params['photo_ids']  ?? [] ) ) );
+        if ( array_key_exists( 'public_on_map', $params ) ) {
+            update_post_meta( $id, '_yzmf_public_on_map', ! empty( $params['public_on_map'] ) ? '1' : '0' );
+        }
 
         if ( ! empty( $params['hero_id'] ) ) {
             $hero_id = intval( $params['hero_id'] );
@@ -250,6 +253,7 @@ class YZMF_Map {
                 'hero_id'       => $hero_id,
                 'hero_url'      => $hero_id ? wp_get_attachment_image_url( $hero_id, 'thumbnail' ) : '',
                 'count'         => self::count_images( $folder_ids, $photo_ids ),
+                'public_on_map' => get_post_meta( $p->ID, '_yzmf_public_on_map', true ) === '1',
             ];
         }
         // Cache 15min — el plugin invalida desde save_location/delete_location

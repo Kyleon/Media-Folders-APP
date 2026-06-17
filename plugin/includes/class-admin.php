@@ -76,10 +76,11 @@ class YZMF_Admin {
         }
 
         wp_localize_script( 'yzmf-main', 'YZMF', [
-            'ajaxurl'      => admin_url( 'admin-ajax.php' ),
-            'nonce'        => wp_create_nonce( 'yzmf_nonce' ),
-            'upload_url'   => admin_url( 'async-upload.php' ),
-            'upload_nonce' => wp_create_nonce( 'media-form' ),
+            'ajaxurl'           => admin_url( 'admin-ajax.php' ),
+            'nonce'             => wp_create_nonce( 'yzmf_nonce' ),
+            'upload_url'        => admin_url( 'async-upload.php' ),
+            'upload_nonce'      => wp_create_nonce( 'media-form' ),
+            'yzmf_upload_nonce' => wp_create_nonce( 'yzmf_upload' ),
             'tree'         => YZMF_Taxonomy::get_tree(),
             'has_ai'       => ! empty( get_option( 'yzmf_claude_api_key', '' ) ),
             'flat_folders' => $folders,

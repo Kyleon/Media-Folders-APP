@@ -350,6 +350,12 @@ class YZMF_Ajax {
 
     public static function assign_on_upload( $attachment_id ) {
         if ( ! current_user_can( 'upload_files' ) ) return;
+        // Solo aceptamos yzmf_folder si viene acompañado de un nonce del panel
+        // (evita CSRF: un admin que sube una imagen desde Gutenberg o desde
+        // otra página atacante no debería ver asignaciones inesperadas de
+        // carpeta YZMF).
+        $nonce = $_POST['_yzmf_upload_nonce'] ?? '';
+        if ( ! $nonce || ! wp_verify_nonce( $nonce, 'yzmf_upload' ) ) return;
         $folder_id = intval( $_POST['yzmf_folder'] ?? 0 );
         if ( $folder_id <= 0 ) return;
         if ( ! get_term( $folder_id, YZMF_TAXONOMY ) ) return;

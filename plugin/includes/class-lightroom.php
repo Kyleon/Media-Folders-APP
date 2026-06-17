@@ -107,9 +107,18 @@ class YZMF_Lightroom {
         require_once ABSPATH . 'wp-admin/includes/media.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
 
-        // Si remote_id existe y aún apunta a un attachment válido, lo eliminamos
-        // para que Lightroom pueda re-publicar (mismo flujo "republish")
+        // Si remote_id existe y aún apunta a un attachment válido Y el usuario
+        // tiene permiso de borrarlo, lo eliminamos. Antes solo se chequeaba
+        // upload_files (permiso de crear, no de borrar ajenos). Sin esto un
+        // user con upload_files podía borrar attachments de otros via Lightroom.
         if ( $remote_id && get_post_type( $remote_id ) === 'attachment' ) {
+            if ( ! current_user_can( 'delete_post', $remote_id ) ) {
+                return new WP_Error(
+                    'forbidden',
+                    'Sin permisos para sobrescribir esa imagen.',
+                    [ 'status' => 403 ]
+                );
+            }
             wp_delete_attachment( $remote_id, true );
         }
 

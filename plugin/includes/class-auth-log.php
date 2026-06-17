@@ -209,17 +209,37 @@ class YZMF_Auth_Log {
 
     /* ─────────── Helpers ─────────── */
 
+    /**
+     * IP del cliente. Por defecto solo REMOTE_ADDR — confiar en
+     * X-Forwarded-For sin un proxy de confianza permite spoofing trivial
+     * (un atacante elige su IP para eludir el lockout, o bloquea a otros
+     * usuarios). Solo se usan headers forwarded si REMOTE_ADDR está dentro
+     * de la lista de proxies de confianza configurada en
+     * `yzmf_trusted_proxies` (CSV de IPs).
+     */
     private static function ip() {
+        $remote = isset( $_SERVER['REMOTE_ADDR'] ) ? trim( $_SERVER['REMOTE_ADDR'] ) : '';
+        if ( ! self::is_trusted_proxy( $remote ) ) {
+            return filter_var( $remote, FILTER_VALIDATE_IP ) ? $remote : '0.0.0.0';
+        }
+        // Detrás de proxy de confianza: aceptamos los headers forwarded.
         $candidates = [];
         if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) $candidates[] = $_SERVER['HTTP_CF_CONNECTING_IP'];
         if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
             foreach ( explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] ) as $part ) $candidates[] = trim( $part );
         }
-        if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) $candidates[] = $_SERVER['REMOTE_ADDR'];
+        $candidates[] = $remote;
         foreach ( $candidates as $ip ) {
             if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) return $ip;
         }
         return '0.0.0.0';
+    }
+
+    private static function is_trusted_proxy( $ip ) {
+        $list = (string) get_option( 'yzmf_trusted_proxies', '' );
+        if ( ! $list ) return false;
+        $proxies = array_filter( array_map( 'trim', explode( ',', $list ) ) );
+        return in_array( $ip, $proxies, true );
     }
 
     private static function ua() {
