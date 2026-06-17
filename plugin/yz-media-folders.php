@@ -3,7 +3,7 @@
  * Plugin Name: YZ Media Folders
  * Plugin URI:  https://nubedocs.es
  * Description: Gestor de medios propio con carpetas, drag & drop, modal de edición, sliders configurables y REST API. Independiente de la librería nativa de WordPress.
- * Version:     2.5.0
+ * Version:     2.6.0
  * Requires PHP: 7.4
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'YZMF_VERSION',  '2.5.0' );
+define( 'YZMF_VERSION',  '2.6.0' );
 define( 'YZMF_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'YZMF_URL',      plugin_dir_url( __FILE__ ) );
 define( 'YZMF_TAXONOMY', 'yz_media_folder' );
@@ -36,6 +36,7 @@ require_once YZMF_PATH . 'includes/class-slider.php';
 require_once YZMF_PATH . 'includes/class-slider-rest.php';
 require_once YZMF_PATH . 'includes/class-slider-shortcode.php';
 require_once YZMF_PATH . 'includes/class-elementor-integration.php';
+require_once YZMF_PATH . 'includes/class-exif-scan.php';
 
 add_action( 'plugins_loaded', function () {
     YZMF_Taxonomy::init();
@@ -53,6 +54,7 @@ add_action( 'plugins_loaded', function () {
     YZMF_Slider_REST::init();
     YZMF_Slider_Shortcode::init();
     YZMF_Elementor_Integration::init();
+    YZMF_Exif_Scan::init();
 } );
 
 /**

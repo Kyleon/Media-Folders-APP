@@ -60,7 +60,7 @@ class YZMF_Portfolio_Bridge {
      * - Multi-row (Meta Box image_advanced) → `get_post_meta(..., false)` devuelve array de IDs.
      * - Single serialized (legacy) → `get_post_meta(..., true)` devuelve un array dentro de array.
      */
-    private static function read_gallery_meta( $post_id, $meta_key ) {
+    public static function read_gallery_meta( $post_id, $meta_key ) {
         $rows = get_post_meta( $post_id, $meta_key, false );
         if ( ! is_array( $rows ) ) return [];
 

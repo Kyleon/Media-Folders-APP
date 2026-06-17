@@ -33,6 +33,14 @@ const photos     = ref([]);
 const photoLayer = ref(null);   // L.layerGroup
 const photoPreview = ref(null); // foto activa para preview lateral
 
+// Filtros combinables (AND) sobre la capa de fotos. 0 = sin filtro.
+const photoFilterFolder    = ref(0);
+const photoFilterPortfolio = ref(0);
+
+// Estado del scan EXIF en background (polling cada 5s mientras esté running).
+const exifScan = ref({ running: false, processed: 0, total: 0, found: 0 });
+let exifPollTimer = null;
+
 const showPortfolios = ref(true);
 const portfolios     = ref([]);   // sólo los que tienen ubicación (para mapa)
 const allPortfolios  = ref([]);   // todos (para el selector del sheet)
@@ -57,15 +65,60 @@ onMounted(async () => {
   initMap();
   renderMarkers();
   renderPortfolioLayer();
+  // Comprueba si hay un scan EXIF corriendo (auto-arrancado por el plugin
+  // tras subir nueva versión). Si lo hay, mostramos el indicador y
+  // recargamos las fotos cuando termine.
+  pollExifStatus();
 });
 
 async function loadPhotos() {
   try {
-    // Cap bajado a 500 (alineado con el cap server-side). Para casos con
-    // más fotos georreferenciadas hace falta clustering — diferido.
-    photos.value = await MediaAPI.listGeo(500);
+    // Cap bajado a 500 (alineado con el cap server-side). Filtros combinables
+    // por carpeta + portfolio (AND).
+    const params = { limit: 500 };
+    if (photoFilterFolder.value > 0)    params.folder_id    = photoFilterFolder.value;
+    if (photoFilterPortfolio.value > 0) params.portfolio_id = photoFilterPortfolio.value;
+    photos.value = await MediaAPI.listGeo(params);
   } catch (e) {
     // Silencioso: no es crítico. ui.toast lo reporta en otros flujos.
+  }
+}
+
+// Re-cargar fotos cuando cambien los filtros (si la capa está visible).
+watch([photoFilterFolder, photoFilterPortfolio], async () => {
+  if (!showPhotos.value) return;
+  await loadPhotos();
+  renderPhotoLayer();
+});
+
+/* ─────── EXIF scan polling ─────── */
+
+async function pollExifStatus() {
+  try {
+    exifScan.value = await MediaAPI.scanExifStatus();
+  } catch { /* no auth o endpoint no disponible: silencioso */ }
+  if (exifScan.value.running) {
+    exifPollTimer = setTimeout(pollExifStatus, 5000);
+  } else {
+    exifPollTimer = null;
+    // Si terminó y la capa está visible, recarga para mostrar las nuevas
+    // fotos geolocalizadas que aparecieron tras el scan.
+    if (showPhotos.value) {
+      await loadPhotos();
+      renderPhotoLayer();
+    }
+  }
+}
+
+async function startExifScan() {
+  try {
+    exifScan.value = await MediaAPI.scanExifStart();
+    if (exifScan.value.running && !exifPollTimer) pollExifStatus();
+    ui.toast(exifScan.value.running
+      ? `📍 Escaneando ${exifScan.value.total} imágenes…`
+      : 'Sin imágenes pendientes de escanear', 'ok');
+  } catch (e) {
+    ui.toast(e.message || 'No se pudo iniciar el escaneo', 'err');
   }
 }
 
@@ -176,6 +229,7 @@ function togglePortfolios() {
 
 onBeforeUnmount(() => {
   if (map.value) map.value.remove();
+  if (exifPollTimer) { clearTimeout(exifPollTimer); exifPollTimer = null; }
 });
 
 function initMap() {
@@ -346,15 +400,56 @@ function toggleFolder(id) {
   <div class="map-wrap">
     <div ref="mapEl" class="map" />
 
-    <!-- Toggles de capas -->
+    <!-- Toggles de capas + filtros -->
     <div v-if="!editing" class="map-overlay-controls">
-      <button class="layer-toggle photos" :class="{ on: showPhotos }" @click="togglePhotos">
+      <button class="layer-toggle photos" :class="{ on: showPhotos }" @click="togglePhotos"
+        :aria-pressed="showPhotos">
         📸 Fotos
         <span class="muted small">{{ photos.length }}</span>
       </button>
-      <button class="layer-toggle portfolios" :class="{ on: showPortfolios }" @click="togglePortfolios">
+      <button class="layer-toggle portfolios" :class="{ on: showPortfolios }" @click="togglePortfolios"
+        :aria-pressed="showPortfolios">
         🗂 Portfolios
         <span class="muted small">{{ portfolios.length }}</span>
+      </button>
+
+      <!-- Filtros combinables sobre la capa de fotos (visible solo si está activa) -->
+      <div v-if="showPhotos" class="map-photo-filters">
+        <label class="ftr-row">
+          <span class="ftr-label">Carpeta</span>
+          <select v-model.number="photoFilterFolder" class="ftr-select">
+            <option :value="0">— Todas —</option>
+            <option v-for="f in folders.flat" :key="f.id" :value="f.id">
+              {{ '— '.repeat(f.depth) }}{{ f.name }} ({{ f.count }})
+            </option>
+          </select>
+        </label>
+        <label class="ftr-row">
+          <span class="ftr-label">Portfolio</span>
+          <select v-model.number="photoFilterPortfolio" class="ftr-select">
+            <option :value="0">— Todos —</option>
+            <option v-for="p in allPortfolios" :key="p.id" :value="p.id">
+              {{ p.title || ('#' + p.id) }}
+            </option>
+          </select>
+        </label>
+        <button v-if="photoFilterFolder || photoFilterPortfolio"
+          class="ftr-clear" @click="photoFilterFolder = 0; photoFilterPortfolio = 0"
+          aria-label="Limpiar filtros">✕ Limpiar</button>
+      </div>
+
+      <!-- Indicador del scan EXIF en background -->
+      <div v-if="exifScan.running" class="exif-scan-pill" role="status" aria-live="polite">
+        <span>📍 EXIF: {{ exifScan.processed }}/{{ exifScan.total }}</span>
+        <span class="muted small">{{ exifScan.found }} con geo</span>
+      </div>
+      <button v-else-if="exifScan.total === 0 && exifScan.finished" class="exif-scan-rerun"
+        @click="startExifScan" title="Volver a escanear EXIF de las imágenes">
+        🔍 Re-escanear EXIF
+      </button>
+      <button v-else-if="!exifScan.running" class="exif-scan-rerun"
+        @click="startExifScan" title="Buscar GPS en EXIF de imágenes sin geo">
+        🔍 Escanear EXIF
       </button>
     </div>
 
@@ -526,8 +621,58 @@ function toggleFolder(id) {
   position: absolute;
   top: 12px; right: 12px;
   z-index: 1100;  /* por encima de los controles Leaflet (1000) */
-  display: flex; gap: 6px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+  max-width: calc(100% - 24px);
+  justify-content: flex-end;
 }
+
+.map-photo-filters {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-basis: 100%;
+  align-items: flex-end;
+  padding: 8px 10px;
+  background: rgba(15,15,15,.85);
+  border: 1px solid #2e2e2e;
+  border-radius: 10px;
+}
+.ftr-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: #aaa;
+}
+.ftr-label { min-width: 60px; }
+.ftr-select {
+  min-height: 32px;
+  padding: 4px 8px;
+  background: rgba(34,34,34,.95);
+  color: #e6e6e6;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 180px;
+}
+.ftr-clear {
+  align-self: flex-end;
+  padding: 4px 10px;
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #3a3a3a;
+  border-radius: 12px;
+  font-size: 11px;
+}
+.ftr-clear:hover { color: #e6e6e6; border-color: #5a5a5a; }
+
+.exif-scan-pill, .exif-scan-rerun {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: rgba(15,15,15,.85);
+  color: #c8a97e;
+  border: 1px solid #c8a97e;
+  border-radius: 16px;
+  font-size: 12px;
+}
+.exif-scan-pill .muted { color: #888; font-size: 11px; }
+.exif-scan-rerun { cursor: pointer; }
+.exif-scan-rerun:hover { background: rgba(200,169,126,.16); }
 .layer-toggle {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 14px;

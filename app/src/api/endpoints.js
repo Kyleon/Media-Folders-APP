@@ -32,7 +32,9 @@ export const MediaAPI = {
   generateAI: (id)            => api.post(NS + 'media/' + id + '/ai'),
   setGeo: (id, body)          => api.put(NS + 'media/' + id + '/geo', body),
   bulkGeo: (ids, body)        => api.post(NS + 'media/geo/bulk', { ids, ...body }),
-  listGeo: (limit = 1000)     => api.get(NS + 'media/geo/all', { limit }),
+  listGeo: (params = {})      => api.get(NS + 'media/geo/all', typeof params === 'number' ? { limit: params } : params),
+  scanExifStart:              () => api.post(NS + 'media/geo/scan-exif'),
+  scanExifStatus:             () => api.get(NS + 'media/geo/scan-exif'),
   setPalette: (id, palette)   => api.put(NS + 'media/' + id + '/palette', { palette }),
   bulkRenamePreview: (ids, operation, params) =>
     api.post(NS + 'media/bulk-rename/preview', { ids, operation, params }),

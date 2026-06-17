@@ -210,6 +210,19 @@ class YZMF_REST {
             'permission_callback' => [ __CLASS__, 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/media/geo/scan-exif', [
+            [
+                'methods'             => 'POST',
+                'callback'            => [ __CLASS__, 'scan_exif_start' ],
+                'permission_callback' => [ __CLASS__, 'can_upload' ],
+            ],
+            [
+                'methods'             => 'GET',
+                'callback'            => [ __CLASS__, 'scan_exif_status' ],
+                'permission_callback' => [ __CLASS__, 'can_upload' ],
+            ],
+        ] );
+
         register_rest_route( self::NS, '/media/bulk-rename', [
             'methods'             => 'POST',
             'callback'            => [ __CLASS__, 'bulk_rename' ],
@@ -785,7 +798,11 @@ class YZMF_REST {
         // muy grandes deben paginar usando per_page+page.
         $limit = min( 500, max( 1, intval( $req->get_param( 'limit' ) ?: 500 ) ) );
 
-        $q = new WP_Query( [
+        // Filtros opcionales combinables (AND): folder_id, portfolio_id.
+        $folder_id    = intval( $req->get_param( 'folder_id' ) ?: 0 );
+        $portfolio_id = intval( $req->get_param( 'portfolio_id' ) ?: 0 );
+
+        $args = [
             'post_type'      => 'attachment',
             'post_status'    => 'inherit',
             'post_mime_type' => 'image',
@@ -793,14 +810,38 @@ class YZMF_REST {
             'orderby'        => 'date',
             'order'          => 'DESC',
             // Un solo EXISTS basta: si hay lat se asume que hay lng (contrato
-            // del plugin: apply_geo_to_id escribe ambos o ninguno). Doble JOIN
-            // antes era 2x el coste para nada.
+            // del plugin: apply_geo_to_id escribe ambos o ninguno).
             'meta_query'     => [
                 [ 'key' => '_yzmf_geo_lat', 'compare' => 'EXISTS' ],
             ],
             'fields'         => 'ids',
             'no_found_rows'  => true,
-        ] );
+        ];
+
+        if ( $folder_id > 0 ) {
+            $args['tax_query'] = [ [
+                'taxonomy'         => YZMF_TAXONOMY,
+                'field'            => 'term_id',
+                'terms'            => $folder_id,
+                'include_children' => true,
+            ] ];
+        }
+
+        // Portfolio filter: limita a los IDs que están en la galería del portfolio.
+        if ( $portfolio_id > 0 && class_exists( 'YZMF_Portfolio_Bridge' ) ) {
+            $layout = get_post_meta( $portfolio_id, 'rnr_wr_port_dt_opt', true ) ?: 'st1';
+            $key    = YZMF_Portfolio_Bridge::gallery_meta_key( $layout );
+            $ids    = YZMF_Portfolio_Bridge::read_gallery_meta( $portfolio_id, $key );
+            if ( empty( $ids ) ) {
+                // Portfolio sin galería → ningún resultado
+                return rest_ensure_response( [] );
+            }
+            $args['post__in'] = array_map( 'intval', $ids );
+            // Cuando se restringe por post__in, paginar por -1 con cap igual a $limit.
+            $args['posts_per_page'] = min( $limit, count( $ids ) );
+        }
+
+        $q = new WP_Query( $args );
 
         if ( ! empty( $q->posts ) ) {
             update_meta_cache( 'post', $q->posts );
@@ -818,22 +859,47 @@ class YZMF_REST {
             // Cuando un tamaño intermedio no existe, WP devuelve el original,
             // así que los fallbacks se gestionan en el cliente.
             $full = wp_get_attachment_url( $id );
+            $terms = wp_get_object_terms( $id, YZMF_TAXONOMY, [ 'fields' => 'ids' ] );
             $out[] = [
-                'id'     => $id,
-                'lat'    => (float) $lat,
-                'lng'    => (float) $lng,
-                'thumb'  => wp_get_attachment_image_url( $id, 'thumbnail' ) ?: $full,
-                'medium' => wp_get_attachment_image_url( $id, 'medium' )    ?: $full,
-                'large'  => wp_get_attachment_image_url( $id, 'large' )     ?: $full,
-                'full'   => $full,
-                'url'    => $full,                                                        // alias
-                'title'  => get_the_title( $id ),
-                'alt'    => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
-                'place'  => get_post_meta( $id, '_yzmf_geo_place', true ),
-                'source' => get_post_meta( $id, '_yzmf_geo_source', true ) ?: 'manual',
+                'id'         => $id,
+                'lat'        => (float) $lat,
+                'lng'        => (float) $lng,
+                'thumb'      => wp_get_attachment_image_url( $id, 'thumbnail' ) ?: $full,
+                'medium'     => wp_get_attachment_image_url( $id, 'medium' )    ?: $full,
+                'large'      => wp_get_attachment_image_url( $id, 'large' )     ?: $full,
+                'full'       => $full,
+                'url'        => $full,                                                        // alias
+                'title'      => get_the_title( $id ),
+                'alt'        => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
+                'place'      => get_post_meta( $id, '_yzmf_geo_place', true ),
+                'source'     => get_post_meta( $id, '_yzmf_geo_source', true ) ?: 'manual',
+                'folder_ids' => is_wp_error( $terms ) ? [] : array_map( 'intval', $terms ),
             ];
         }
         return rest_ensure_response( $out );
+    }
+
+    /* ─────────── EXIF SCAN ─────────── */
+
+    /**
+     * Arranca el backfill de EXIF GPS en background. Idempotente.
+     * Devuelve el estado tras el start.
+     */
+    public static function scan_exif_start( WP_REST_Request $req ) {
+        if ( ! class_exists( 'YZMF_Exif_Scan' ) ) {
+            return new WP_Error( 'yzmf_unavailable', 'Exif scan no disponible', [ 'status' => 500 ] );
+        }
+        return rest_ensure_response( YZMF_Exif_Scan::start_scan() );
+    }
+
+    /**
+     * Estado actual del backfill (polling desde la PWA).
+     */
+    public static function scan_exif_status( WP_REST_Request $req ) {
+        if ( ! class_exists( 'YZMF_Exif_Scan' ) ) {
+            return new WP_Error( 'yzmf_unavailable', 'Exif scan no disponible', [ 'status' => 500 ] );
+        }
+        return rest_ensure_response( YZMF_Exif_Scan::get_state() );
     }
 
     public static function media_ai( WP_REST_Request $req ) {
