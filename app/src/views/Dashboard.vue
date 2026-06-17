@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useFoldersStore } from '../stores/folders';
@@ -8,7 +8,9 @@ import ThemeSwitch from '../components/ThemeSwitch.vue';
 import Spinner from '../components/Spinner.vue';
 import PullRefresh from '../components/PullRefresh.vue';
 import DashLatest from '../components/DashLatest.vue';
-import DashMiniMap from '../components/DashMiniMap.vue';
+// DashMiniMap arrastra Leaflet (~150KB minified). Async para no inflar
+// el chunk inicial de '/' — el resto del Dashboard renderiza primero.
+const DashMiniMap = defineAsyncComponent(() => import('../components/DashMiniMap.vue'));
 import DashHeatmap from '../components/DashHeatmap.vue';
 import DashPalette from '../components/DashPalette.vue';
 

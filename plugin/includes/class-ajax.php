@@ -234,7 +234,16 @@ class YZMF_Ajax {
         $full  = wp_get_attachment_image_src( $att->ID, 'full' );
         $meta  = wp_get_attachment_metadata( $att->ID ) ?: [];
         $path  = get_attached_file( $att->ID );
-        $size  = ( $path && file_exists( $path ) ) ? filesize( $path ) : 0;
+
+        // Filesize: usar el meta _yzmf_filesize precalculado (store_filesize_meta
+        // lo escribe al subir). Si no existe (attachments anteriores al plugin),
+        // hacemos filesize() una sola vez y lo cacheamos en meta para que el
+        // siguiente list-media no toque disco. Evita N+1 de stat() en listados.
+        $size = (int) get_post_meta( $att->ID, '_yzmf_filesize', true );
+        if ( ! $size && $path && file_exists( $path ) ) {
+            $size = (int) filesize( $path );
+            if ( $size ) update_post_meta( $att->ID, '_yzmf_filesize', $size );
+        }
         $terms = wp_get_object_terms( $att->ID, YZMF_TAXONOMY, [ 'fields' => 'ids' ] );
 
         $exif = [];

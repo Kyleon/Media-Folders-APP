@@ -52,5 +52,15 @@ export default defineConfig({
     // pásalo a 'inline' o 'hidden' temporalmente (deploy.ps1 ya filtra .map
     // como cinturón y tirantes).
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Chunks manuales para que las libs pesadas se cacheen entre rutas
+        // en vez de duplicarse en cada vista que las importa.
+        manualChunks: {
+          leaflet: ['leaflet'],
+          draggable: ['vue-draggable-plus'],
+        },
+      },
+    },
   },
 });

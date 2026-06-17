@@ -315,13 +315,30 @@ class YZMF_REST {
     }
 
     public static function delete_folder( WP_REST_Request $req ) {
+        global $wpdb;
         $id = intval( $req['id'] );
         if ( ! $id ) return new WP_Error( 'yzmf_invalid', 'ID inválido', [ 'status' => 400 ] );
-        $atts = get_posts( [
-            'post_type' => 'attachment', 'posts_per_page' => -1, 'fields' => 'ids',
-            'tax_query' => [ [ 'taxonomy' => YZMF_TAXONOMY, 'field' => 'term_id', 'terms' => $id ] ],
-        ] );
-        foreach ( $atts as $att ) wp_remove_object_terms( $att, $id, YZMF_TAXONOMY );
+
+        // Antes: get_posts(-1) + bucle wp_remove_object_terms → O(N) round-trips.
+        // Ahora: single DELETE en term_relationships + invalidación de caché.
+        // Carpetas con miles de fotos pasan de N queries a 1.
+        $tt_id = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT term_taxonomy_id FROM {$wpdb->term_taxonomy} WHERE term_id = %d AND taxonomy = %s",
+            $id, YZMF_TAXONOMY
+        ) );
+        if ( $tt_id ) {
+            // Captura ids afectados para limpiar caches de term de cada attachment
+            $ids = $wpdb->get_col( $wpdb->prepare(
+                "SELECT object_id FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d",
+                $tt_id
+            ) );
+            $ids = array_map( 'intval', (array) $ids );
+            $wpdb->query( $wpdb->prepare(
+                "DELETE FROM {$wpdb->term_relationships} WHERE term_taxonomy_id = %d",
+                $tt_id
+            ) );
+            if ( ! empty( $ids ) ) clean_object_term_cache( $ids, 'attachment' );
+        }
         $r = wp_delete_term( $id, YZMF_TAXONOMY );
         if ( is_wp_error( $r ) ) return $r;
         return rest_ensure_response( [ 'deleted' => true, 'id' => $id ] );
@@ -727,7 +744,10 @@ class YZMF_REST {
      * Devuelve [{ id, lat, lng, thumb, title, place, source, folder_ids }]
      */
     public static function list_media_with_geo( WP_REST_Request $req ) {
-        $limit = min( 2000, max( 1, intval( $req->get_param( 'limit' ) ?: 1000 ) ) );
+        // Cap real bajado de 2000 a 500. El mapa con >500 markers ya pide
+        // clustering (otro hallazgo de auditoría: H-09/M-09). Las galerías
+        // muy grandes deben paginar usando per_page+page.
+        $limit = min( 500, max( 1, intval( $req->get_param( 'limit' ) ?: 500 ) ) );
 
         $q = new WP_Query( [
             'post_type'      => 'attachment',
@@ -736,12 +756,14 @@ class YZMF_REST {
             'posts_per_page' => $limit,
             'orderby'        => 'date',
             'order'          => 'DESC',
+            // Un solo EXISTS basta: si hay lat se asume que hay lng (contrato
+            // del plugin: apply_geo_to_id escribe ambos o ninguno). Doble JOIN
+            // antes era 2x el coste para nada.
             'meta_query'     => [
-                'relation' => 'AND',
                 [ 'key' => '_yzmf_geo_lat', 'compare' => 'EXISTS' ],
-                [ 'key' => '_yzmf_geo_lng', 'compare' => 'EXISTS' ],
             ],
-            'fields' => 'ids',
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
         ] );
 
         if ( ! empty( $q->posts ) ) {

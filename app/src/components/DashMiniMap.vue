@@ -2,13 +2,16 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { MediaAPI } from '../api/endpoints';
-import L from 'leaflet';
+// Leaflet se carga DINÁMICAMENTE al primer render para no inflar el bundle
+// inicial del Dashboard (~150KB minified). Sin esto, '/' arrastra Leaflet
+// aunque el user no entre a /map.
 
 const router = useRouter();
 const mapEl  = ref(null);
 const count  = ref(0);
 const loading = ref(true);
 let map = null;
+let L = null; // se hidrata en el primer render()
 
 async function load() {
   loading.value = true;
@@ -21,11 +24,16 @@ async function load() {
   }
 }
 
-function render(photos) {
+async function render(photos) {
   if (!mapEl.value) return;
   if (map) { map.remove(); map = null; }
 
   if (!photos.length) return;
+
+  if (!L) {
+    // Import dinámico: este chunk se sirve solo cuando hace falta.
+    L = (await import('leaflet')).default;
+  }
 
   // Bounds que abarquen todos los puntos
   const lats = photos.map(p => p.lat).filter(Number.isFinite);
