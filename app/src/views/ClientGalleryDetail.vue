@@ -7,7 +7,7 @@ import { usePortfoliosStore } from '../stores/portfolios';
 import { useUiStore } from '../stores/ui';
 import Spinner from '../components/Spinner.vue';
 import MediaPicker from '../components/MediaPicker.vue';
-import draggable from 'vuedraggable';
+import { VueDraggable } from 'vue-draggable-plus';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 const router     = useRouter();
@@ -371,9 +371,8 @@ async function copyFavoritesToClipboard() {
         <button class="btn pri" @click="showPicker = true" style="margin-top:10px">+ Añadir imágenes</button>
       </div>
 
-      <draggable v-else
+      <VueDraggable v-else
         v-model="item.images"
-        item-key="id"
         class="img-grid"
         :animation="180"
         :force-fallback="true"
@@ -383,13 +382,11 @@ async function copyFavoritesToClipboard() {
         ghost-class="g-ghost"
         chosen-class="g-chosen"
         @end="onReorder">
-        <template #item="{ element: img }">
-          <div class="img-card">
-            <img :src="img.full || img.url || img.thumb" :alt="img.alt || img.title" loading="lazy" draggable="false" />
-            <button class="img-rm" @click="removeImage(img.id)" title="Quitar de galería">✕</button>
-          </div>
-        </template>
-      </draggable>
+        <div v-for="img in item.images" :key="img.id" class="img-card">
+          <img :src="img.full || img.url || img.thumb" :alt="img.alt || img.title" loading="lazy" draggable="false" />
+          <button class="img-rm" @click="removeImage(img.id)" title="Quitar de galería">✕</button>
+        </div>
+      </VueDraggable>
 
       <div v-if="item.images.length" class="row" style="margin-top:14px">
         <button class="btn pri" :disabled="saving || !dirty" @click="save" style="flex:1">

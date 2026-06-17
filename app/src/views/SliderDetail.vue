@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router';
-import draggable from 'vuedraggable';
+import { VueDraggable } from 'vue-draggable-plus';
 import { useSlidersStore } from '../stores/sliders';
 import { usePortfoliosStore } from '../stores/portfolios';
 import { useUiStore } from '../stores/ui';
@@ -171,25 +171,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
           <button class="btn pri" style="margin-top:14px" @click="addSlide">Añadir el primero</button>
         </div>
 
-        <draggable
+        <VueDraggable
           v-else
           v-model="slides"
-          item-key="id"
           handle=".drag"
           :animation="200"
           class="slides-list"
         >
-          <template #item="{ element: slide }">
-            <SlideForm
-              :slide="slide"
-              :portfolios="portfolios.items"
-              @update="(patch) => sliders.updateSlide(slide.id, patch)"
-              @update-style="(patch) => sliders.updateSlideStyle(slide.id, patch)"
-              @remove="removeSlide(slide.id)"
-              @duplicate="duplicateSlide(slide.id)"
-            />
-          </template>
-        </draggable>
+          <SlideForm
+            v-for="slide in slides"
+            :key="slide.id"
+            :slide="slide"
+            :portfolios="portfolios.items"
+            @update="(patch) => sliders.updateSlide(slide.id, patch)"
+            @update-style="(patch) => sliders.updateSlideStyle(slide.id, patch)"
+            @remove="removeSlide(slide.id)"
+            @duplicate="duplicateSlide(slide.id)"
+          />
+        </VueDraggable>
       </div>
 
       <!-- Cómo usar el slider -->

@@ -7,7 +7,7 @@ import { useLocationsStore } from '../stores/locations';
 import { useUiStore } from '../stores/ui';
 import { PortfoliosAPI } from '../api/endpoints';
 import Spinner from '../components/Spinner.vue';
-import draggable from 'vuedraggable';
+import { VueDraggable } from 'vue-draggable-plus';
 import MediaPicker from '../components/MediaPicker.vue';
 import LocationCreatorModal from '../components/LocationCreatorModal.vue';
 import PortfolioMetaForm from '../components/PortfolioMetaForm.vue';
@@ -259,9 +259,8 @@ async function onLocationCreated(loc) {
       </div>
       <p class="muted small" style="margin:0 0 8px">Pulsa para abrir · mantén pulsado 1 s para arrastrar</p>
 
-      <draggable v-if="galleryItems.length"
+      <VueDraggable v-if="galleryItems.length"
         v-model="galleryItems"
-        item-key="id"
         class="ggrid"
         :animation="180"
         :force-fallback="true"
@@ -273,21 +272,20 @@ async function onLocationCreated(loc) {
         chosen-class="g-chosen"
         drag-class="g-drag"
         @end="onDragEnd">
-        <template #item="{ element: g }">
-          <div class="gitem"
-            :class="{ 'is-hero': g.id === item.hero_id }"
-            @click="openMedia(g.id)"
-            :title="g.title || g.alt || 'Abrir imagen'">
-            <img :src="g.thumb" :alt="g.alt || g.title" loading="lazy" draggable="false" />
-            <button class="ghero"
-              :class="{ on: g.id === item.hero_id }"
-              @click.stop="setHero(g.id)"
-              :title="g.id === item.hero_id ? 'Es la imagen destacada' : 'Marcar como destacada'">★</button>
-            <button class="grm" @click.stop="removeFromGallery(g.id)" title="Quitar de galería">✕</button>
-            <span class="gopen" aria-hidden="true">↗</span>
-          </div>
-        </template>
-      </draggable>
+        <div v-for="g in galleryItems" :key="g.id"
+          class="gitem"
+          :class="{ 'is-hero': g.id === item.hero_id }"
+          @click="openMedia(g.id)"
+          :title="g.title || g.alt || 'Abrir imagen'">
+          <img :src="g.thumb" :alt="g.alt || g.title" loading="lazy" draggable="false" />
+          <button class="ghero"
+            :class="{ on: g.id === item.hero_id }"
+            @click.stop="setHero(g.id)"
+            :title="g.id === item.hero_id ? 'Es la imagen destacada' : 'Marcar como destacada'">★</button>
+          <button class="grm" @click.stop="removeFromGallery(g.id)" title="Quitar de galería">✕</button>
+          <span class="gopen" aria-hidden="true">↗</span>
+        </div>
+      </VueDraggable>
       <p v-else class="muted small">Sin imágenes en la galería.</p>
 
       <hr style="border:0; border-top:1px solid var(--border); margin:14px 0">
