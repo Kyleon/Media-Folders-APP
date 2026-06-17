@@ -16,6 +16,40 @@ class YZMF_REST {
     public static function init() {
         add_action( 'rest_api_init', [ __CLASS__, 'register_routes' ] );
         add_action( 'rest_api_init', [ __CLASS__, 'enable_cors' ], 15 );
+        // Envía no-cache en TODAS las respuestas de yzmf/v1 para que LSCache,
+        // Cloudflare y proxies intermedios no guarden listados de medios
+        // (sin esto cada upload obliga a purgar manualmente desde hPanel).
+        add_filter( 'rest_post_dispatch', [ __CLASS__, 'send_no_cache_headers' ], 10, 3 );
+    }
+
+    /**
+     * Asegura que las respuestas del namespace yzmf/v1 NO sean cacheables.
+     * Cubre los tres mecanismos que Hostinger / LiteSpeed respetan:
+     *   - Header Cache-Control standard (HTTP/1.1)
+     *   - Header X-LiteSpeed-Cache-Control: no-cache (LSCache nativo)
+     *   - Pragma: no-cache (proxies legacy HTTP/1.0)
+     */
+    public static function send_no_cache_headers( $response, $server, $request ) {
+        if ( ! ( $response instanceof WP_REST_Response ) ) return $response;
+        $route = (string) $request->get_route();
+        if ( strpos( $route, '/' . self::NS ) !== 0 ) return $response;
+        $response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+        $response->header( 'X-LiteSpeed-Cache-Control', 'no-cache' );
+        $response->header( 'Pragma', 'no-cache' );
+        return $response;
+    }
+
+    /**
+     * Pide al plugin LSCache de WP que purgue el cache de la URL pública
+     * relacionada con un attachment. Lo invocamos tras cada upload/update/
+     * delete/setFolder en endpoints de media. Si LSCache no está instalado,
+     * el do_action es no-op (no rompe nada).
+     */
+    public static function purge_lscache_after_mutation() {
+        // Purga el HTML público que pudiera estar mostrando esa imagen.
+        // litespeed_purge_all es lo más agresivo pero el más fiable para
+        // un evento poco frecuente como la subida.
+        do_action( 'litespeed_purge_all' );
     }
 
     /**

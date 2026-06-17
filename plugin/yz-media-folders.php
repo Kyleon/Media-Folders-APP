@@ -66,6 +66,11 @@ if ( ! function_exists( 'yzmf_bust_stats_cache' ) ) {
         delete_transient( 'yzmf_stats_exif_cache' );
         delete_transient( 'yzmf_tags_cache' );
         delete_transient( 'yzmf_colors_cache' );
+        // Pide al plugin LSCache que invalide el HTML público que pudiera
+        // estar mostrando este attachment. do_action no-op si LSCache no
+        // está instalado. Evita tener que purgar manualmente desde hPanel
+        // tras cada subida/edición desde la PWA.
+        do_action( 'litespeed_purge_all' );
     }
 }
 add_action( 'add_attachment',      'yzmf_bust_stats_cache' );
