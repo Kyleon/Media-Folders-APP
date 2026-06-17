@@ -47,10 +47,10 @@ function isImageLogo() {
 
 <template>
   <div class="shell">
-    <header class="topbar safe-top">
-      <button class="topbar-back" v-if="showBack" @click="router.back()">‹</button>
+    <header class="topbar safe-top" role="banner">
+      <button class="topbar-back" v-if="showBack" @click="router.back()" aria-label="Volver">‹</button>
 
-      <button class="brand-mark" @click="router.push({ name: 'dashboard' })" title="Ir al inicio">
+      <button class="brand-mark" @click="router.push({ name: 'dashboard' })" :aria-label="`Ir al inicio (${brand.name || 'YPVA'})`">
         <img v-if="isImageLogo()" :src="brand.logoUrl" :alt="brand.name || 'Logo'" class="brand-logo" />
         <span v-else class="brand-initials">{{ brand.initials }}</span>
       </button>
@@ -58,10 +58,10 @@ function isImageLogo() {
       <h1 class="topbar-title">{{ title }}</h1>
 
       <div class="topbar-actions">
-        <button class="topbar-icon" @click="router.push({ name: 'settings' })" title="Ajustes">⚙</button>
+        <button class="topbar-icon" @click="router.push({ name: 'settings' })" aria-label="Ajustes">⚙</button>
       </div>
     </header>
-    <main class="content"><slot /></main>
+    <main class="content" role="main"><slot /></main>
     <BottomNav />
   </div>
 </template>

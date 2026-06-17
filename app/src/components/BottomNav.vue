@@ -26,12 +26,14 @@ const activeName = computed(() => {
 </script>
 
 <template>
-  <nav class="bottom-nav safe-bottom">
+  <nav class="bottom-nav safe-bottom" aria-label="Navegación principal">
     <button
       v-for="it in items" :key="it.name"
       class="bn-btn" :class="{ active: activeName === it.name }"
+      :aria-current="activeName === it.name ? 'page' : undefined"
+      :aria-label="it.label"
       @click="router.push({ name: it.name })">
-      <span class="bn-icon">{{ it.icon }}</span>
+      <span class="bn-icon" aria-hidden="true">{{ it.icon }}</span>
       <span class="bn-label">{{ it.label }}</span>
     </button>
   </nav>

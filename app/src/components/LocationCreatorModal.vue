@@ -3,6 +3,7 @@ import { ref, watch, nextTick, onBeforeUnmount } from 'vue';
 import L from 'leaflet';
 import { GeoAPI, MapAPI } from '../api/endpoints';
 import { useUiStore } from '../stores/ui';
+import { useFocusTrap } from '../composables/useFocusTrap';
 import Spinner from './Spinner.vue';
 
 /**
@@ -41,6 +42,9 @@ function makeEmpty() {
 }
 
 function close() { emit('update:modelValue', false); }
+
+const sheetEl = ref(null);
+useFocusTrap(sheetEl, () => props.modelValue, close);
 
 watch(() => props.modelValue, async (v) => {
   if (v) {
@@ -168,11 +172,12 @@ async function save() {
 <template>
   <transition name="sheet">
     <div v-if="modelValue" class="sheet-overlay" @click.self="close">
-      <div class="sheet">
+      <div ref="sheetEl" class="sheet"
+        role="dialog" aria-modal="true" aria-labelledby="locationcreator-title" tabindex="-1">
         <div class="sheet-handle" />
         <div class="sheet-head">
-          <h3>{{ title }}</h3>
-          <button class="close-btn" @click="close">✕</button>
+          <h3 id="locationcreator-title">{{ title }}</h3>
+          <button class="close-btn" @click="close" aria-label="Cerrar">✕</button>
         </div>
 
         <div class="body">

@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, toRef } from 'vue';
 import { MediaAPI } from '../api/endpoints';
 import { useUiStore } from '../stores/ui';
 import { applyOpLocal } from '../utils/bulk-rename';
+import { useFocusTrap } from '../composables/useFocusTrap';
 import Spinner from './Spinner.vue';
 
 /**
@@ -38,6 +39,9 @@ const serverPreview = ref(null);   // resultado del endpoint /preview
 const loadingPreview = ref(false);
 
 function close() { emit('update:modelValue', false); }
+
+const sheetEl = ref(null);
+useFocusTrap(sheetEl, () => props.modelValue, close);
 
 watch(() => props.modelValue, (v) => {
   if (v) {
@@ -128,11 +132,12 @@ const ops = [
 <template>
   <transition name="sheet">
     <div v-if="modelValue" class="sheet-overlay" @click.self="close">
-      <div class="sheet">
+      <div ref="sheetEl" class="sheet"
+        role="dialog" aria-modal="true" aria-labelledby="bulk-rename-title" tabindex="-1">
         <div class="sheet-handle" />
         <div class="sheet-head">
-          <h3>Editar títulos en lote ({{ ids.length }})</h3>
-          <button class="close-btn" @click="close">✕</button>
+          <h3 id="bulk-rename-title">Editar títulos en lote ({{ ids.length }})</h3>
+          <button class="close-btn" @click="close" aria-label="Cerrar">✕</button>
         </div>
 
         <!-- Tabs de operaciones -->

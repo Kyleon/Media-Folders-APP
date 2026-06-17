@@ -2,6 +2,7 @@
 import { ref, watch, onBeforeUnmount, nextTick } from 'vue';
 import L from 'leaflet';
 import { GeoAPI } from '../api/endpoints';
+import { useFocusTrap } from '../composables/useFocusTrap';
 
 /**
  * Bottomsheet con mapa para asignar lat/lng a una o varias imágenes.
@@ -45,6 +46,9 @@ let mapInited = false;
 function close() {
   emit('update:modelValue', false);
 }
+
+const sheetEl = ref(null);
+useFocusTrap(sheetEl, () => props.modelValue, close);
 
 function initMap() {
   if (mapInited || !mapEl.value) return;
@@ -189,14 +193,15 @@ onBeforeUnmount(() => {
 <template>
   <transition name="sheet">
     <div v-if="modelValue" class="sheet-overlay" @click.self="close">
-      <div class="sheet">
+      <div ref="sheetEl" class="sheet"
+        role="dialog" aria-modal="true" aria-labelledby="geotagger-title" tabindex="-1">
         <div class="sheet-handle" />
         <div class="sheet-head">
           <div>
-            <h3>{{ title }}</h3>
+            <h3 id="geotagger-title">{{ title }}</h3>
             <p v-if="subtitle" class="muted small" style="margin:2px 0 0">{{ subtitle }}</p>
           </div>
-          <button class="close-btn" @click="close">✕</button>
+          <button class="close-btn" @click="close" aria-label="Cerrar">✕</button>
         </div>
 
         <div class="search-wrap">

@@ -1,6 +1,7 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useFoldersStore } from '../stores/folders';
+import { useFocusTrap } from '../composables/useFocusTrap';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },           // v-model: visible
@@ -23,16 +24,20 @@ function pick(id) {
 }
 
 function close() { emit('update:modelValue', false); }
+
+const sheetEl = ref(null);
+useFocusTrap(sheetEl, () => props.modelValue, close);
 </script>
 
 <template>
   <transition name="sheet">
     <div v-if="modelValue" class="sheet-overlay" @click.self="close">
-      <div class="sheet">
+      <div ref="sheetEl" class="sheet"
+        role="dialog" aria-modal="true" aria-labelledby="folderpicker-title" tabindex="-1">
         <div class="sheet-handle" />
         <div class="sheet-head">
-          <h3>{{ title }}</h3>
-          <button class="close-btn" @click="close">✕</button>
+          <h3 id="folderpicker-title">{{ title }}</h3>
+          <button class="close-btn" @click="close" aria-label="Cerrar">✕</button>
         </div>
 
         <button v-if="showAll"
