@@ -210,6 +210,12 @@ class YZMF_REST {
             'permission_callback' => [ __CLASS__, 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/media/geo/count', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'count_media_with_geo' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
         register_rest_route( self::NS, '/media/geo/scan-exif', [
             [
                 'methods'             => 'POST',
@@ -797,6 +803,24 @@ class YZMF_REST {
         do_action( 'litespeed_purge_all' );
 
         return YZMF_Ajax::format_image( get_post( $id ) );
+    }
+
+    /**
+     * Devuelve el conteo total de imágenes con geo asignada. Endpoint ligero
+     * para mostrar el total disponible aunque la capa del mapa esté inactiva.
+     */
+    public static function count_media_with_geo( WP_REST_Request $req ) {
+        global $wpdb;
+        $count = (int) $wpdb->get_var( "
+            SELECT COUNT(DISTINCT p.ID)
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm
+              ON pm.post_id = p.ID AND pm.meta_key = '_yzmf_geo_lat'
+            WHERE p.post_type = 'attachment'
+              AND p.post_status = 'inherit'
+              AND p.post_mime_type LIKE 'image/%'
+        " );
+        return rest_ensure_response( [ 'total' => $count ] );
     }
 
     /**

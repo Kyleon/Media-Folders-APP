@@ -40,6 +40,7 @@ export const MediaAPI = {
     p._t = Date.now();
     return api.get(NS + 'media/geo/all', p);
   },
+  countGeo:                   () => api.get(NS + 'media/geo/count', { _t: Date.now() }),
   scanExifStart:              () => api.post(NS + 'media/geo/scan-exif'),
   scanExifStatus:             () => api.get(NS + 'media/geo/scan-exif', { _t: Date.now() }),
   setPalette: (id, palette)   => api.put(NS + 'media/' + id + '/palette', { palette }),

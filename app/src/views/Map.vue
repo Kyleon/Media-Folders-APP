@@ -34,6 +34,7 @@ const saving  = ref(false);
 // congela el hilo principal en móvil. El user la activa explícitamente.
 const showPhotos = ref(false);
 const photos     = ref([]);
+const photosTotal = ref(0);     // contador total disponible (independiente del layer)
 const photoLayer = ref(null);   // L.layerGroup
 const photoPreview = ref(null); // foto activa para preview lateral
 
@@ -68,11 +69,21 @@ onMounted(async () => {
   initMap();
   renderMarkers();
   renderPortfolioLayer();
+  // Carga el total de fotos georreferenciadas para mostrarlo en el badge
+  // aunque la capa esté desactivada. Sin esto el badge mostraba 0.
+  loadPhotosTotal();
   // Comprueba si hay un scan EXIF corriendo (auto-arrancado por el plugin
   // tras subir nueva versión). Si lo hay, mostramos el indicador y
   // recargamos las fotos cuando termine.
   pollExifStatus();
 });
+
+async function loadPhotosTotal() {
+  try {
+    const r = await MediaAPI.countGeo();
+    photosTotal.value = r?.total ?? 0;
+  } catch { /* silencioso */ }
+}
 
 async function loadPhotos() {
   try {
@@ -102,8 +113,9 @@ async function pollExifStatus() {
     exifPollTimer = setTimeout(pollExifStatus, 5000);
   } else {
     exifPollTimer = null;
-    // Si terminó y la capa está visible, recarga para mostrar las nuevas
-    // fotos geolocalizadas que aparecieron tras el scan.
+    // Si terminó, refrescamos el contador total (puede haber subido) y, si
+    // la capa está visible, recargamos para mostrar las nuevas fotos.
+    loadPhotosTotal();
     if (showPhotos.value) {
       await loadPhotos();
       renderPhotoLayer();
@@ -427,7 +439,7 @@ function toggleFolder(id) {
       <button class="layer-toggle photos" :class="{ on: showPhotos }" @click="togglePhotos"
         :aria-pressed="showPhotos">
         📸 Fotos
-        <span class="muted small">{{ photos.length }}</span>
+        <span class="muted small">{{ showPhotos ? photos.length : photosTotal }}</span>
       </button>
       <button class="layer-toggle portfolios" :class="{ on: showPortfolios }" @click="togglePortfolios"
         :aria-pressed="showPortfolios">

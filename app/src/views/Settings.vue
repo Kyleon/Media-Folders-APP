@@ -10,6 +10,17 @@ import MediaPicker from '../components/MediaPicker.vue';
 import Spinner from '../components/Spinner.vue';
 
 const router = useRouter();
+
+// Versión y fecha del build inyectadas por Vite (vite.config.js define).
+// Fallback por si se ejecuta en entorno sin define (tests, dev).
+const APP_VERSION = (typeof __APP_VERSION__ !== 'undefined') ? __APP_VERSION__ : 'dev';
+const BUILD_DATE  = (typeof __BUILD_DATE__  !== 'undefined') ? __BUILD_DATE__  : '';
+const buildDateLabel = BUILD_DATE
+  ? new Date(BUILD_DATE).toLocaleString('es-ES', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    })
+  : '';
 const auth   = useAuthStore();
 const ui     = useUiStore();
 const brand  = useBrandStore();
@@ -405,7 +416,8 @@ onMounted(async () => {
     <div class="card">
       <h2 class="section">Acerca de</h2>
       <p class="muted small">
-        {{ brand.name || 'YPVA' }} Admin · v0.2.0<br>
+        {{ brand.name || 'YPVA' }} Admin · v{{ APP_VERSION }}<br>
+        <span v-if="buildDateLabel">Build: {{ buildDateLabel }}<br></span>
         Panel para fotógrafos · plugin <code>yz-media-folders</code>
       </p>
     </div>
