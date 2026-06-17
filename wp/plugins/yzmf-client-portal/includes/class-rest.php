@@ -196,6 +196,41 @@ class YZMF_CP_REST {
         return $favs;
     }
 
+    /* ─────────── Rate-limit y anti-spam ─────────── */
+
+    /**
+     * Rate-limit por (token + ip + endpoint). Usa transient + sliding-window
+     * simple. Si se excede, devuelve WP_Error 429; si no, registra y devuelve null.
+     *
+     * Defaults conservadores: login 10/5min, favorite 60/min, comment 20/min.
+     */
+    private static function rate_limit( $token, $endpoint, $max, $window_seconds ) {
+        $ip  = self::client_ip();
+        $key = 'yzmf_cp_rl_' . md5( $endpoint . '|' . $token . '|' . $ip );
+        $bucket = get_transient( $key );
+        if ( ! is_array( $bucket ) ) $bucket = [ 'count' => 0, 'started' => time() ];
+        if ( time() - $bucket['started'] > $window_seconds ) {
+            $bucket = [ 'count' => 0, 'started' => time() ];
+        }
+        $bucket['count']++;
+        set_transient( $key, $bucket, $window_seconds );
+        if ( $bucket['count'] > $max ) {
+            return new WP_Error( 'rate_limited',
+                'Demasiadas peticiones. Espera un momento.',
+                [ 'status' => 429 ]
+            );
+        }
+        return null;
+    }
+
+    private static function client_ip() {
+        // El portal cliente es público: no aceptamos X-Forwarded-For aquí
+        // (el atacante elegiría su IP para eludir el rate-limit). Si el host
+        // está detrás de proxy, los buckets serán compartidos — preferible a
+        // que un atacante los esquive.
+        return (string) ( $_SERVER['REMOTE_ADDR'] ?? '' );
+    }
+
     /* ─────────── Endpoints cliente ─────────── */
 
     public static function get_gallery( WP_REST_Request $req ) {
@@ -215,6 +250,8 @@ class YZMF_CP_REST {
 
     public static function login( WP_REST_Request $req ) {
         $token = $req['token'];
+        if ( $err = self::rate_limit( $token, 'login', 10, 5 * MINUTE_IN_SECONDS ) ) return $err;
+
         $pwd   = (string) $req->get_param( 'password' );
         $post  = YZMF_CP_CPT::find_by_token( $token );
         if ( ! $post ) return new WP_Error( 'not_found', 'No encontrada', [ 'status' => 404 ] );
@@ -248,6 +285,7 @@ class YZMF_CP_REST {
     }
 
     public static function favorite( WP_REST_Request $req ) {
+        if ( $err = self::rate_limit( $req['token'], 'favorite', 60, MINUTE_IN_SECONDS ) ) return $err;
         $post = self::require_gallery( $req['token'] );
         if ( is_wp_error( $post ) ) return $post;
         $att_id = (int) $req->get_param( 'att_id' );
@@ -280,6 +318,7 @@ class YZMF_CP_REST {
     }
 
     public static function comment( WP_REST_Request $req ) {
+        if ( $err = self::rate_limit( $req['token'], 'comment', 20, MINUTE_IN_SECONDS ) ) return $err;
         $post = self::require_gallery( $req['token'] );
         if ( is_wp_error( $post ) ) return $post;
         $allow = (bool) get_post_meta( $post->ID, '_yzmf_cp_allow_comments', true );
@@ -306,12 +345,20 @@ class YZMF_CP_REST {
         $email = get_option( 'yzmf_cp_owner_email', get_option( 'admin_email' ) );
         if ( ! $email ) return;
 
+        // Debounce por (galería, tipo): 1 email cada 5 min como mucho. Evita
+        // que un cliente (o atacante con token) bombardee el buzón pulsando
+        // favorita en 200 fotos.
+        $debounce_key = 'yzmf_cp_notify_' . $post->ID . '_' . $type;
+        if ( get_transient( $debounce_key ) ) return;
+        set_transient( $debounce_key, 1, 5 * MINUTE_IN_SECONDS );
+
         $title = get_the_title( $post );
         $client = get_post_meta( $post->ID, '_yzmf_cp_client_name', true );
 
         if ( $type === 'favorite' ) {
             $subject = sprintf( '[%s] %s marcó una favorita', $title, $client ?: 'Cliente' );
             $body = "El cliente marcó como favorita la imagen #$att_id.\n\n";
+            $body .= "(Notificación agrupada — quizá hay más favoritas posteriores en los próximos 5 min)\n\n";
         } else {
             $subject = sprintf( '[%s] %s comentó', $title, $client ?: 'Cliente' );
             $body = "El cliente comentó la imagen #$att_id:\n\n$extra\n\n";

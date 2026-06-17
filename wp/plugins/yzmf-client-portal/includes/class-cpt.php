@@ -84,8 +84,10 @@ class YZMF_CP_CPT {
     }
 
     public static function generate_token() {
-        // 12 chars URL-safe (~71 bits de entropía). Suficiente para galerías privadas.
-        $bytes = random_bytes( 9 );
+        // 22 chars URL-safe (~128 bits de entropía). Antes eran 9 bytes (71 bits) —
+        // los existentes siguen funcionando porque find_by_token compara longitud
+        // variable. Los nuevos son inforzables por fuerza bruta.
+        $bytes = random_bytes( 16 );
         return rtrim( strtr( base64_encode( $bytes ), '+/', '-_' ), '=' );
     }
 
