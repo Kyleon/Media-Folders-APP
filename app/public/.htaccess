@@ -1,15 +1,27 @@
 # Desactiva LiteSpeed Cache para todo el subdominio app.yezraelperez.es
 # (Hostinger usa LSWS con el módulo LSCache; sin esto cachea respuestas
 # y deja la PWA atascada en builds antiguos.)
+#
+# Usamos dos vías en paralelo — cinturón y tirantes:
+#   1) Directivas nativas CacheDisable + CacheLookup off (apaga el módulo).
+#   2) Variable de entorno Cache-Control:no-cache por RewriteRule
+#      (patrón documentado oficialmente por Hostinger; LSCache la respeta
+#      como header HTTP). Cubre el caso de que el módulo de directivas
+#      nativas no esté habilitado en la cuenta.
 <IfModule LiteSpeed>
   CacheDisable public /
   CacheLookup off
 </IfModule>
 
-# SPA fallback: cualquier ruta que no exista como archivo/carpeta cae a index.html
+# SPA fallback + exclusión de cache por ENV var
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # Excluir TODO el subdominio del cache de LSWS/LSCache (patrón Hostinger).
+  RewriteRule .* - [E=Cache-Control:no-cache]
+
+  # SPA fallback: cualquier ruta que no exista como archivo/carpeta cae a index.html
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
