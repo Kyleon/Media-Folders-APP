@@ -105,10 +105,7 @@ class YZMF_Slider_REST {
         ], true );
 
         if ( is_wp_error( $id ) ) {
-            return new WP_REST_Response( [
-                'code'    => 'yzmf_slider_create_failed',
-                'message' => $id->get_error_message(),
-            ], 500 );
+            return new WP_Error( 'yzmf_slider_create_failed', $id->get_error_message(), [ 'status' => 500 ] );
         }
 
         // Inicializa con data por defecto
@@ -126,7 +123,7 @@ class YZMF_Slider_REST {
         $id   = (int) $req['id'];
         $post = get_post( $id );
         if ( ! $post || $post->post_type !== YZMF_Slider::POST_TYPE ) {
-            return new WP_REST_Response( [ 'code' => 'yzmf_slider_not_found', 'message' => 'No existe' ], 404 );
+            return new WP_Error( 'yzmf_slider_not_found', 'No existe', [ 'status' => 404 ] );
         }
 
         $params = $req->get_json_params();
@@ -145,12 +142,7 @@ class YZMF_Slider_REST {
         // Data JSON (opcional)
         if ( isset( $params['data'] ) ) {
             $result = YZMF_Slider::save_data( $id, $params['data'] );
-            if ( is_wp_error( $result ) ) {
-                return new WP_REST_Response( [
-                    'code'    => $result->get_error_code(),
-                    'message' => $result->get_error_message(),
-                ], $result->get_error_data()['status'] ?? 400 );
-            }
+            if ( is_wp_error( $result ) ) return $result;
         }
 
         return self::respond_full( $id );
@@ -160,17 +152,17 @@ class YZMF_Slider_REST {
         $id = (int) $req['id'];
         $post = get_post( $id );
         if ( ! $post || $post->post_type !== YZMF_Slider::POST_TYPE ) {
-            return new WP_REST_Response( [ 'code' => 'yzmf_slider_not_found', 'message' => 'No existe' ], 404 );
+            return new WP_Error( 'yzmf_slider_not_found', 'No existe', [ 'status' => 404 ] );
         }
 
         $force = (bool) $req->get_param( 'force' );
         $result = $force ? wp_delete_post( $id, true ) : wp_trash_post( $id );
 
         if ( ! $result ) {
-            return new WP_REST_Response( [ 'code' => 'yzmf_slider_delete_failed', 'message' => 'No se pudo eliminar' ], 500 );
+            return new WP_Error( 'yzmf_slider_delete_failed', 'No se pudo eliminar', [ 'status' => 500 ] );
         }
 
-        return new WP_REST_Response( [
+        return rest_ensure_response( [
             'id'      => $id,
             'deleted' => true,
             'force'   => $force,
@@ -181,12 +173,7 @@ class YZMF_Slider_REST {
         $id     = (int) $req['id'];
         $new_id = YZMF_Slider::duplicate( $id );
 
-        if ( is_wp_error( $new_id ) ) {
-            return new WP_REST_Response( [
-                'code'    => $new_id->get_error_code(),
-                'message' => $new_id->get_error_message(),
-            ], $new_id->get_error_data()['status'] ?? 400 );
-        }
+        if ( is_wp_error( $new_id ) ) return $new_id;
 
         return self::respond_full( $new_id, 201 );
     }
@@ -196,15 +183,17 @@ class YZMF_Slider_REST {
     private static function respond_full( $id, $status = 200 ) {
         $post = get_post( $id );
         if ( ! $post || $post->post_type !== YZMF_Slider::POST_TYPE ) {
-            return new WP_REST_Response( [ 'code' => 'yzmf_slider_not_found', 'message' => 'No existe' ], 404 );
+            return new WP_Error( 'yzmf_slider_not_found', 'No existe', [ 'status' => 404 ] );
         }
 
-        return new WP_REST_Response( [
+        $resp = rest_ensure_response( [
             'id'       => $id,
             'title'    => $post->post_title,
             'status'   => $post->post_status,
             'modified' => mysql_to_rfc3339( $post->post_modified_gmt ),
             'data'     => YZMF_Slider::get_data( $id ),
-        ], $status );
+        ] );
+        $resp->set_status( $status );
+        return $resp;
     }
 }

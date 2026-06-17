@@ -4,6 +4,9 @@
  * Plugin URI:  https://yezraelperez.es
  * Description: Detecta hotlinking de imágenes desde dominios externos y sirve una versión con marca de agua. Cache en disco, configurable.
  * Version:     1.0.0
+ * Requires PHP: 7.4
+ * Requires at least: 6.0
+ * Tested up to: 6.7
  * Author:      Yezrael Pérez
  * License:     GPL-2.0+
  * Text Domain: yzmf-hotlink-wm

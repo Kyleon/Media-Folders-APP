@@ -116,9 +116,15 @@ class YZMF_Media_Service {
 
     /**
      * Ejecuta el WP_Query y devuelve el payload listo para REST/AJAX.
+     *
+     * Acepta $params['context'] = 'list' (default) o 'detail'. En 'list' el
+     * format_image devuelve solo los campos esenciales (~5KB por respuesta
+     * de 40 items vs ~30KB en 'detail'). MediaDetail.vue debe pedir el
+     * /media/{id} con context=detail para los campos completos.
      */
     public static function run( array $params ) {
         $built = self::build_query_args( $params );
+        $context = ( isset( $params['context'] ) && $params['context'] === 'detail' ) ? 'detail' : 'list';
         $q = new WP_Query( $built['args'] );
 
         $ids = wp_list_pluck( $q->posts, 'ID' );
@@ -126,8 +132,12 @@ class YZMF_Media_Service {
             update_meta_cache( 'post', $ids );
             update_object_term_cache( $ids, 'attachment' );
         }
+        $images = [];
+        foreach ( $q->posts as $p ) {
+            $images[] = YZMF_Ajax::format_image( $p, $context );
+        }
         return [
-            'images'  => array_map( [ 'YZMF_Ajax', 'format_image' ], $q->posts ),
+            'images'  => $images,
             'total'   => (int) $q->found_posts,
             'pages'   => (int) $q->max_num_pages,
             'current' => $built['paged'],

@@ -153,7 +153,16 @@ class YZMF_Ajax {
         ] ) );
     }
 
-    public static function format_image( $att ) {
+    /**
+     * Formatea un attachment para devolverlo por la API.
+     *
+     * @param WP_Post|int $att
+     * @param string      $context 'detail' (default, todos los campos) o 'list'
+     *                              (subset mínimo para grids: id, title, mime,
+     *                              thumb, medium, alt, folder_ids, geo).
+     *                              Reduce de ~30KB a ~5KB por respuesta de 40 items.
+     */
+    public static function format_image( $att, $context = 'detail' ) {
         if ( is_int( $att ) ) $att = get_post( $att );
         $thumb = wp_get_attachment_image_src( $att->ID, 'thumbnail' );
         $med   = wp_get_attachment_image_src( $att->ID, 'medium_large' );
@@ -201,13 +210,20 @@ class YZMF_Ajax {
         $ai_tags = get_post_meta( $att->ID, '_yzmf_ai_tags', true );
         if ( ! is_array( $ai_tags ) ) $ai_tags = [];
 
-        return [
+        $base = [
             'id'         => $att->ID,
             'title'      => $att->post_title,
-            'filename'   => basename( $path ?: '' ),
             'mime'       => $att->post_mime_type,
             'thumb'      => $thumb  ? $thumb[0]  : '',           // 150x150
             'medium'     => $med    ? $med[0]    : '',           // ~768
+            'alt'        => get_post_meta( $att->ID, '_wp_attachment_image_alt', true ) ?: '',
+            'folder_ids' => is_wp_error( $terms ) ? [] : $terms,
+            'geo'        => $geo,
+        ];
+        if ( $context === 'list' ) return $base;
+
+        return $base + [
+            'filename'   => basename( $path ?: '' ),
             'large'      => $large  ? $large[0]  : '',           // ~1024
             'full'       => $full   ? $full[0]   : wp_get_attachment_url( $att->ID ), // tamaño original
             'url'        => wp_get_attachment_url( $att->ID ),   // tamaño original (alias)
@@ -216,13 +232,10 @@ class YZMF_Ajax {
             'filesize'   => $size,
             'filesize_h' => $size ? size_format( $size ) : '—',
             'date'       => get_the_date( 'd/m/Y', $att ),
-            'alt'        => get_post_meta( $att->ID, '_wp_attachment_image_alt', true ) ?: '',
             'seo_title'  => get_post_meta( $att->ID, '_yzmf_seo_title', true ) ?: '',
             'caption'    => $att->post_excerpt,
             'description'=> $att->post_content,
-            'folder_ids' => is_wp_error( $terms ) ? [] : $terms,
             'exif'       => $exif,
-            'geo'        => $geo,
             'tags'       => $ai_tags,
             'edit_url'   => get_edit_post_link( $att->ID, 'raw' ),
         ];

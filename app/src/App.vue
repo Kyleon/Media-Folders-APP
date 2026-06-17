@@ -7,6 +7,7 @@ import AppShell from './components/AppShell.vue';
 import Toast from './components/Toast.vue';
 import UpdateBanner from './components/UpdateBanner.vue';
 import SearchPalette from './components/SearchPalette.vue';
+import ConfirmDialog from './components/ConfirmDialog.vue';
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts';
 import { useAutoLogout } from './composables/useAutoLogout';
 
@@ -15,7 +16,11 @@ const auth   = useAuthStore();
 const route  = useRoute();
 const router = useRouter();
 
-onMounted(() => ui.applyTheme());
+const confirmDialogRef = ref(null);
+onMounted(() => {
+  ui.applyTheme();
+  ui.registerConfirmDialog(confirmDialogRef.value);
+});
 
 const showShell    = computed(() => auth.isAuthed && !route.meta.public && !route.meta.fullscreen);
 const showPalette  = ref(false);
@@ -54,4 +59,5 @@ useAutoLogout(() => {
   <Toast />
   <UpdateBanner />
   <SearchPalette v-model="showPalette" />
+  <ConfirmDialog ref="confirmDialogRef" />
 </template>

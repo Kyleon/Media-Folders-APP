@@ -4,6 +4,9 @@
  * Plugin URI:  https://yezraelperez.es
  * Description: Galerías privadas para clientes con token único, favoritas, comentarios y descarga selectiva. Sin necesidad de cuenta de WordPress para el cliente.
  * Version:     1.0.4
+ * Requires PHP: 7.4
+ * Requires at least: 6.0
+ * Tested up to: 6.7
  * Author:      Yezrael Pérez
  * License:     GPL-2.0+
  * Text Domain: yzmf-cp

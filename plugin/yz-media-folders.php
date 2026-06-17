@@ -4,6 +4,9 @@
  * Plugin URI:  https://nubedocs.es
  * Description: Gestor de medios propio con carpetas, drag & drop, modal de edición, sliders configurables y REST API. Independiente de la librería nativa de WordPress.
  * Version:     2.5.0
+ * Requires PHP: 7.4
+ * Requires at least: 6.0
+ * Tested up to: 6.7
  * Author:      Yezrael Pérez · Nubedocs
  * Author URI:  https://nubedocs.es
  * License:     GPL-2.0+
@@ -79,4 +82,19 @@ add_action( 'created_term', function ( $term_id, $tt_id, $taxonomy ) {
 register_activation_hook( __FILE__, function () {
     // La taxonomía se registra en init; aquí solo refrescamos rewrite rules.
     flush_rewrite_rules();
+    update_option( 'yzmf_db_version', YZMF_VERSION );
 } );
+
+/**
+ * Migración mínima: si la versión persistida no coincide con la actual,
+ * disparamos las acciones de migración pertinentes. Hoy es solo flush de
+ * rewrite rules + setup defaults; en el futuro permite añadir migraciones
+ * sin riesgo de aplicarlas dos veces.
+ */
+add_action( 'plugins_loaded', function () {
+    $stored = get_option( 'yzmf_db_version' );
+    if ( $stored === YZMF_VERSION ) return;
+    // Futuras migraciones por versión van aquí (if-greater-than comparisons).
+    flush_rewrite_rules();
+    update_option( 'yzmf_db_version', YZMF_VERSION );
+}, 999 );
