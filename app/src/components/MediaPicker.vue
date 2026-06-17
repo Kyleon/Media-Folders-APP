@@ -182,7 +182,7 @@ useFocusTrap(sheetEl, () => props.modelValue, close);
               @click="toggle(img)"
               @keydown.enter.prevent="toggle(img)"
               @keydown.space.prevent="toggle(img)">
-              <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" class="thumb-img" />
+              <img v-if="img.thumb" :src="img.thumb" :alt="img.alt || img.title || ''" loading="lazy" class="thumb-img" />
               <div v-if="multiple" class="check" :class="{ on: isSelected(img.id) }">
                 <span v-if="isSelected(img.id)">✓</span>
               </div>

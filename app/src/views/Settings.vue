@@ -194,7 +194,7 @@ onMounted(async () => {
 
     <!-- 1. Identidad / Marca ─────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Marca</h3>
+      <h2 class="section">Marca</h2>
 
       <input ref="logoFileInput" type="file"
         accept="image/svg+xml,image/png,image/jpeg,image/webp,image/*"
@@ -254,7 +254,7 @@ onMounted(async () => {
 
     <!-- 2. Apariencia ────────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Apariencia</h3>
+      <h2 class="section">Apariencia</h2>
       <div class="kv-row">
         <span class="muted">Tema</span>
         <ThemeSwitch />
@@ -263,7 +263,7 @@ onMounted(async () => {
 
     <!-- 3. Sesión actual ────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Sesión</h3>
+      <h2 class="section">Sesión</h2>
       <div class="kv-row"><span class="muted">Sitio</span><span class="val">{{ auth.creds?.baseUrl }}</span></div>
       <div class="kv-row"><span class="muted">Usuario</span><span class="val">{{ auth.creds?.username }}</span></div>
       <div class="kv-row">
@@ -297,7 +297,7 @@ onMounted(async () => {
 
     <!-- 4. Seguridad: actividad ──────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Seguridad — actividad</h3>
+      <h2 class="section">Seguridad — actividad</h2>
       <div v-if="loadingActivity" class="center muted small"><Spinner :size="12" /> Cargando…</div>
       <template v-else>
         <div class="auth-stats">
@@ -345,7 +345,7 @@ onMounted(async () => {
 
     <!-- 5. Política de bloqueo ───────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Política de bloqueo de logins</h3>
+      <h2 class="section">Política de bloqueo de logins</h2>
       <p class="muted small" style="margin-bottom:10px">
         Cuando una IP supera el umbral de intentos fallidos en una ventana de
         tiempo, se bloquea durante el tiempo de penalización.
@@ -373,7 +373,7 @@ onMounted(async () => {
 
     <!-- 6. Usuarios ──────────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Usuarios</h3>
+      <h2 class="section">Usuarios</h2>
       <button class="btn" @click="$router.push({ name: 'users' })" style="width:100%;margin-bottom:8px">
         👤 Gestionar usuarios y contraseñas de aplicación
       </button>
@@ -385,7 +385,7 @@ onMounted(async () => {
 
     <!-- 7. Gestión ──────────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Gestión</h3>
+      <h2 class="section">Gestión</h2>
       <button class="btn" @click="$router.push({ name: 'folders' })" style="width:100%;margin-bottom:8px">📁 Carpetas de medios</button>
       <button class="btn" @click="$router.push({ name: 'portfolio-categories' })" style="width:100%;margin-bottom:8px">📂 Categorías de portfolio</button>
       <button class="btn" @click="$router.push({ name: 'client-galleries' })" style="width:100%;margin-bottom:8px">🔐 Galerías de cliente</button>
@@ -394,7 +394,7 @@ onMounted(async () => {
 
     <!-- 8. Mantenimiento ────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Mantenimiento</h3>
+      <h2 class="section">Mantenimiento</h2>
       <button class="btn" @click="clearCaches" style="width:100%">🧹 Limpiar cachés</button>
       <p class="muted small" style="margin-top:8px">
         Limpia los datos cacheados por el Service Worker. Útil si la app no muestra los últimos cambios.
@@ -403,7 +403,7 @@ onMounted(async () => {
 
     <!-- 9. Acerca de ────────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section">Acerca de</h3>
+      <h2 class="section">Acerca de</h2>
       <p class="muted small">
         {{ brand.name || 'YPVA' }} Admin · v0.2.0<br>
         Panel para fotógrafos · plugin <code>yz-media-folders</code>

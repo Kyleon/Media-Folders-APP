@@ -99,7 +99,7 @@ async function removeCategory(cat) {
   <div>
     <div class="card">
       <div class="head">
-        <h3 class="section">Categorías de portfolio</h3>
+        <h2 class="section">Categorías de portfolio</h2>
         <button class="add-btn" @click="startCreate(0)">+ Nueva</button>
       </div>
 

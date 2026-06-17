@@ -140,7 +140,7 @@ const isMe = computed(() => user.value?.id === user.value?.me_id);
 
     <!-- Datos -->
     <div class="card">
-      <h3 class="section">Datos</h3>
+      <h2 class="section">Datos</h2>
       <div class="row">
         <div class="field" style="flex:1">
           <label>Nombre</label>
@@ -190,7 +190,7 @@ const isMe = computed(() => user.value?.id === user.value?.me_id);
     <!-- Application Passwords -->
     <div class="card">
       <div class="ap-head">
-        <h3 class="section" style="margin:0">Application Passwords</h3>
+        <h2 class="section" style="margin:0">Application Passwords</h2>
         <button class="btn sm pri" @click="showCreatePwd = true">+ Nueva</button>
       </div>
       <p class="muted small" style="margin:6px 0 12px">

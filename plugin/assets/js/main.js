@@ -528,7 +528,7 @@ function buildItem(img) {
     <div class="yz-item${isSel ? ' selected' : ''}" data-id="${img.id}">
       <div class="yz-thumb">
         ${isImg && img.thumb
-            ? `<img src="${img.thumb}" alt="${esc(img.title)}" loading="lazy">`
+            ? `<img src="${img.thumb}" alt="${esc(img.alt || img.title)}" loading="lazy">`
             : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:30px">${mimeIcon(img.mime)}</div>`
         }
         <div class="yz-checkbox" title="Seleccionar"></div>

@@ -30,10 +30,13 @@ let miniMap = null;
 let miniMarker = null;
 
 const form = ref({ title: '', alt: '', seo_title: '', caption: '', description: '' });
+const loadError = ref('');
 
-onMounted(async () => {
-  await folders.load();
+async function loadDetail() {
+  loading.value = true;
+  loadError.value = '';
   try {
+    await folders.load();
     item.value = await MediaAPI.detail(props.id);
     form.value = {
       title: item.value.title || '',
@@ -44,12 +47,15 @@ onMounted(async () => {
     };
     folderId.value = item.value.folder_ids?.[0] || 0;
   } catch (e) {
-    ui.toast(e.message, 'err');
-    router.back();
+    // Antes hacíamos router.back() — el user perdía contexto. Ahora
+    // mostramos un error con botón Reintentar.
+    loadError.value = e.message || 'Error al cargar la imagen';
   } finally {
     loading.value = false;
   }
-});
+}
+
+onMounted(loadDetail);
 
 async function save() {
   saving.value = true;
@@ -292,6 +298,14 @@ watch(() => props.id, async (newId) => {
 
 <template>
   <div v-if="loading" class="center muted"><Spinner /> Cargando…</div>
+
+  <div v-else-if="loadError" class="center" role="alert" aria-live="assertive" style="flex-direction:column;gap:12px;padding:40px 20px">
+    <p class="danger">{{ loadError }}</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn" @click="router.back()">Volver</button>
+      <button class="btn pri" @click="loadDetail">Reintentar</button>
+    </div>
+  </div>
 
   <div v-else-if="item" class="md-layout">
     <div class="md-col md-col-left">

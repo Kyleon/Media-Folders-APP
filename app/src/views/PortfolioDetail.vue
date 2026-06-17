@@ -245,7 +245,7 @@ async function onLocationCreated(loc) {
     <!-- 2. Galería justo debajo del hero -->
     <div class="card">
       <div class="gallery-head">
-        <h3 class="section" style="margin:0">Galería ({{ galleryItems.length }})</h3>
+        <h2 class="section" style="margin:0">Galería ({{ galleryItems.length }})</h2>
         <div class="gh-actions">
           <button v-if="galleryItems.length" class="btn sm"
             @click="$router.push({ name: 'slideshow', query: { portfolio: item.id } })"

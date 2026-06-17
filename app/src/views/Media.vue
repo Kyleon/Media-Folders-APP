@@ -9,6 +9,7 @@ import Skeleton from '../components/Skeleton.vue';
 import PullRefresh from '../components/PullRefresh.vue';
 import GeoTagger from '../components/GeoTagger.vue';
 import BulkRenameSheet from '../components/BulkRenameSheet.vue';
+import EmptyState from '../components/EmptyState.vue';
 import { StatsAPI } from '../api/endpoints';
 
 const router  = useRouter();
@@ -352,6 +353,18 @@ function changeOrderby(v) {
   media.load(true);
 }
 
+const hasActiveFilters = computed(() => {
+  const f = media.filter;
+  return !!(f.search || f.mime || f.tag || f.color || f.folder > 0 || f.folder === 0);
+});
+
+function clearAllFilters() {
+  activeQuickFilter.value = null;
+  searchInput.value = '';
+  media.setFilter({ folder: -1, search: '', mime: '', tag: '', color: '', orderby: 'date', order: 'DESC' });
+  media.load(true);
+}
+
 function changeMime(v) {
   // Cambiar mime directamente desactiva cualquier QuickFilter activo
   // y limpia el search invisible (__NO_ALT__) para que "Todos" muestre todo.
@@ -480,7 +493,7 @@ watch(sentinel, setupObserver);
         @mouseleave="cancelPress"
         @contextmenu.prevent="media.enterSelectMode(img.id)">
         <div class="thumb">
-          <img v-if="img.thumb" :src="img.thumb" :alt="img.title" loading="lazy" />
+          <img v-if="img.thumb" :src="img.thumb" :alt="img.alt || img.title || ''" loading="lazy" />
           <div v-else class="thumb-icon">{{ thumbOrIcon(img) }}</div>
           <div v-if="media.selectMode" class="sel-check" :class="{ on: media.isSelected(img.id) }">
             <span v-if="media.isSelected(img.id)">✓</span>
@@ -516,7 +529,12 @@ watch(sentinel, setupObserver);
       </div>
     </div>
     <div v-else-if="media.loading" class="center muted"><Spinner /> Cargando más…</div>
-    <div v-else-if="!media.items.length" class="empty muted">📭 Sin resultados</div>
+    <EmptyState v-else-if="!media.items.length"
+      icon="📭"
+      title="Sin resultados"
+      :description="hasActiveFilters ? 'Hay filtros activos. Pruébalo sin filtros.' : 'Aún no hay imágenes en esta carpeta.'"
+      :actionLabel="hasActiveFilters ? 'Limpiar filtros' : 'Subir imágenes'"
+      @action="hasActiveFilters ? clearAllFilters() : $router.push({ name: 'upload' })" />
     <div ref="sentinel" v-if="media.page < media.pages" style="height:30px"></div>
 
     <!-- Folder picker bottomsheet -->
@@ -747,7 +765,7 @@ watch(sentinel, setupObserver);
   color: var(--text-mute);
   font-size: 12px;
   white-space: nowrap;
-  min-height: 32px;
+  min-height: 36px;
 }
 .qf-chip.on {
   background: var(--accent-lo);
@@ -808,11 +826,11 @@ watch(sentinel, setupObserver);
   font-size: 12px; font-weight: 500;
   border: 1px solid var(--border);
   white-space: nowrap;
-  min-height: 32px;
+  min-height: 36px;
 }
 .chip.on { background: var(--accent); color: #0f0f0f; border-color: var(--accent); }
 .select {
-  padding: 6px 8px; height: 32px; font-size: 12px;
+  padding: 6px 8px; height: 36px; font-size: 12px;
   background: var(--s2); border: 1px solid var(--border); color: var(--text);
   border-radius: 16px;
   width: auto;
