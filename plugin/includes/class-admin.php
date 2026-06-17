@@ -7,6 +7,21 @@ class YZMF_Admin {
         add_action( 'admin_menu',            [ __CLASS__, 'register_menu' ] );
         add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue' ] );
         add_action( 'admin_init',            [ __CLASS__, 'register_settings' ] );
+        add_action( 'admin_notices',         [ __CLASS__, 'maybe_basic_auth_notice' ] );
+    }
+
+    /**
+     * Aviso visible cuando Basic Auth con contraseña regular está activo.
+     * Es un modo de mayor riesgo: la contraseña principal del usuario viaja
+     * en cada request REST. Recomendamos Application Passwords.
+     */
+    public static function maybe_basic_auth_notice() {
+        if ( ! current_user_can( 'manage_options' ) ) return;
+        if ( ! class_exists( 'YZMF_Basic_Auth' ) || ! YZMF_Basic_Auth::is_enabled() ) return;
+        $url = esc_url( admin_url( 'admin.php?page=yz-media-settings' ) );
+        echo '<div class="notice notice-warning"><p><strong>YZ Media Folders:</strong> '
+           . esc_html__( 'Basic Auth con contraseña regular está ACTIVADO. La contraseña principal viaja en cada request a /wp-json/. Recomendamos Application Passwords y desactivar esta opción.', 'yz-media-folders' )
+           . ' <a href="' . $url . '">' . esc_html__( 'Ajustes', 'yz-media-folders' ) . '</a></p></div>';
     }
 
     public static function register_menu() {
@@ -243,8 +258,22 @@ class YZMF_Admin {
         register_setting( 'yzmf_settings_group', 'yzmf_cors_origins', [
             'sanitize_callback' => function( $v ) {
                 $list = array_filter( array_map( 'trim', explode( ',', (string) $v ) ) );
-                $list = array_filter( $list, function( $u ) { return (bool) wp_http_validate_url( $u ); } );
+                // Solo orígenes HTTPS o http://localhost para evitar abrir el grifo
+                // a orígenes inseguros si el admin se equivoca.
+                $list = array_filter( $list, function( $u ) {
+                    if ( ! wp_http_validate_url( $u ) ) return false;
+                    $p = wp_parse_url( $u );
+                    if ( ! empty( $p['scheme'] ) && $p['scheme'] === 'https' ) return true;
+                    if ( ! empty( $p['scheme'] ) && $p['scheme'] === 'http'
+                        && ! empty( $p['host'] ) && in_array( $p['host'], [ 'localhost', '127.0.0.1' ], true ) ) return true;
+                    return false;
+                } );
                 return implode( ', ', $list );
+            },
+        ] );
+        register_setting( 'yzmf_settings_group', 'yzmf_enable_basic_auth', [
+            'sanitize_callback' => function( $v ) {
+                return ( $v === '1' || $v === 1 || $v === true ) ? '1' : '0';
             },
         ] );
     }

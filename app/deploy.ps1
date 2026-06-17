@@ -91,7 +91,9 @@ function Upload-FtpFile {
 Write-Host "[3/3] Subiendo archivos..." -ForegroundColor Cyan
 
 $root  = (Resolve-Path ".\dist").Path
-$items = Get-ChildItem -Recurse -File ".\dist"
+# Filtramos .map: si por error vite.config.js queda con sourcemaps activos,
+# evitamos publicarlos en producción.
+$items = Get-ChildItem -Recurse -File ".\dist" | Where-Object { $_.Extension -ne ".map" }
 $total = $items.Count
 $count = 0
 $totalBytes = 0

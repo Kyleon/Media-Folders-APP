@@ -27,7 +27,11 @@ class YZMF_Basic_Auth {
     }
 
     public static function is_enabled() {
-        $opt = get_option( 'yzmf_enable_basic_auth', '1' );
+        // Default OFF a partir de 2026-06: solo Application Passwords salvo
+        // que el admin lo active explícitamente. Reduce la superficie de
+        // credential-stuffing (basta con que se filtre la password regular
+        // del usuario para tomar la API entera).
+        $opt = get_option( 'yzmf_enable_basic_auth', '0' );
         return $opt === '1' || $opt === 1 || $opt === true;
     }
 

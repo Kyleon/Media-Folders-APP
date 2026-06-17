@@ -47,6 +47,10 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // Sin sourcemaps en producción: en builds anteriores se subían a Hostinger
+    // y permitían reverse-engineering del flujo de auth. Para debugging local
+    // pásalo a 'inline' o 'hidden' temporalmente (deploy.ps1 ya filtra .map
+    // como cinturón y tirantes).
+    sourcemap: false,
   },
 });

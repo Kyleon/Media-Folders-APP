@@ -32,4 +32,14 @@
   <FilesMatch "\.(html|webmanifest)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate"
   </FilesMatch>
+
+  # Cabeceras de seguridad
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "camera=(self), microphone=(), geolocation=(self), payment=()"
+  # CSP: el script de la PWA viene del propio dominio; permitimos conectar a
+  # WordPress (REST), tile-server de OpenStreetMap (Leaflet) y geocoder de
+  # Nominatim. blob: necesario para algunas operaciones de Vite/Workbox.
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://yezraelperez.es https://*.tile.openstreetmap.org https://nominatim.openstreetmap.org; worker-src 'self' blob:; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 </IfModule>
