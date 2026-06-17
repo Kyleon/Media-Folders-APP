@@ -795,27 +795,21 @@ class YZMF_REST {
     }
 
     /**
-     * Backfill perezoso de _yzmf_geo_set_at para geos preexistentes (pre-2.6.0).
-     * Para cada attachment con _yzmf_geo_lat pero sin _yzmf_geo_set_at,
-     * escribimos el timestamp del post_date (UNIX). Idempotente y se ejecuta
-     * una sola vez gracias al flag yzmf_geo_set_at_backfilled.
+     * Orden por timestamp de geo via posts_clauses. Usa _yzmf_geo_set_at si
+     * existe (LEFT JOIN, no INNER) y CAE A post_date_gmt cuando no.
+     *
+     * Sin esto teníamos un orderby meta_value_num que generaba INNER JOIN y
+     * dejaba fuera del listado a las fotos sin _yzmf_geo_set_at — justo las
+     * que el backfill no había alcanzado.
      */
-    private static function maybe_backfill_geo_set_at() {
-        if ( get_option( 'yzmf_geo_set_at_backfilled' ) === 'yes' ) return;
+    public static function order_by_geo_set_at( $clauses ) {
         global $wpdb;
-        // INSERT IGNORE para no duplicar si el meta ya existe.
-        $wpdb->query( "
-            INSERT IGNORE INTO {$wpdb->postmeta} (post_id, meta_key, meta_value)
-            SELECT p.ID, '_yzmf_geo_set_at', UNIX_TIMESTAMP(p.post_date_gmt)
-            FROM {$wpdb->posts} p
-            INNER JOIN {$wpdb->postmeta} pm_lat
-              ON pm_lat.post_id = p.ID AND pm_lat.meta_key = '_yzmf_geo_lat'
-            LEFT JOIN {$wpdb->postmeta} pm_at
-              ON pm_at.post_id  = p.ID AND pm_at.meta_key = '_yzmf_geo_set_at'
-            WHERE p.post_type = 'attachment'
-              AND pm_at.meta_id IS NULL
-        " );
-        update_option( 'yzmf_geo_set_at_backfilled', 'yes', false );
+        $clauses['join']    .= " LEFT JOIN {$wpdb->postmeta} yz_pm_setat "
+                            . " ON yz_pm_setat.post_id = {$wpdb->posts}.ID "
+                            . " AND yz_pm_setat.meta_key = '_yzmf_geo_set_at' ";
+        $clauses['orderby']  = "COALESCE(CAST(yz_pm_setat.meta_value AS UNSIGNED), "
+                            . "UNIX_TIMESTAMP({$wpdb->posts}.post_date_gmt)) DESC";
+        return $clauses;
     }
 
     /**
@@ -832,14 +826,9 @@ class YZMF_REST {
         $folder_id    = intval( $req->get_param( 'folder_id' ) ?: 0 );
         $portfolio_id = intval( $req->get_param( 'portfolio_id' ) ?: 0 );
 
-        // Migración perezosa: para geos antiguas sin _yzmf_geo_set_at, hacemos
-        // backfill con post_date para que entren en el orden. Sin esto el
-        // INNER JOIN del orderby las dejaría fuera.
-        self::maybe_backfill_geo_set_at();
-
-        // Orden por timestamp de asignación de geo (DESC = lo más reciente
-        // primero). Antes era post_date DESC → fotos antiguas geolocalizadas
-        // hoy quedaban fuera del top 500.
+        // Orden por timestamp de geo (DESC). El posts_clauses filter usa
+        // COALESCE(_yzmf_geo_set_at, post_date_gmt) para que las fotos sin
+        // ese meta también aparezcan ordenadas por su fecha de subida.
         $args = [
             'post_type'      => 'attachment',
             'post_status'    => 'inherit',
@@ -848,9 +837,6 @@ class YZMF_REST {
             'meta_query'     => [
                 [ 'key' => '_yzmf_geo_lat', 'compare' => 'EXISTS' ],
             ],
-            'meta_key'       => '_yzmf_geo_set_at',
-            'orderby'        => 'meta_value_num',
-            'order'          => 'DESC',
             'fields'         => 'ids',
             'no_found_rows'  => true,
         ];
@@ -878,7 +864,9 @@ class YZMF_REST {
             $args['posts_per_page'] = min( $limit, count( $ids ) );
         }
 
+        add_filter( 'posts_clauses', [ __CLASS__, 'order_by_geo_set_at' ], 99 );
         $q = new WP_Query( $args );
+        remove_filter( 'posts_clauses', [ __CLASS__, 'order_by_geo_set_at' ], 99 );
 
         if ( ! empty( $q->posts ) ) {
             update_meta_cache( 'post', $q->posts );
