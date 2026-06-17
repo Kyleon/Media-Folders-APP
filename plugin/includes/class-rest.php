@@ -791,6 +791,11 @@ class YZMF_REST {
             update_post_meta( $id, '_yzmf_geo_set_at', time() );
         }
 
+        // Geo cambió → purga LSCache para que la próxima /media/geo/all
+        // devuelva la lista actualizada. update_post_meta no dispara hooks
+        // de purge automáticamente.
+        do_action( 'litespeed_purge_all' );
+
         return YZMF_Ajax::format_image( get_post( $id ) );
     }
 

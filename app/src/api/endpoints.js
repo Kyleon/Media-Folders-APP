@@ -32,9 +32,16 @@ export const MediaAPI = {
   generateAI: (id)            => api.post(NS + 'media/' + id + '/ai'),
   setGeo: (id, body)          => api.put(NS + 'media/' + id + '/geo', body),
   bulkGeo: (ids, body)        => api.post(NS + 'media/geo/bulk', { ids, ...body }),
-  listGeo: (params = {})      => api.get(NS + 'media/geo/all', typeof params === 'number' ? { limit: params } : params),
+  listGeo: (params = {})      => {
+    // Cache-buster: aunque /yzmf/v1/* envía no-cache headers, LSCache puede
+    // estar sirviendo entradas guardadas antes de que esos headers se
+    // añadieran. Un _t distinto por petición evita el cache hit.
+    const p = typeof params === 'number' ? { limit: params } : { ...params };
+    p._t = Date.now();
+    return api.get(NS + 'media/geo/all', p);
+  },
   scanExifStart:              () => api.post(NS + 'media/geo/scan-exif'),
-  scanExifStatus:             () => api.get(NS + 'media/geo/scan-exif'),
+  scanExifStatus:             () => api.get(NS + 'media/geo/scan-exif', { _t: Date.now() }),
   setPalette: (id, palette)   => api.put(NS + 'media/' + id + '/palette', { palette }),
   bulkRenamePreview: (ids, operation, params) =>
     api.post(NS + 'media/bulk-rename/preview', { ids, operation, params }),
