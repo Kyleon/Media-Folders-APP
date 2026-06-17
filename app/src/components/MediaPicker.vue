@@ -52,18 +52,42 @@ watch(folder, () => { resetAndLoad(); });
 watch(() => props.modelValue, async (v) => {
   if (v) {
     selected.value = [];
-    resetAndLoad();
+    await resetAndLoad();
     await nextTick();
     setupObserver();
+    // Si la primera página no llena el viewport, sigue cargando hasta que
+    // el sentinel quede fuera de vista o no haya más páginas. Sin esto, el
+    // IntersectionObserver no detecta un "enter event" porque el sentinel
+    // ya estaba visible cuando se montó.
+    fillViewport();
   } else {
     teardownObserver();
   }
 });
 
-function resetAndLoad() {
+async function resetAndLoad() {
   page.value = 1;
   items.value = [];
-  load();
+  await load();
+}
+
+/**
+ * Mientras el sentinel siga visible dentro del scroll container Y queden
+ * páginas, sigue cargando. Cap a 5 iteraciones para no descontrolarse.
+ */
+async function fillViewport() {
+  for (let i = 0; i < 5; i++) {
+    if (page.value >= pages.value) break;
+    if (!sentinel.value || !scrollRef.value) break;
+    const sRect = sentinel.value.getBoundingClientRect();
+    const cRect = scrollRef.value.getBoundingClientRect();
+    // Sentinel "visible" si su top está dentro del viewport + 300px buffer.
+    const visible = sRect.top < cRect.bottom + 300;
+    if (!visible) break;
+    page.value++;
+    await load();
+    await nextTick();
+  }
 }
 
 async function load() {
@@ -94,11 +118,15 @@ async function load() {
   }
 }
 
-function loadMore() {
+async function loadMore() {
   if (loading.value) return;
   if (page.value >= pages.value) return;
   page.value++;
-  load();
+  await load();
+  await nextTick();
+  // Tras cargar, si el sentinel sigue dentro del viewport y quedan páginas,
+  // continúa. Cubre el caso "cargué 40 pero todavía cabe más".
+  fillViewport();
 }
 
 /* ─────── IntersectionObserver para scroll infinito ─────── */
