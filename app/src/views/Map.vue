@@ -37,8 +37,7 @@ const photos     = ref([]);
 const photoLayer = ref(null);   // L.layerGroup
 const photoPreview = ref(null); // foto activa para preview lateral
 
-// Filtros combinables (AND) sobre la capa de fotos. 0 = sin filtro.
-const photoFilterFolder    = ref(0);
+// Filtro sobre la capa de fotos. 0 = sin filtro.
 const photoFilterPortfolio = ref(0);
 
 // Estado del scan EXIF en background (polling cada 5s mientras esté running).
@@ -77,10 +76,8 @@ onMounted(async () => {
 
 async function loadPhotos() {
   try {
-    // Cap bajado a 500 (alineado con el cap server-side). Filtros combinables
-    // por carpeta + portfolio (AND).
+    // Cap 500 (alineado con server-side). Filtro opcional por portfolio.
     const params = { limit: 500 };
-    if (photoFilterFolder.value > 0)    params.folder_id    = photoFilterFolder.value;
     if (photoFilterPortfolio.value > 0) params.portfolio_id = photoFilterPortfolio.value;
     photos.value = await MediaAPI.listGeo(params);
   } catch (e) {
@@ -88,8 +85,8 @@ async function loadPhotos() {
   }
 }
 
-// Re-cargar fotos cuando cambien los filtros (si la capa está visible).
-watch([photoFilterFolder, photoFilterPortfolio], async () => {
+// Re-cargar fotos cuando cambie el filtro (si la capa está visible).
+watch(photoFilterPortfolio, async () => {
   if (!showPhotos.value) return;
   await loadPhotos();
   renderPhotoLayer();
@@ -438,17 +435,8 @@ function toggleFolder(id) {
         <span class="muted small">{{ portfolios.length }}</span>
       </button>
 
-      <!-- Filtros combinables sobre la capa de fotos (visible solo si está activa) -->
+      <!-- Filtro por portfolio sobre la capa de fotos (visible solo si está activa) -->
       <div v-if="showPhotos" class="map-photo-filters">
-        <label class="ftr-row">
-          <span class="ftr-label">Carpeta</span>
-          <select v-model.number="photoFilterFolder" class="ftr-select">
-            <option :value="0">— Todas —</option>
-            <option v-for="f in folders.flat" :key="f.id" :value="f.id">
-              {{ '— '.repeat(f.depth) }}{{ f.name }} ({{ f.count }})
-            </option>
-          </select>
-        </label>
         <label class="ftr-row">
           <span class="ftr-label">Portfolio</span>
           <select v-model.number="photoFilterPortfolio" class="ftr-select">
@@ -458,9 +446,9 @@ function toggleFolder(id) {
             </option>
           </select>
         </label>
-        <button v-if="photoFilterFolder || photoFilterPortfolio"
-          class="ftr-clear" @click="photoFilterFolder = 0; photoFilterPortfolio = 0"
-          aria-label="Limpiar filtros">✕ Limpiar</button>
+        <button v-if="photoFilterPortfolio"
+          class="ftr-clear" @click="photoFilterPortfolio = 0"
+          aria-label="Limpiar filtro">✕ Limpiar</button>
       </div>
 
       <!-- Indicador del scan EXIF: progreso si corre, botón si no. -->

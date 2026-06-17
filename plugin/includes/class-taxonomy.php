@@ -18,7 +18,26 @@ class YZMF_Taxonomy {
             'show_ui'       => false,
             'show_in_rest'  => true,
             'rewrite'       => false,
+            // Por defecto WP usa _update_post_term_count que solo cuenta posts
+            // con status 'publish'. Los attachments tienen status 'inherit', así
+            // que el conteo siempre era 0. _update_generic_term_count cuenta
+            // todos los objetos sin importar el status.
+            'update_count_callback' => '_update_generic_term_count',
         ] );
+
+        // Backfill: si la opción no está marcada, recontamos todos los términos
+        // una vez para que el count refleje la realidad tras este fix.
+        if ( get_option( 'yzmf_term_count_recounted' ) !== 'yes' ) {
+            $tt_ids = get_terms( [
+                'taxonomy'   => YZMF_TAXONOMY,
+                'fields'     => 'tt_ids',
+                'hide_empty' => false,
+            ] );
+            if ( ! is_wp_error( $tt_ids ) && ! empty( $tt_ids ) ) {
+                wp_update_term_count_now( $tt_ids, YZMF_TAXONOMY );
+            }
+            update_option( 'yzmf_term_count_recounted', 'yes', false );
+        }
     }
 
     /** Árbol anidado de carpetas */

@@ -150,6 +150,7 @@ class YZMF_Exif_Scan {
                 update_post_meta( $id, '_yzmf_geo_lat',    $gps['lat'] );
                 update_post_meta( $id, '_yzmf_geo_lng',    $gps['lng'] );
                 update_post_meta( $id, '_yzmf_geo_source', 'exif' );
+                update_post_meta( $id, '_yzmf_geo_set_at', time() );
                 $found++;
             } else {
                 // Marca de "scaneado sin geo": evita reprocesar en el siguiente

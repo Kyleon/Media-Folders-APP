@@ -39,6 +39,7 @@ class YZMF_Ajax {
                     update_post_meta( $attachment_id, '_yzmf_geo_lat',    $gps['lat'] );
                     update_post_meta( $attachment_id, '_yzmf_geo_lng',    $gps['lng'] );
                     update_post_meta( $attachment_id, '_yzmf_geo_source', 'exif' );
+                    update_post_meta( $attachment_id, '_yzmf_geo_set_at', time() );
                 }
             }
         }

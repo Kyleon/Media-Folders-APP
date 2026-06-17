@@ -770,6 +770,7 @@ class YZMF_REST {
             delete_post_meta( $id, '_yzmf_geo_lng' );
             delete_post_meta( $id, '_yzmf_geo_place' );
             delete_post_meta( $id, '_yzmf_geo_source' );
+            delete_post_meta( $id, '_yzmf_geo_set_at' );
         } else {
             $lat_f = floatval( $lat );
             $lng_f = floatval( $lng );
@@ -783,9 +784,38 @@ class YZMF_REST {
                 update_post_meta( $id, '_yzmf_geo_place', sanitize_text_field( $place ) );
             }
             update_post_meta( $id, '_yzmf_geo_source', 'manual' );
+            // Timestamp de asignación: usado por list_media_with_geo para
+            // ordenar por "lo más recientemente geolocalizado". Sin esto,
+            // las fotos antiguas a las que se les añade geo hoy quedaban
+            // fuera del top 500 (ordenado por post_date).
+            update_post_meta( $id, '_yzmf_geo_set_at', time() );
         }
 
         return YZMF_Ajax::format_image( get_post( $id ) );
+    }
+
+    /**
+     * Backfill perezoso de _yzmf_geo_set_at para geos preexistentes (pre-2.6.0).
+     * Para cada attachment con _yzmf_geo_lat pero sin _yzmf_geo_set_at,
+     * escribimos el timestamp del post_date (UNIX). Idempotente y se ejecuta
+     * una sola vez gracias al flag yzmf_geo_set_at_backfilled.
+     */
+    private static function maybe_backfill_geo_set_at() {
+        if ( get_option( 'yzmf_geo_set_at_backfilled' ) === 'yes' ) return;
+        global $wpdb;
+        // INSERT IGNORE para no duplicar si el meta ya existe.
+        $wpdb->query( "
+            INSERT IGNORE INTO {$wpdb->postmeta} (post_id, meta_key, meta_value)
+            SELECT p.ID, '_yzmf_geo_set_at', UNIX_TIMESTAMP(p.post_date_gmt)
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm_lat
+              ON pm_lat.post_id = p.ID AND pm_lat.meta_key = '_yzmf_geo_lat'
+            LEFT JOIN {$wpdb->postmeta} pm_at
+              ON pm_at.post_id  = p.ID AND pm_at.meta_key = '_yzmf_geo_set_at'
+            WHERE p.post_type = 'attachment'
+              AND pm_at.meta_id IS NULL
+        " );
+        update_option( 'yzmf_geo_set_at_backfilled', 'yes', false );
     }
 
     /**
@@ -802,18 +832,25 @@ class YZMF_REST {
         $folder_id    = intval( $req->get_param( 'folder_id' ) ?: 0 );
         $portfolio_id = intval( $req->get_param( 'portfolio_id' ) ?: 0 );
 
+        // Migración perezosa: para geos antiguas sin _yzmf_geo_set_at, hacemos
+        // backfill con post_date para que entren en el orden. Sin esto el
+        // INNER JOIN del orderby las dejaría fuera.
+        self::maybe_backfill_geo_set_at();
+
+        // Orden por timestamp de asignación de geo (DESC = lo más reciente
+        // primero). Antes era post_date DESC → fotos antiguas geolocalizadas
+        // hoy quedaban fuera del top 500.
         $args = [
             'post_type'      => 'attachment',
             'post_status'    => 'inherit',
             'post_mime_type' => 'image',
             'posts_per_page' => $limit,
-            'orderby'        => 'date',
-            'order'          => 'DESC',
-            // Un solo EXISTS basta: si hay lat se asume que hay lng (contrato
-            // del plugin: apply_geo_to_id escribe ambos o ninguno).
             'meta_query'     => [
                 [ 'key' => '_yzmf_geo_lat', 'compare' => 'EXISTS' ],
             ],
+            'meta_key'       => '_yzmf_geo_set_at',
+            'orderby'        => 'meta_value_num',
+            'order'          => 'DESC',
             'fields'         => 'ids',
             'no_found_rows'  => true,
         ];
