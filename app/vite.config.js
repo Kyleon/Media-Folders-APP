@@ -77,7 +77,7 @@ export default defineConfig({
         // Chunks manuales para que las libs pesadas se cacheen entre rutas
         // en vez de duplicarse en cada vista que las importa.
         manualChunks: {
-          leaflet: ['leaflet'],
+          leaflet: ['leaflet', 'leaflet.markercluster'],
           draggable: ['vue-draggable-plus'],
         },
       },

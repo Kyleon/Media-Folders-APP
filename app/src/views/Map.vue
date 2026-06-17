@@ -1,6 +1,10 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import L from 'leaflet';
+// Plugin de clustering. Registra L.markerClusterGroup como side-effect.
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { useLocationsStore } from '../stores/locations';
 import { useFoldersStore } from '../stores/folders';
 import { useUiStore } from '../stores/ui';
@@ -131,25 +135,46 @@ function renderPhotoLayer() {
   }
   if (!showPhotos.value || !photos.value.length) return;
 
-  // Renderer canvas: pintar 500 markers como divIcon HTML congela el hilo
-  // principal en móvil. CircleMarker sobre canvas es ~10x más rápido.
-  const renderer = L.canvas({ padding: 0.5 });
-  photoLayer.value = L.layerGroup();
+  // L.markerClusterGroup agrupa markers próximos en un círculo con conteo,
+  // y "spiderfy" abre como abanico los que están exactamente en el mismo
+  // punto. Resuelve dos cosas a la vez: perf con cientos de markers y
+  // solapamientos en zooms altos.
+  photoLayer.value = L.markerClusterGroup({
+    chunkedLoading: true,            // procesa en chunks para no bloquear el hilo
+    spiderfyOnMaxZoom: true,         // abre abanico en zoom máximo
+    showCoverageOnHover: false,      // sin polígono al hover (más limpio)
+    zoomToBoundsOnClick: true,
+    maxClusterRadius: 50,            // px — clusters más compactos en mobile
+    spiderfyDistanceMultiplier: 1.4,
+    disableClusteringAtZoom: 19,
+    iconCreateFunction: (cluster) => {
+      const n = cluster.getChildCount();
+      const size = n < 10 ? 'sm' : n < 100 ? 'md' : 'lg';
+      return L.divIcon({
+        html: `<div class="yz-cluster yz-cluster-${size}"><span>${n}</span></div>`,
+        className: 'yz-cluster-wrap',
+        iconSize: L.point(40, 40),
+      });
+    },
+  });
+
+  const dotIcon = L.divIcon({
+    className: '',
+    html: '<div class="yz-photo-pin"></div>',
+    iconSize: [14, 14], iconAnchor: [7, 7],
+  });
+
+  const markers = [];
   for (const p of photos.value) {
-    const m = L.circleMarker([p.lat, p.lng], {
-      renderer,
-      radius: 5,
-      color: '#0f0f0f',
-      weight: 2,
-      fillColor: '#4e8ef7',
-      fillOpacity: 1,
-    });
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+    const m = L.marker([p.lat, p.lng], { icon: dotIcon });
     m.on('click', (e) => {
       L.DomEvent.stop(e);
       photoPreview.value = p;
     });
-    photoLayer.value.addLayer(m);
+    markers.push(m);
   }
+  photoLayer.value.addLayers(markers);  // bulk add — mucho más rápido que addLayer N veces
   photoLayer.value.addTo(map.value);
 }
 
@@ -785,4 +810,43 @@ function toggleFolder(id) {
 .sheet-enter-active .sheet, .sheet-leave-active .sheet { transition: transform .25s; }
 .sheet-enter-from, .sheet-leave-to { opacity: 0; }
 .sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: translateY(100%); }
+</style>
+
+<!-- Estilos NO scoped: Leaflet inyecta el HTML del divIcon en otro stacking
+     context, así que :scoped no llega. Estos sólo se aplican a las clases
+     que prefijamos con yz- (no afectan a otros componentes). -->
+<style>
+.yz-photo-pin {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #4e8ef7;
+  border: 2px solid #0f0f0f;
+  box-shadow: 0 0 0 1px rgba(78,142,247,.5);
+}
+
+.yz-cluster-wrap { background: transparent; border: 0; }
+.yz-cluster {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  color: #0f0f0f;
+  font-weight: 700;
+  font-size: 13px;
+  background: rgba(78,142,247,.85);
+  border: 2px solid #0f0f0f;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+  transition: transform .15s;
+}
+.yz-cluster:hover { transform: scale(1.08); }
+.yz-cluster-sm { background: rgba(78,142,247,.85); }
+.yz-cluster-md { background: rgba(200,169,126,.9); width: 46px; height: 46px; font-size: 14px; }
+.yz-cluster-lg { background: rgba(224,85,85,.9);  width: 54px; height: 54px; font-size: 15px; color: #fff; }
+
+/* Spider lines (las que conectan al centro al hacer click en un punto con
+   varios markers exactamente iguales) */
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow,
+.leaflet-cluster-spider-leg {
+  transition: stroke .3s ease-out, stroke-opacity .3s ease-out;
+}
 </style>
