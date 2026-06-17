@@ -294,7 +294,12 @@ onBeforeUnmount(() => {
 .close-btn { font-size: 22px; color: var(--text-mute); padding: 4px 8px; }
 .small { font-size: 11px; }
 
-.search-wrap { position: relative; margin-bottom: 10px; }
+.search-wrap {
+  position: relative;
+  margin-bottom: 10px;
+  /* Por encima del mapa Leaflet (que llega a z-index 700 internamente). */
+  z-index: 1000;
+}
 .search-status {
   padding: 6px 10px;
   margin-top: 4px;
@@ -309,7 +314,9 @@ onBeforeUnmount(() => {
   border-radius: var(--radius);
   margin-top: 4px;
   max-height: 200px; overflow-y: auto;
-  z-index: 5;
+  /* Por encima de los panes de Leaflet (markerPane = 600, popup = 700). */
+  z-index: 1100;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
 }
 .sr {
   display: block; width: 100%; text-align: left;
