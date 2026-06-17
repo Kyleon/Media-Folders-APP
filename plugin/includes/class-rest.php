@@ -1045,7 +1045,10 @@ class YZMF_REST {
         }
 
         global $wpdb;
-        // Cogemos todos los _wp_attachment_metadata de imágenes
+        // LIMIT defensivo: en catálogos grandes maybe_unserialize de TODA la
+        // tabla puede OOM en shared hostings. 5000 fotos = histograma
+        // representativo. Para catálogos mayores hace falta cola en background
+        // (diferido en AUDIT-DEFERRED.md).
         $rows = $wpdb->get_col( "
             SELECT pm.meta_value
             FROM {$wpdb->postmeta} pm
@@ -1053,12 +1056,15 @@ class YZMF_REST {
             WHERE pm.meta_key = '_wp_attachment_metadata'
               AND p.post_type = 'attachment'
               AND p.post_mime_type LIKE 'image/%'
+            LIMIT 5000
         " );
 
         $cameras = []; $focals = []; $apertures = []; $isos = []; $shutters = [];
 
         foreach ( $rows as $blob ) {
-            $meta = @maybe_unserialize( $blob );
+            // allowed_classes=false evita gadget chains de PHP Object Injection
+            // si llegara a haber meta_value con payload serializado de objeto.
+            $meta = @unserialize( $blob, [ 'allowed_classes' => false ] );
             if ( ! is_array( $meta ) || empty( $meta['image_meta'] ) ) continue;
             $im = $meta['image_meta'];
 
@@ -1165,7 +1171,8 @@ class YZMF_REST {
 
         $counts = [];
         foreach ( $rows as $blob ) {
-            $arr = @maybe_unserialize( $blob );
+            // allowed_classes=false: defensa frente a PHP Object Injection
+            $arr = @unserialize( $blob, [ 'allowed_classes' => false ] );
             if ( ! is_array( $arr ) ) continue;
             foreach ( $arr as $t ) {
                 $t = strtolower( trim( (string) $t ) );
@@ -1198,7 +1205,8 @@ class YZMF_REST {
 
         $counts = [];
         foreach ( $rows as $blob ) {
-            $arr = @maybe_unserialize( $blob );
+            // allowed_classes=false: defensa frente a PHP Object Injection
+            $arr = @unserialize( $blob, [ 'allowed_classes' => false ] );
             if ( ! is_array( $arr ) ) continue;
             foreach ( $arr as $hex ) {
                 $hex = strtoupper( ltrim( (string) $hex, '#' ) );
@@ -1219,13 +1227,40 @@ class YZMF_REST {
 
     /* ─────────── GEOCODING (proxy Nominatim) ─────────── */
 
+    /**
+     * Rate-limit por usuario para llamadas a Nominatim. Su política exige
+     * <1 req/s. Aquí lo enmarcamos en 30 req/min por user para evitar que
+     * la IP del servidor termine baneada por un abuso desde la PWA.
+     */
+    private static function geocode_rate_limit() {
+        $uid = get_current_user_id() ?: 0;
+        $key = 'yzmf_geo_rl_' . $uid;
+        $bucket = get_transient( $key );
+        if ( ! is_array( $bucket ) ) $bucket = [ 'count' => 0, 'started' => time() ];
+        if ( time() - $bucket['started'] > MINUTE_IN_SECONDS ) {
+            $bucket = [ 'count' => 0, 'started' => time() ];
+        }
+        $bucket['count']++;
+        set_transient( $key, $bucket, MINUTE_IN_SECONDS );
+        if ( $bucket['count'] > 30 ) {
+            return new WP_Error( 'yzmf_rate_limited',
+                'Demasiadas búsquedas de ubicación. Espera un momento.',
+                [ 'status' => 429 ]
+            );
+        }
+        return null;
+    }
+
     public static function geocode_search( WP_REST_Request $req ) {
         $q = sanitize_text_field( $req->get_param( 'q' ) ?: '' );
         if ( strlen( $q ) < 3 ) return rest_ensure_response( [] );
+        if ( strlen( $q ) > 200 ) return new WP_Error( 'yzmf_invalid', 'Búsqueda demasiado larga', [ 'status' => 400 ] );
 
         $cache_key = 'yzmf_geo_s_' . md5( $q );
         $cached    = get_transient( $cache_key );
         if ( $cached !== false ) return rest_ensure_response( $cached );
+
+        if ( $err = self::geocode_rate_limit() ) return $err;
 
         $url = add_query_arg( [
             'q'               => $q,
@@ -1253,6 +1288,8 @@ class YZMF_REST {
         $cache_key = 'yzmf_geo_r_' . md5( $lat . ',' . $lng );
         $cached    = get_transient( $cache_key );
         if ( $cached !== false ) return rest_ensure_response( $cached );
+
+        if ( $err = self::geocode_rate_limit() ) return $err;
 
         $url = add_query_arg( [
             'lat'             => $lat,

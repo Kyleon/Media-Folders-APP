@@ -295,6 +295,15 @@ class YZMF_Ajax {
     public static function yzmf_get_used_in() {
         self::check();
         $id      = intval( $_POST['id'] ?? 0 );
+
+        // Caché 1h: el LIKE sobre post_content es full-scan y se llama una
+        // vez por imagen abierta. Invalidado por save_post (yzmf_bust_used_in).
+        $cache_key = 'yzmf_used_in_' . $id;
+        $cached = get_transient( $cache_key );
+        if ( $cached !== false ) {
+            wp_send_json_success( $cached );
+        }
+
         $results = [];
         $seen    = [];
 
@@ -333,6 +342,7 @@ class YZMF_Ajax {
                 $results[] = [ 'id' => $p->ID, 'title' => $p->post_title, 'type' => $p->post_type, 'url' => get_permalink( $p->ID ), 'edit' => get_edit_post_link( $p->ID, 'raw' ), 'via' => 'Contenido' ];
             }
         }
+        set_transient( $cache_key, $results, HOUR_IN_SECONDS );
         wp_send_json_success( $results );
     }
 

@@ -26,7 +26,9 @@ const placeResults = ref([]);
 
 const saving  = ref(false);
 
-const showPhotos = ref(true);   // toggle capa de fotos
+// Capa de fotos OFF por defecto: cargar 500-2000 markers individuales
+// congela el hilo principal en móvil. El user la activa explícitamente.
+const showPhotos = ref(false);
 const photos     = ref([]);
 const photoLayer = ref(null);   // L.layerGroup
 const photoPreview = ref(null); // foto activa para preview lateral
@@ -46,21 +48,24 @@ function makeEmptyForm() {
 }
 
 onMounted(async () => {
+  // Carga prioritaria: locations + portfolios geo + lista ligera de
+  // portfolios. Las fotos se cargan SOLO cuando el user activa la capa.
   await Promise.all([
-    locations.load(), folders.load(), loadPhotos(),
+    locations.load(), folders.load(),
     loadPortfolios(), loadAllPortfolios(),
   ]);
   initMap();
   renderMarkers();
-  renderPhotoLayer();
   renderPortfolioLayer();
 });
 
 async function loadPhotos() {
   try {
-    photos.value = await MediaAPI.listGeo(2000);
+    // Cap bajado a 500 (alineado con el cap server-side). Para casos con
+    // más fotos georreferenciadas hace falta clustering — diferido.
+    photos.value = await MediaAPI.listGeo(500);
   } catch (e) {
-    console.warn('No se pudieron cargar fotos georreferenciadas', e);
+    // Silencioso: no es crítico. ui.toast lo reporta en otros flujos.
   }
 }
 
@@ -73,14 +78,18 @@ function renderPhotoLayer() {
   }
   if (!showPhotos.value || !photos.value.length) return;
 
+  // Renderer canvas: pintar 500 markers como divIcon HTML congela el hilo
+  // principal en móvil. CircleMarker sobre canvas es ~10x más rápido.
+  const renderer = L.canvas({ padding: 0.5 });
   photoLayer.value = L.layerGroup();
   for (const p of photos.value) {
-    const m = L.marker([p.lat, p.lng], {
-      icon: L.divIcon({
-        className: '',
-        html: '<div class="photo-pin" style="width:10px;height:10px;border-radius:50%;background:#4e8ef7;border:2px solid #0f0f0f;box-shadow:0 0 0 1px rgba(78,142,247,.5)"></div>',
-        iconSize: [10, 10], iconAnchor: [5, 5],
-      }),
+    const m = L.circleMarker([p.lat, p.lng], {
+      renderer,
+      radius: 5,
+      color: '#0f0f0f',
+      weight: 2,
+      fillColor: '#4e8ef7',
+      fillOpacity: 1,
     });
     m.on('click', (e) => {
       L.DomEvent.stop(e);
@@ -91,8 +100,12 @@ function renderPhotoLayer() {
   photoLayer.value.addTo(map.value);
 }
 
-function togglePhotos() {
+async function togglePhotos() {
   showPhotos.value = !showPhotos.value;
+  // Carga diferida: solo descargamos las fotos cuando el user activa la capa.
+  if (showPhotos.value && !photos.value.length) {
+    await loadPhotos();
+  }
   renderPhotoLayer();
 }
 

@@ -30,8 +30,28 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-        // Servicio offline simple — la app degrada con gracia si la API no responde
+        navigationPreload: true,
         runtimeCaching: [
+          // Thumbnails y assets servidos por WordPress. Cache eterno con cap.
+          {
+            urlPattern: /\/wp-content\/uploads\/.*\.(?:jpg|jpeg|png|webp|svg|gif)(?:\?.*)?$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'yzmf-uploads',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Listas pequeñas de la API que se consultan mucho. SWR.
+          {
+            urlPattern: ({ url }) => /\/wp-json\/yzmf\/v1\/(folders|stats|tags|colors|brand)/.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'yzmf-lists',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 10 },
+            },
+          },
+          // Datos del mapa público (también accesible sin auth).
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/wp-json/yzmf/v1/map/data'),
             handler: 'StaleWhileRevalidate',

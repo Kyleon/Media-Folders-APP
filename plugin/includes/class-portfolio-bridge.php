@@ -414,13 +414,17 @@ class YZMF_Portfolio_Bridge {
         $allowed_order = [ 'date', 'title', 'menu_order' ];
         if ( ! in_array( $order, $allowed_order, true ) ) $order = 'date';
 
+        // Cap defensivo a 1000 imágenes por galería. Para portfolios con más,
+        // hay que usar paginación de visualización en el theme — no tiene
+        // sentido cargar 5000 imágenes en una sola página.
         $atts = get_posts( [
             'post_type'      => 'attachment',
             'post_status'    => 'inherit',
-            'posts_per_page' => -1,
+            'posts_per_page' => 1000,
             'orderby'        => $order,
             'order'          => $direction,
             'fields'         => 'ids',
+            'no_found_rows'  => true,
             'tax_query'      => [ [
                 'taxonomy'         => YZMF_TAXONOMY,
                 'field'            => 'term_id',
