@@ -39,6 +39,8 @@ const place = ref('');
 
 const placeQ = ref('');
 const placeResults = ref([]);
+const searching   = ref(false);
+const searchError = ref('');
 const geoStatus = ref('');
 
 let mapInited = false;
@@ -97,10 +99,27 @@ function drawMarker(la, ln) {
 let searchDebounce;
 function onPlaceInput() {
   clearTimeout(searchDebounce);
-  if (placeQ.value.length < 3) { placeResults.value = []; return; }
+  searchError.value = '';
+  if (placeQ.value.length < 3) {
+    placeResults.value = [];
+    searching.value = false;
+    return;
+  }
+  searching.value = true;
   searchDebounce = setTimeout(async () => {
-    try { placeResults.value = await GeoAPI.search(placeQ.value); }
-    catch { placeResults.value = []; }
+    try {
+      const r = await GeoAPI.search(placeQ.value);
+      placeResults.value = Array.isArray(r) ? r : [];
+      if (!placeResults.value.length) searchError.value = 'Sin resultados';
+    } catch (e) {
+      placeResults.value = [];
+      // status 429 = rate limit, 502 = Nominatim caído, etc.
+      searchError.value = e?.status === 429
+        ? 'Demasiadas búsquedas, espera unos segundos'
+        : (e?.message || 'Error al buscar');
+    } finally {
+      searching.value = false;
+    }
   }, 350);
 }
 
@@ -205,8 +224,14 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="search-wrap">
-          <input v-model="placeQ" @input="onPlaceInput" placeholder="🔍 Buscar lugar (ciudad, monumento…)" />
-          <div v-if="placeResults.length" class="search-results">
+          <input v-model="placeQ" @input="onPlaceInput"
+            placeholder="🔍 Buscar lugar (ciudad, monumento…)"
+            aria-label="Buscar lugar" />
+          <div v-if="searching" class="search-status muted small">🔍 Buscando…</div>
+          <div v-else-if="searchError && placeQ.length >= 3" class="search-status danger small">
+            {{ searchError }}
+          </div>
+          <div v-else-if="placeResults.length" class="search-results">
             <button v-for="r in placeResults" :key="r.place_id" class="sr" @click="pickPlace(r)">
               {{ r.display_name.split(',').slice(0, 3).join(',') }}
             </button>
@@ -270,6 +295,14 @@ onBeforeUnmount(() => {
 .small { font-size: 11px; }
 
 .search-wrap { position: relative; margin-bottom: 10px; }
+.search-status {
+  padding: 6px 10px;
+  margin-top: 4px;
+  background: var(--s2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.search-status.danger { color: var(--danger); border-color: var(--danger); }
 .search-results {
   position: absolute; top: 100%; left: 0; right: 0;
   background: var(--s2); border: 1px solid var(--border);

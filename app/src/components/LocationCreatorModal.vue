@@ -34,6 +34,8 @@ const marker  = ref(null);
 
 const placeQ        = ref('');
 const placeResults  = ref([]);
+const searching     = ref(false);
+const searchError   = ref('');
 const saving        = ref(false);
 
 const form = ref(makeEmpty());
@@ -109,10 +111,26 @@ function placePin(lat, lng) {
 let searchDebounce;
 function onPlaceInput() {
   clearTimeout(searchDebounce);
-  if (placeQ.value.length < 3) { placeResults.value = []; return; }
+  searchError.value = '';
+  if (placeQ.value.length < 3) {
+    placeResults.value = [];
+    searching.value = false;
+    return;
+  }
+  searching.value = true;
   searchDebounce = setTimeout(async () => {
-    try { placeResults.value = await GeoAPI.search(placeQ.value); }
-    catch { placeResults.value = []; }
+    try {
+      const r = await GeoAPI.search(placeQ.value);
+      placeResults.value = Array.isArray(r) ? r : [];
+      if (!placeResults.value.length) searchError.value = 'Sin resultados';
+    } catch (e) {
+      placeResults.value = [];
+      searchError.value = e?.status === 429
+        ? 'Demasiadas búsquedas, espera unos segundos'
+        : (e?.message || 'Error al buscar');
+    } finally {
+      searching.value = false;
+    }
   }, 350);
 }
 
@@ -184,7 +202,12 @@ async function save() {
           <div class="field">
             <label>Buscar lugar</label>
             <input v-model="placeQ" @input="onPlaceInput" placeholder="Ciudad, monumento…" />
-            <div v-if="placeResults.length" class="search-results">
+            <div v-if="searching" class="muted small" style="padding:6px 10px;margin-top:4px">🔍 Buscando…</div>
+            <div v-else-if="searchError && placeQ.length >= 3" class="danger small"
+              style="padding:6px 10px;margin-top:4px;border:1px solid var(--danger);border-radius:var(--radius)">
+              {{ searchError }}
+            </div>
+            <div v-else-if="placeResults.length" class="search-results">
               <button v-for="r in placeResults" :key="r.place_id" class="sr" @click="pickPlace(r)">
                 {{ r.display_name.split(',').slice(0,3).join(',') }}
               </button>
