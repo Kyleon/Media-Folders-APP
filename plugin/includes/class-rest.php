@@ -365,86 +365,19 @@ class YZMF_REST {
     /* ─────────── MEDIA ─────────── */
 
     public static function list_media( WP_REST_Request $req ) {
-        $folder   = $req->get_param( 'folder' );
-        $folder   = $folder !== null ? intval( $folder ) : -1;
-        $paged    = max( 1, intval( $req->get_param( 'page' ) ?: 1 ) );
-        $perpage  = min( 100, max( 1, intval( $req->get_param( 'per_page' ) ?: 40 ) ) );
-        $search   = sanitize_text_field( $req->get_param( 'search' ) ?: '' );
-        $orderby  = sanitize_key( $req->get_param( 'orderby' ) ?: 'date' );
-        $order    = strtoupper( $req->get_param( 'order' ) ?: 'DESC' ) === 'ASC' ? 'ASC' : 'DESC';
-        $mime_in  = sanitize_text_field( $req->get_param( 'mime' ) ?: '' );
-
-        if ( ! in_array( $orderby, [ 'date', 'title', 'size' ], true ) ) $orderby = 'date';
-
-        $args = [
-            'post_type'      => 'attachment',
-            'post_status'    => 'inherit',
-            'posts_per_page' => $perpage,
-            'paged'          => $paged,
-            'order'          => $order,
-        ];
-        if ( $orderby === 'size' ) {
-            $args['orderby']  = 'meta_value_num';
-            $args['meta_key'] = '_yzmf_filesize';
-        } else {
-            $args['orderby'] = $orderby;
-        }
-
-        $tag   = sanitize_text_field( $req->get_param( 'tag' ) ?: '' );
-        $color = sanitize_text_field( $req->get_param( 'color' ) ?: '' );
-        $meta_q = [];
-
-        if ( $search === '__NO_ALT__' ) {
-            $meta_q[] = [
-                'relation' => 'OR',
-                [ 'key' => '_wp_attachment_image_alt', 'compare' => 'NOT EXISTS' ],
-                [ 'key' => '_wp_attachment_image_alt', 'value' => '', 'compare' => '=' ],
-            ];
-            $search = '';
-        }
-        if ( $search ) $args['s'] = $search;
-        // Si se filtra por mime, aplica ese tipo. Si no, pasamos la lista
-        // explícita de tipos soportados — sin esto, WP_Query con
-        // post_type=attachment + tax_query SIN post_mime_type añade un
-        // LEFT JOIN sobre el post_parent que en algunos setups (cachés,
-        // hooks) acaba devolviendo 0 filas para el filtro "Todos". Forzar
-        // el WHERE de mime estabiliza el resultado.
-        $mime_map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
-        if ( $mime_in && isset( $mime_map[ $mime_in ] ) ) {
-            $args['post_mime_type'] = $mime_map[ $mime_in ];
-        } else {
-            $args['post_mime_type'] = array_values( $mime_map );
-        }
-        if ( $tag ) {
-            $meta_q[] = [ 'key' => '_yzmf_ai_tags', 'value' => '"' . $tag . '"', 'compare' => 'LIKE' ];
-        }
-        if ( $color && preg_match( '/^#?[0-9A-Fa-f]{6}$/', $color ) ) {
-            $hex = strtoupper( ltrim( $color, '#' ) );
-            $meta_q[] = [ 'key' => '_yzmf_color_palette', 'value' => $hex, 'compare' => 'LIKE' ];
-        }
-        if ( ! empty( $meta_q ) ) {
-            $meta_q['relation'] = 'AND';
-            $args['meta_query'] = $meta_q;
-        }
-
-        if ( $folder === 0 ) {
-            $args['tax_query'] = [ [ 'taxonomy' => YZMF_TAXONOMY, 'operator' => 'NOT EXISTS' ] ];
-        } elseif ( $folder > 0 ) {
-            $args['tax_query'] = [ [ 'taxonomy' => YZMF_TAXONOMY, 'field' => 'term_id', 'terms' => $folder, 'include_children' => true ] ];
-        }
-
-        $q   = new WP_Query( $args );
-        $ids = wp_list_pluck( $q->posts, 'ID' );
-        if ( ! empty( $ids ) ) {
-            update_meta_cache( 'post', $ids );
-            update_object_term_cache( $ids, 'attachment' );
-        }
-        return rest_ensure_response( [
-            'images'  => array_map( [ 'YZMF_Ajax', 'format_image' ], $q->posts ),
-            'total'   => $q->found_posts,
-            'pages'   => (int) $q->max_num_pages,
-            'current' => $paged,
-        ] );
+        // Toda la lógica de construir args + ejecutar WP_Query vive en
+        // YZMF_Media_Service. Antes estaba duplicada con YZMF_Ajax::yzmf_get_images.
+        return rest_ensure_response( YZMF_Media_Service::run( [
+            'folder'   => $req->get_param( 'folder' ),
+            'page'     => $req->get_param( 'page' ),
+            'per_page' => $req->get_param( 'per_page' ),
+            'search'   => $req->get_param( 'search' ),
+            'orderby'  => $req->get_param( 'orderby' ),
+            'order'    => $req->get_param( 'order' ),
+            'mime'     => $req->get_param( 'mime' ),
+            'tag'      => $req->get_param( 'tag' ),
+            'color'    => $req->get_param( 'color' ),
+        ] ) );
     }
 
     public static function get_media( WP_REST_Request $req ) {
@@ -884,38 +817,22 @@ class YZMF_REST {
     }
 
     public static function save_location( WP_REST_Request $req ) {
-        $id = isset( $req['id'] ) ? intval( $req['id'] ) : 0;
-        if ( $id && get_post_type( $id ) !== YZMF_Map::CPT ) {
-            return new WP_Error( 'yzmf_not_found', 'Ubicación inexistente', [ 'status' => 404 ] );
-        }
-        $name = sanitize_text_field( $req->get_param( 'name' ) );
-        if ( ! $name ) return new WP_Error( 'yzmf_missing_name', 'Nombre requerido', [ 'status' => 400 ] );
-
-        $post = [
-            'post_type'   => YZMF_Map::CPT,
-            'post_status' => 'publish',
-            'post_title'  => $name,
-        ];
-        if ( $id ) { $post['ID'] = $id; $id = wp_update_post( $post ); }
-        else        { $id = wp_insert_post( $post ); }
+        $id = YZMF_Map::persist_location(
+            isset( $req['id'] ) ? intval( $req['id'] ) : 0,
+            [
+                'name'          => $req->get_param( 'name' ),
+                'lat'           => $req->get_param( 'lat' ),
+                'lng'           => $req->get_param( 'lng' ),
+                'tag'           => $req->get_param( 'tag' ),
+                'description'   => $req->get_param( 'description' ),
+                'gallery_url'   => $req->get_param( 'gallery_url' ),
+                'folder_ids'    => $req->get_param( 'folder_ids' ),
+                'photo_ids'     => $req->get_param( 'photo_ids' ),
+                'hero_id'       => $req->get_param( 'hero_id' ),
+                'portfolio_ids' => $req->get_param( 'portfolio_ids' ),
+            ]
+        );
         if ( is_wp_error( $id ) ) return $id;
-
-        update_post_meta( $id, '_yzmf_lat',         floatval( $req->get_param( 'lat' ) ) );
-        update_post_meta( $id, '_yzmf_lng',         floatval( $req->get_param( 'lng' ) ) );
-        update_post_meta( $id, '_yzmf_tag',         sanitize_text_field( $req->get_param( 'tag' ) ?: '' ) );
-        update_post_meta( $id, '_yzmf_description', sanitize_textarea_field( $req->get_param( 'description' ) ?: '' ) );
-        update_post_meta( $id, '_yzmf_gallery_url', esc_url_raw( $req->get_param( 'gallery_url' ) ?: '' ) );
-        update_post_meta( $id, '_yzmf_folder_ids',  array_map( 'intval', (array) ( $req->get_param( 'folder_ids' ) ?: [] ) ) );
-        update_post_meta( $id, '_yzmf_photo_ids',   array_map( 'intval', (array) ( $req->get_param( 'photo_ids' ) ?: [] ) ) );
-        if ( $req->get_param( 'hero_id' ) ) set_post_thumbnail( $id, intval( $req->get_param( 'hero_id' ) ) );
-
-        // Portfolios vinculados — viceversa: escribimos el meta location_id en cada portfolio.
-        $portfolio_ids = $req->get_param( 'portfolio_ids' );
-        if ( $portfolio_ids !== null && class_exists( 'YZMF_Portfolio_Bridge' ) ) {
-            YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $portfolio_ids );
-        }
-
-        YZMF_Map::invalidate_caches();
         return rest_ensure_response( [ 'id' => $id ] );
     }
 

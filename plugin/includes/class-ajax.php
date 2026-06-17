@@ -138,90 +138,19 @@ class YZMF_Ajax {
 
     public static function yzmf_get_images() {
         self::check();
-        $folder  = intval( $_POST['folder']   ?? -1 );
-        $paged   = max( 1, intval( $_POST['paged']    ?? 1 ) );
-        $perpage = min( 100, max( 1, intval( $_POST['per_page'] ?? 40 ) ) );
-        $search  = sanitize_text_field( $_POST['search']  ?? '' );
-        $orderby = sanitize_key( $_POST['orderby'] ?? 'date' );
-        $order   = strtoupper( $_POST['order']   ?? 'DESC' ) === 'ASC' ? 'ASC' : 'DESC';
-        $mime    = sanitize_text_field( $_POST['mime'] ?? '' );
-        $tag     = sanitize_text_field( $_POST['tag'] ?? '' );  // filtro por tag IA
-        $color   = sanitize_text_field( $_POST['color'] ?? '' ); // filtro por color hex (#RRGGBB)
-
-        $allowed = [ 'date', 'title', 'size' ];
-        if ( ! in_array( $orderby, $allowed ) ) $orderby = 'date';
-
-        $args = [
-            'post_type'      => 'attachment',
-            'post_status'    => 'inherit',
-            'posts_per_page' => $perpage,
-            'paged'          => $paged,
-            'order'          => $order,
-        ];
-        if ( $orderby === 'size' ) {
-            $args['orderby']  = 'meta_value_num';
-            $args['meta_key'] = '_yzmf_filesize';
-        } else {
-            $args['orderby'] = $orderby;
-        }
-        // Filtros especiales en search
-        $meta_q = [];
-        if ( $search === '__NO_ALT__' ) {
-            // Imágenes sin alt text
-            $meta_q[] = [
-                'relation' => 'OR',
-                [ 'key' => '_wp_attachment_image_alt', 'compare' => 'NOT EXISTS' ],
-                [ 'key' => '_wp_attachment_image_alt', 'value' => '', 'compare' => '=' ],
-            ];
-            $search = '';
-        }
-        if ( $search ) $args['s'] = $search;
-        // Si se filtra por mime, aplica ese tipo. Si no, pasamos la lista
-        // explícita de tipos soportados para forzar la cláusula WHERE
-        // post_mime_type — ver nota en YZMF_REST::list_media().
-        $mime_map = [ 'image' => 'image/', 'video' => 'video/', 'pdf' => 'application/pdf', 'audio' => 'audio/' ];
-        if ( $mime && isset( $mime_map[ $mime ] ) ) {
-            $args['post_mime_type'] = $mime_map[ $mime ];
-        } else {
-            $args['post_mime_type'] = array_values( $mime_map );
-        }
-
-        // Filtro por tag IA (LIKE sobre el meta serializado)
-        if ( $tag ) {
-            $meta_q[] = [ 'key' => '_yzmf_ai_tags', 'value' => '"' . $tag . '"', 'compare' => 'LIKE' ];
-        }
-
-        // Filtro por color dominante (LIKE sobre meta de paleta)
-        if ( $color && preg_match( '/^#?[0-9A-Fa-f]{6}$/', $color ) ) {
-            $hex = strtoupper( ltrim( $color, '#' ) );
-            $meta_q[] = [ 'key' => '_yzmf_color_palette', 'value' => $hex, 'compare' => 'LIKE' ];
-        }
-
-        if ( ! empty( $meta_q ) ) {
-            $meta_q['relation'] = 'AND';
-            $args['meta_query'] = isset( $args['meta_query'] )
-                ? array_merge( $args['meta_query'], $meta_q )
-                : $meta_q;
-        }
-
-        if ( $folder === 0 ) {
-            $args['tax_query'] = [ [ 'taxonomy' => YZMF_TAXONOMY, 'operator' => 'NOT EXISTS' ] ];
-        } elseif ( $folder > 0 ) {
-            $args['tax_query'] = [ [ 'taxonomy' => YZMF_TAXONOMY, 'field' => 'term_id', 'terms' => $folder, 'include_children' => true ] ];
-        }
-
-        $q = new WP_Query( $args );
-        $ids = wp_list_pluck( $q->posts, 'ID' );
-        if ( ! empty( $ids ) ) {
-            update_meta_cache( 'post', $ids );
-            update_object_term_cache( $ids, 'attachment' );
-        }
-        wp_send_json_success( [
-            'images'  => array_map( [ __CLASS__, 'format_image' ], $q->posts ),
-            'total'   => $q->found_posts,
-            'pages'   => (int) $q->max_num_pages,
-            'current' => $paged,
-        ] );
+        // Delega en el servicio compartido. El input AJAX usa `paged` en vez
+        // de `page` (legacy del jQuery del admin); lo normalizamos aquí.
+        wp_send_json_success( YZMF_Media_Service::run( [
+            'folder'   => $_POST['folder']   ?? null,
+            'page'     => $_POST['paged']    ?? ( $_POST['page'] ?? null ),
+            'per_page' => $_POST['per_page'] ?? null,
+            'search'   => $_POST['search']   ?? null,
+            'orderby'  => $_POST['orderby']  ?? null,
+            'order'    => $_POST['order']    ?? null,
+            'mime'     => $_POST['mime']     ?? null,
+            'tag'      => $_POST['tag']      ?? null,
+            'color'    => $_POST['color']    ?? null,
+        ] ) );
     }
 
     public static function format_image( $att ) {

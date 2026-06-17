@@ -19,6 +19,7 @@ define( 'YZMF_TAXONOMY', 'yz_media_folder' );
 
 require_once YZMF_PATH . 'includes/class-taxonomy.php';
 require_once YZMF_PATH . 'includes/class-ajax.php';
+require_once YZMF_PATH . 'includes/class-media-service.php';
 require_once YZMF_PATH . 'includes/class-admin.php';
 require_once YZMF_PATH . 'includes/class-map.php';
 require_once YZMF_PATH . 'includes/class-rest.php';

@@ -83,39 +83,24 @@ class YZMF_Map {
 
     public static function yzmf_map_save_location() {
         self::check();
-        $d = $_POST;
-        $post = [
-            'post_type'   => self::CPT,
-            'post_status' => 'publish',
-            'post_title'  => sanitize_text_field( $d['name'] ?? '' ),
-        ];
-        $id = ! empty( $d['id'] ) ? intval( $d['id'] ) : 0;
-        if ( $id ) {
-            if ( get_post_type( $id ) !== self::CPT ) {
-                wp_send_json_error( [ 'message' => 'ID inválido para este recurso.' ] );
-            }
-            $post['ID'] = $id;
-            $id = wp_update_post( $post );
-        } else {
-            $id = wp_insert_post( $post );
+        $id = self::persist_location(
+            ! empty( $_POST['id'] ) ? intval( $_POST['id'] ) : 0,
+            [
+                'name'          => $_POST['name']          ?? '',
+                'lat'           => $_POST['lat']           ?? 0,
+                'lng'           => $_POST['lng']           ?? 0,
+                'tag'           => $_POST['tag']           ?? '',
+                'description'   => $_POST['description']   ?? '',
+                'gallery_url'   => $_POST['gallery_url']   ?? '',
+                'folder_ids'    => $_POST['folder_ids']    ?? [],
+                'photo_ids'     => $_POST['photo_ids']     ?? [],
+                'hero_id'       => $_POST['hero_id']       ?? 0,
+                'portfolio_ids' => $_POST['portfolio_ids'] ?? null,
+            ]
+        );
+        if ( is_wp_error( $id ) ) {
+            wp_send_json_error( [ 'message' => $id->get_error_message() ] );
         }
-        if ( is_wp_error( $id ) ) wp_send_json_error( [ 'message' => $id->get_error_message() ] );
-
-        update_post_meta( $id, '_yzmf_lat',         floatval( $d['lat']         ?? 0 ) );
-        update_post_meta( $id, '_yzmf_lng',         floatval( $d['lng']         ?? 0 ) );
-        update_post_meta( $id, '_yzmf_tag',         sanitize_text_field( $d['tag']         ?? '' ) );
-        update_post_meta( $id, '_yzmf_description', sanitize_textarea_field( $d['description'] ?? '' ) );
-        update_post_meta( $id, '_yzmf_gallery_url', esc_url_raw( $d['gallery_url'] ?? '' ) );
-        update_post_meta( $id, '_yzmf_folder_ids', array_map( 'intval', (array)( $d['folder_ids']  ?? [] ) ) );
-        update_post_meta( $id, '_yzmf_photo_ids',  array_map( 'intval', (array)( $d['photo_ids']   ?? [] ) ) );
-        if ( ! empty( $d['hero_id'] ) ) set_post_thumbnail( $id, intval( $d['hero_id'] ) );
-
-        // Portfolios vinculados (escribe el meta location_id en cada portfolio)
-        if ( isset( $d['portfolio_ids'] ) && class_exists( 'YZMF_Portfolio_Bridge' ) ) {
-            YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $d['portfolio_ids'] );
-        }
-
-        self::invalidate_caches();
         wp_send_json_success( [ 'id' => $id ] );
     }
 
@@ -147,6 +132,68 @@ class YZMF_Map {
         delete_transient( 'yzmf_map_public_data' );
         delete_transient( 'yzmf_all_locations' );
         delete_transient( 'yzmf_portfolio_geo_list' );
+    }
+
+    /**
+     * Persiste una ubicación (insert o update). Centraliza la lógica que
+     * antes vivía duplicada en YZMF_REST::save_location y YZMF_Map::yzmf_map_save_location.
+     *
+     * @param int   $id     0 = nuevo, >0 = update.
+     * @param array $params claves: name, lat, lng, tag, description, gallery_url,
+     *                      folder_ids, photo_ids, hero_id, portfolio_ids
+     * @return int|WP_Error  ID del post creado/actualizado, o WP_Error.
+     */
+    public static function persist_location( $id, array $params ) {
+        $id   = intval( $id );
+        if ( $id && get_post_type( $id ) !== self::CPT ) {
+            return new WP_Error( 'yzmf_not_found', 'Ubicación inexistente', [ 'status' => 404 ] );
+        }
+        $name = sanitize_text_field( $params['name'] ?? '' );
+        if ( $name === '' ) {
+            return new WP_Error( 'yzmf_missing_name', 'Nombre requerido', [ 'status' => 400 ] );
+        }
+
+        // Clamp coordenadas al rango legal (-90..90 / -180..180).
+        $lat = isset( $params['lat'] ) ? floatval( $params['lat'] ) : 0.0;
+        $lng = isset( $params['lng'] ) ? floatval( $params['lng'] ) : 0.0;
+        $lat = max( -90.0,  min( 90.0,  $lat ) );
+        $lng = max( -180.0, min( 180.0, $lng ) );
+
+        $post = [
+            'post_type'   => self::CPT,
+            'post_status' => 'publish',
+            'post_title'  => $name,
+        ];
+        if ( $id ) {
+            $post['ID'] = $id;
+            $id = wp_update_post( $post, true );
+        } else {
+            $id = wp_insert_post( $post, true );
+        }
+        if ( is_wp_error( $id ) ) return $id;
+
+        update_post_meta( $id, '_yzmf_lat',         $lat );
+        update_post_meta( $id, '_yzmf_lng',         $lng );
+        update_post_meta( $id, '_yzmf_tag',         sanitize_text_field( $params['tag'] ?? '' ) );
+        update_post_meta( $id, '_yzmf_description', sanitize_textarea_field( $params['description'] ?? '' ) );
+        update_post_meta( $id, '_yzmf_gallery_url', esc_url_raw( $params['gallery_url'] ?? '' ) );
+        update_post_meta( $id, '_yzmf_folder_ids',  array_map( 'intval', (array) ( $params['folder_ids'] ?? [] ) ) );
+        update_post_meta( $id, '_yzmf_photo_ids',   array_map( 'intval', (array) ( $params['photo_ids']  ?? [] ) ) );
+
+        if ( ! empty( $params['hero_id'] ) ) {
+            $hero_id = intval( $params['hero_id'] );
+            // Solo aceptamos attachments reales como featured image.
+            if ( $hero_id > 0 && get_post_type( $hero_id ) === 'attachment' ) {
+                set_post_thumbnail( $id, $hero_id );
+            }
+        }
+
+        if ( isset( $params['portfolio_ids'] ) && class_exists( 'YZMF_Portfolio_Bridge' ) ) {
+            YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $params['portfolio_ids'] );
+        }
+
+        self::invalidate_caches();
+        return $id;
     }
 
     // ── DATA ────────────────────────────────────────────────────────
