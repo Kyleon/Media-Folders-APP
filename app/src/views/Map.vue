@@ -438,18 +438,14 @@ function toggleFolder(id) {
           aria-label="Limpiar filtros">✕ Limpiar</button>
       </div>
 
-      <!-- Indicador del scan EXIF en background -->
+      <!-- Indicador del scan EXIF: progreso si corre, botón si no. -->
       <div v-if="exifScan.running" class="exif-scan-pill" role="status" aria-live="polite">
         <span>📍 EXIF: {{ exifScan.processed }}/{{ exifScan.total }}</span>
         <span class="muted small">{{ exifScan.found }} con geo</span>
       </div>
-      <button v-else-if="exifScan.total === 0 && exifScan.finished" class="exif-scan-rerun"
-        @click="startExifScan" title="Volver a escanear EXIF de las imágenes">
-        🔍 Re-escanear EXIF
-      </button>
-      <button v-else-if="!exifScan.running" class="exif-scan-rerun"
+      <button v-else class="exif-scan-rerun"
         @click="startExifScan" title="Buscar GPS en EXIF de imágenes sin geo">
-        🔍 Escanear EXIF
+        🔍 {{ exifScan.finished ? 'Re-escanear EXIF' : 'Escanear EXIF' }}
       </button>
     </div>
 

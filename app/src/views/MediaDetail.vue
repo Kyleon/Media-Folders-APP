@@ -8,6 +8,7 @@ import { useUiStore } from '../stores/ui';
 import Spinner from '../components/Spinner.vue';
 import FolderPicker from '../components/FolderPicker.vue';
 import GeoTagger from '../components/GeoTagger.vue';
+import MediaPicker from '../components/MediaPicker.vue';
 import L from 'leaflet';
 import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts';
 
@@ -25,6 +26,8 @@ const tab        = ref('meta');
 const folderId   = ref(0);
 const showFolderPicker = ref(false);
 const showGeoTagger = ref(false);
+const showCopyGeoPicker = ref(false);
+const copyingGeo = ref(false);
 const miniMapEl = ref(null);
 let miniMap = null;
 let miniMarker = null;
@@ -177,6 +180,35 @@ async function onGeoClear() {
     if (miniMap)    { miniMap.remove();    miniMap = null; }
   } catch (e) {
     ui.toast(e.message, 'err');
+  }
+}
+
+/**
+ * Aplica la ubicación de ESTA foto a las que el usuario elija en el picker.
+ * Usa el endpoint bulk-geo del plugin (1 request para N attachments).
+ */
+async function onCopyGeoTo(picked) {
+  if (!item.value?.geo) return;
+  const ids = (Array.isArray(picked) ? picked : [picked])
+    .map(p => p.id)
+    .filter(id => id && id !== Number(props.id));
+  if (!ids.length) {
+    ui.toast('Selecciona alguna foto destino', 'err');
+    return;
+  }
+  copyingGeo.value = true;
+  try {
+    const payload = {
+      lat:   item.value.geo.lat,
+      lng:   item.value.geo.lng,
+      place: item.value.geo.place || '',
+    };
+    const r = await MediaAPI.bulkGeo(ids, payload);
+    ui.toast(`📍 Ubicación copiada a ${r.updated} foto${r.updated === 1 ? '' : 's'}`, 'ok');
+  } catch (e) {
+    ui.toast(e.message || 'No se pudo copiar', 'err');
+  } finally {
+    copyingGeo.value = false;
   }
 }
 
@@ -413,6 +445,11 @@ watch(() => props.id, async (newId) => {
           <button class="btn" @click="showGeoTagger = true" style="flex:1">📍 Cambiar</button>
           <button class="btn danger" @click="onGeoClear">🗑 Quitar</button>
         </div>
+        <button class="btn ghost" :disabled="copyingGeo"
+          @click="showCopyGeoPicker = true" style="margin-top:8px;width:100%">
+          <Spinner v-if="copyingGeo" :size="14" />
+          <span v-else>📍 Copiar esta ubicación a otras fotos…</span>
+        </button>
       </div>
 
       <div v-else class="geo-empty">
@@ -465,6 +502,12 @@ watch(() => props.id, async (newId) => {
     title="Ubicación de la imagen"
     @pick="onGeoPick"
     @clear="onGeoClear" />
+
+  <MediaPicker v-model="showCopyGeoPicker"
+    :multiple="true"
+    :exclude="[Number(props.id)]"
+    title="Elegir fotos destino"
+    @pick="onCopyGeoTo" />
 </template>
 
 <style scoped>

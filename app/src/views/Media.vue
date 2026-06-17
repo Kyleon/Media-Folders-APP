@@ -10,6 +10,7 @@ import PullRefresh from '../components/PullRefresh.vue';
 import GeoTagger from '../components/GeoTagger.vue';
 import BulkRenameSheet from '../components/BulkRenameSheet.vue';
 import EmptyState from '../components/EmptyState.vue';
+import MediaPicker from '../components/MediaPicker.vue';
 import { StatsAPI } from '../api/endpoints';
 
 const router  = useRouter();
@@ -29,6 +30,7 @@ const aiProgress       = ref(null);    // { done, errors, total } durante bulk A
 const movingFolder     = ref(null);    // { id, name } cuando estamos eligiendo destino para mover una carpeta
 const dragFolderId     = ref(null);    // id de carpeta arrastrada (drag & drop nativo en desktop)
 const showBulkGeo      = ref(false);   // sheet de geotag para seleccionados
+const showGeoSourcePicker = ref(false); // picker para "copiar geo de otra foto"
 const showTagPicker    = ref(false);
 const showColorPicker  = ref(false);
 const showBulkRename   = ref(false);   // sheet de edición de títulos en lote
@@ -309,6 +311,27 @@ async function onBulkGeoPick(payload) {
   }
 }
 
+/**
+ * Selección -> "Copiar geo de otra foto". Recibe la foto-fuente del picker
+ * y aplica su lat/lng/place a todos los seleccionados.
+ */
+async function onGeoSourcePick(source) {
+  if (!source?.geo?.lat || !source?.geo?.lng) {
+    ui.toast('Esa foto no tiene ubicación asignada', 'err');
+    return;
+  }
+  try {
+    const r = await media.bulkGeo({
+      lat:   source.geo.lat,
+      lng:   source.geo.lng,
+      place: source.geo.place || '',
+    });
+    ui.toast(`📍 Ubicación copiada a ${r.updated} foto${r.updated === 1 ? '' : 's'}`, 'ok');
+  } catch (e) {
+    ui.toast(e.message, 'err');
+  }
+}
+
 async function openTagPicker() {
   showTagPicker.value = true;
   if (!allTags.value.length) {
@@ -421,7 +444,10 @@ watch(sentinel, setupObserver);
       <span class="spacer" />
       <button class="sel-act" @click="media.selectAllVisible()" title="Seleccionar todo visible">☑</button>
       <button class="sel-act" @click="showMovePicker = true" :disabled="!media.selectedCount" title="Mover a carpeta">📁</button>
-      <button class="sel-act" @click="showBulkGeo = true" :disabled="!media.selectedCount" title="Asignar ubicación">📍</button>
+      <button class="sel-act" @click="showBulkGeo = true" :disabled="!media.selectedCount"
+        aria-label="Asignar ubicación a la selección" title="Asignar ubicación">📍</button>
+      <button class="sel-act" @click="showGeoSourcePicker = true" :disabled="!media.selectedCount"
+        aria-label="Copiar ubicación de otra foto" title="Copiar ubicación de otra foto">📍↗</button>
       <button class="sel-act" @click="bulkAI" :disabled="!media.selectedCount" title="Generar IA">✨</button>
       <button class="sel-act" @click="showBulkRename = true" :disabled="!media.selectedCount" title="Editar títulos en lote">✏</button>
       <button class="sel-act" @click="bulkCopyUrls" :disabled="!media.selectedCount" title="Copiar URLs">📋</button>
@@ -696,6 +722,13 @@ watch(sentinel, setupObserver);
       :subtitle="media.selectedCount + ' imágenes seleccionadas'"
       :allow-clear="false"
       @pick="onBulkGeoPick" />
+
+    <!-- Picker para "copiar geo de otra foto" -->
+    <MediaPicker v-model="showGeoSourcePicker"
+      :multiple="false"
+      :exclude="media.selectedIds"
+      title="Elegir foto con la ubicación a copiar"
+      @pick="onGeoSourcePick" />
 
     <!-- Edición de títulos en lote -->
     <BulkRenameSheet v-model="showBulkRename"
