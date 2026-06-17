@@ -36,6 +36,13 @@ acopladas:
   (`app/.vscode/sftp.json` con credenciales).
 - **PWA**: `app/.\deploy.ps1` hace `npm run build` + sube `dist/` por FTP.
 
+## Versionado
+
+Plugin y PWA van en **lockstep** desde 2.6.4. Cada release toca a la vez:
+- `plugin/yz-media-folders.php` — header `Version:` y `define( 'YZMF_VERSION', ... )`.
+- `app/package.json` — campo `version` (lo lee Vite e inyecta como
+  `__APP_VERSION__` en Settings → Acerca de).
+
 ## Multi-equipo
 
 El usuario trabaja desde dos máquinas (desktop + portátil) sincronizando el
