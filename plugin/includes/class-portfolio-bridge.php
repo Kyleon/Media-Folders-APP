@@ -343,7 +343,7 @@ class YZMF_Portfolio_Bridge {
             } else {
                 delete_post_meta( $id, self::META_LINKED_LOCATION );
             }
-            delete_transient( 'yzmf_map_public_data' );
+            if ( class_exists( 'YZMF_Map' ) ) YZMF_Map::invalidate_caches();
         }
     }
 
@@ -452,16 +452,26 @@ class YZMF_Portfolio_Bridge {
      * Estructura por item: { id, title, hero_url, location_id, location_name, lat, lng, permalink, status }
      */
     public static function list_portfolios_with_geo( WP_REST_Request $req ) {
+        // Cache 15min — se invalida desde set_portfolios_for_location y desde
+        // los hooks de save_location (delete_transient('yzmf_map_public_data')
+        // ahora también limpia este transient: ver maybe_invalidate_portfolio_geo()).
+        $cache_key = 'yzmf_portfolio_geo_list';
+        $cached = get_transient( $cache_key );
+        if ( $cached !== false ) return rest_ensure_response( $cached );
+
         $q = new WP_Query( [
             'post_type'      => self::CPT,
             'post_status'    => [ 'publish', 'draft', 'private', 'pending' ],
-            'posts_per_page' => -1,
+            'posts_per_page' => 500, // cap defensivo; >500 portfolios = case excepcional
             'fields'         => 'ids',
             'meta_query'     => [ [ 'key' => self::META_LINKED_LOCATION, 'compare' => 'EXISTS' ] ],
             'no_found_rows'  => true,
         ] );
 
-        if ( empty( $q->posts ) ) return rest_ensure_response( [] );
+        if ( empty( $q->posts ) ) {
+            set_transient( $cache_key, [], 15 * MINUTE_IN_SECONDS );
+            return rest_ensure_response( [] );
+        }
 
         update_meta_cache( 'post', $q->posts );
 
@@ -509,7 +519,21 @@ class YZMF_Portfolio_Bridge {
                 'thumb'         => $thumb_id ? wp_get_attachment_image_url( $thumb_id, 'thumbnail' ) : '',
             ];
         }
+        set_transient( $cache_key, $out, 15 * MINUTE_IN_SECONDS );
         return rest_ensure_response( $out );
+    }
+
+    /**
+     * Limpia los transients relacionados con geo de portfolios.
+     * Llamado por save_location / delete_location y por set_portfolios_for_location.
+     */
+    public static function invalidate_geo_cache() {
+        if ( class_exists( 'YZMF_Map' ) ) {
+            YZMF_Map::invalidate_caches();
+        } else {
+            delete_transient( 'yzmf_portfolio_geo_list' );
+            delete_transient( 'yzmf_map_public_data' );
+        }
     }
 
     /**
@@ -546,14 +570,18 @@ class YZMF_Portfolio_Bridge {
         $new = array_values( array_unique( array_filter( array_map( 'intval', (array) $ids ) ) ) );
         $current = self::get_portfolios_by_location( $location_id );
 
+        $changed = false;
         foreach ( array_diff( $current, $new ) as $pid ) {
             delete_post_meta( $pid, self::META_LINKED_LOCATION );
+            $changed = true;
         }
         foreach ( $new as $pid ) {
             if ( get_post_type( $pid ) === self::CPT ) {
                 update_post_meta( $pid, self::META_LINKED_LOCATION, $location_id );
+                $changed = true;
             }
         }
+        if ( $changed ) self::invalidate_geo_cache();
     }
 
     /* ─────────── CATEGORIES ─────────── */

@@ -21,6 +21,8 @@ export const MediaAPI = {
   update: (id, body)          => api.put(NS + 'media/' + id, body),
   remove: (id)                => api.del(NS + 'media/' + id),
   setFolder: (id, folder_id)  => api.put(NS + 'media/' + id + '/folder', { folder_id }),
+  setFolderBulk: (ids, folder_id) => api.post(NS + 'media/folder/bulk', { ids, folder_id }),
+  removeBulk: (ids)               => api.post(NS + 'media/delete/bulk', { ids }),
   upload: (file, folder_id)   => {
     const fd = new FormData();
     fd.append('file', file);

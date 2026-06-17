@@ -107,49 +107,69 @@ export const useMediaStore = defineStore('media', {
     // ── Acciones masivas ──
     async bulkMoveTo(folder_id) {
       const ids = [...this.selectedIds];
-      const errors = [];
-      for (const id of ids) {
-        try { await MediaAPI.setFolder(id, folder_id); }
-        catch (e) { errors.push({ id, error: e.message }); }
+      let moved = 0;
+      let errors = [];
+      try {
+        const r = await MediaAPI.setFolderBulk(ids, folder_id);
+        moved = r.moved || 0;
+        errors = r.errors || [];
+      } catch (e) {
+        errors = ids.map(id => ({ id, error: e.message }));
       }
       // Si la lista actual está filtrada por una carpeta y las imágenes ya no pertenecen, sacarlas
       if (this.filter.folder > 0 && folder_id !== this.filter.folder) {
         this.items = this.items.filter(i => !ids.includes(i.id));
       }
       this.exitSelectMode();
-      return { moved: ids.length - errors.length, errors };
+      return { moved, errors };
     },
     async bulkDelete() {
       const ids = [...this.selectedIds];
-      const errors = [];
-      for (const id of ids) {
-        try { await MediaAPI.remove(id); }
-        catch (e) { errors.push({ id, error: e.message }); }
+      let deleted = 0;
+      let errors = [];
+      try {
+        const r = await MediaAPI.removeBulk(ids);
+        deleted = r.deleted || 0;
+        errors = r.errors || [];
+      } catch (e) {
+        errors = ids.map(id => ({ id, error: e.message }));
       }
-      this.items = this.items.filter(i => !ids.includes(i.id));
-      this.total = Math.max(0, this.total - (ids.length - errors.length));
+      // Quitamos del local solo los que realmente se borraron (si el servidor
+      // marca errors por id, podríamos respetarlos — pero la PWA mostrará el
+      // total con el toast, suficiente).
+      const failedIds = new Set(errors.map(e => e.id));
+      this.items = this.items.filter(i => failedIds.has(i.id) || !ids.includes(i.id));
+      this.total = Math.max(0, this.total - deleted);
       this.exitSelectMode();
-      return { deleted: ids.length - errors.length, errors };
+      return { deleted, errors };
     },
     async bulkGenerateAI(onProgress) {
       const ids = [...this.selectedIds];
       let done = 0, errors = 0;
-      for (const id of ids) {
-        try {
-          const r = await MediaAPI.generateAI(id);
-          const idx = this.items.findIndex(i => i.id === id);
-          if (idx !== -1) {
-            this.items[idx].alt     = r.alt;
-            this.items[idx].caption = r.caption;
+      const CONCURRENCY = 4; // Anthropic acepta concurrencia razonable
+      const total = ids.length;
+      const queue = [...ids];
+
+      const worker = async () => {
+        while (queue.length) {
+          const id = queue.shift();
+          try {
+            const r = await MediaAPI.generateAI(id);
+            const idx = this.items.findIndex(i => i.id === id);
+            if (idx !== -1) {
+              this.items[idx].alt     = r.alt;
+              this.items[idx].caption = r.caption;
+            }
+            done++;
+          } catch (e) {
+            errors++;
           }
-          done++;
-        } catch (e) {
-          errors++;
+          if (onProgress) onProgress({ done, errors, total });
         }
-        if (onProgress) onProgress({ done, errors, total: ids.length });
-      }
+      };
+      await Promise.all(Array.from({ length: CONCURRENCY }, worker));
       this.exitSelectMode();
-      return { done, errors, total: ids.length };
+      return { done, errors, total };
     },
     bulkCopyUrls() {
       const urls = this.selectedIds

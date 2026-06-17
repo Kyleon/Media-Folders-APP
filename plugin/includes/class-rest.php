@@ -145,6 +145,18 @@ class YZMF_REST {
             'permission_callback' => [ __CLASS__, 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/media/folder/bulk', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'set_media_folder_bulk' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
+        register_rest_route( self::NS, '/media/delete/bulk', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'delete_media_bulk' ],
+            'permission_callback' => [ __CLASS__, 'can_delete' ],
+        ] );
+
         // ── GEO ──────────────────────────────────────────────────
         register_rest_route( self::NS, '/media/(?P<id>\d+)/geo', [
             'methods'             => 'PUT',
@@ -490,6 +502,52 @@ class YZMF_REST {
             wp_delete_object_term_relationships( $id, YZMF_TAXONOMY );
         }
         return rest_ensure_response( [ 'id' => $id, 'folder_id' => $folder_id ] );
+    }
+
+    /**
+     * Mueve N attachments a una carpeta (o sin carpeta si folder_id=0).
+     * Reduce N round-trips de la PWA a 1 — antes bulkMoveTo en stores/media.js
+     * hacía `for (const id of ids) await setFolder()`.
+     */
+    public static function set_media_folder_bulk( WP_REST_Request $req ) {
+        $ids       = array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ?: [] ) );
+        $folder_id = intval( $req->get_param( 'folder_id' ) );
+        if ( ! $ids ) return new WP_Error( 'yzmf_invalid', 'Sin IDs', [ 'status' => 400 ] );
+        if ( $folder_id > 0 && ! get_term( $folder_id, YZMF_TAXONOMY ) ) {
+            return new WP_Error( 'yzmf_invalid_folder', 'Carpeta inexistente', [ 'status' => 400 ] );
+        }
+        $moved = 0; $errors = [];
+        foreach ( $ids as $id ) {
+            if ( get_post_type( $id ) !== 'attachment' ) {
+                $errors[] = [ 'id' => $id, 'error' => 'No attachment' ];
+                continue;
+            }
+            if ( $folder_id > 0 ) {
+                wp_set_object_terms( $id, [ $folder_id ], YZMF_TAXONOMY );
+            } else {
+                wp_delete_object_term_relationships( $id, YZMF_TAXONOMY );
+            }
+            $moved++;
+        }
+        return rest_ensure_response( [ 'moved' => $moved, 'folder_id' => $folder_id, 'errors' => $errors ] );
+    }
+
+    /**
+     * Elimina N attachments. Reduce N round-trips a 1.
+     */
+    public static function delete_media_bulk( WP_REST_Request $req ) {
+        $ids = array_filter( array_map( 'intval', (array) $req->get_param( 'ids' ) ?: [] ) );
+        if ( ! $ids ) return new WP_Error( 'yzmf_invalid', 'Sin IDs', [ 'status' => 400 ] );
+        $deleted = 0; $errors = [];
+        foreach ( $ids as $id ) {
+            if ( get_post_type( $id ) !== 'attachment' ) {
+                $errors[] = [ 'id' => $id, 'error' => 'No attachment' ];
+                continue;
+            }
+            if ( wp_delete_attachment( $id, false ) ) $deleted++;
+            else $errors[] = [ 'id' => $id, 'error' => 'delete_failed' ];
+        }
+        return rest_ensure_response( [ 'deleted' => $deleted, 'errors' => $errors ] );
     }
 
     public static function upload_media( WP_REST_Request $req ) {
@@ -857,7 +915,7 @@ class YZMF_REST {
             YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $portfolio_ids );
         }
 
-        delete_transient( 'yzmf_map_public_data' );
+        YZMF_Map::invalidate_caches();
         return rest_ensure_response( [ 'id' => $id ] );
     }
 
@@ -867,7 +925,7 @@ class YZMF_REST {
             return new WP_Error( 'yzmf_not_found', 'No encontrado', [ 'status' => 404 ] );
         }
         wp_delete_post( $id, true );
-        delete_transient( 'yzmf_map_public_data' );
+        YZMF_Map::invalidate_caches();
         return rest_ensure_response( [ 'deleted' => true, 'id' => $id ] );
     }
 

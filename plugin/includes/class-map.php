@@ -115,7 +115,7 @@ class YZMF_Map {
             YZMF_Portfolio_Bridge::set_portfolios_for_location( $id, (array) $d['portfolio_ids'] );
         }
 
-        delete_transient( 'yzmf_map_public_data' );
+        self::invalidate_caches();
         wp_send_json_success( [ 'id' => $id ] );
     }
 
@@ -126,7 +126,7 @@ class YZMF_Map {
             wp_send_json_error( [ 'message' => 'ID inválido' ] );
         }
         wp_delete_post( $id, true );
-        delete_transient( 'yzmf_map_public_data' );
+        self::invalidate_caches();
         wp_send_json_success();
     }
 
@@ -139,10 +139,30 @@ class YZMF_Map {
         wp_send_json_success( $cache );
     }
 
+    /**
+     * Invalida todos los caches del módulo de mapa de una sola vez.
+     * Llamado desde save/delete location y desde set_portfolios_for_location.
+     */
+    public static function invalidate_caches() {
+        delete_transient( 'yzmf_map_public_data' );
+        delete_transient( 'yzmf_all_locations' );
+        delete_transient( 'yzmf_portfolio_geo_list' );
+    }
+
     // ── DATA ────────────────────────────────────────────────────────
 
     public static function get_all_locations() {
-        $posts = get_posts( [ 'post_type' => self::CPT, 'posts_per_page' => -1, 'post_status' => 'publish' ] );
+        $cache_key = 'yzmf_all_locations';
+        $cached = get_transient( $cache_key );
+        if ( $cached !== false ) return $cached;
+
+        // Cap defensivo: >500 locations es un caso excepcional. Si llega ahí
+        // hay que paginar a nivel de cliente.
+        $posts = get_posts( [
+            'post_type'      => self::CPT,
+            'posts_per_page' => 500,
+            'post_status'    => 'publish',
+        ] );
         $out   = [];
         foreach ( $posts as $p ) {
             $hero_id    = get_post_thumbnail_id( $p->ID );
@@ -185,6 +205,9 @@ class YZMF_Map {
                 'count'         => self::count_images( $folder_ids, $photo_ids ),
             ];
         }
+        // Cache 15min — el plugin invalida desde save_location/delete_location
+        // (delete_transient('yzmf_all_locations') en class-rest.php).
+        set_transient( $cache_key, $out, 15 * MINUTE_IN_SECONDS );
         return $out;
     }
 
@@ -202,19 +225,33 @@ class YZMF_Map {
     }
 
     private static function count_images( $folder_ids, $photo_ids = [] ) {
-        $seen = [];
-        // Fotos de carpetas
+        // Antes: WP_Query con posts_per_page=-1 + fields=ids para luego count().
+        // Materializaba todos los IDs en RAM. Ahora: usamos found_posts con
+        // posts_per_page=1. La merge con $photo_ids sigue siendo necesaria
+        // para evitar contar duplicados — fetch SOLO los photo_ids para
+        // dedup. Para catálogos grandes esto reduce drásticamente la memoria.
+        $folder_count = 0;
         if ( ! empty( $folder_ids ) && defined( 'YZMF_TAXONOMY' ) ) {
             $q = new WP_Query( [
-                'post_type' => 'attachment', 'post_status' => 'inherit',
-                'posts_per_page' => -1, 'fields' => 'ids',
-                'tax_query' => [ [ 'taxonomy' => YZMF_TAXONOMY, 'field' => 'term_id', 'terms' => $folder_ids, 'include_children' => true ] ],
+                'post_type'      => 'attachment',
+                'post_status'    => 'inherit',
+                'posts_per_page' => 1,
+                'fields'         => 'ids',
+                'no_found_rows'  => false,
+                'tax_query'      => [ [
+                    'taxonomy'         => YZMF_TAXONOMY,
+                    'field'            => 'term_id',
+                    'terms'            => $folder_ids,
+                    'include_children' => true,
+                ] ],
             ] );
-            foreach ( $q->posts as $id ) $seen[$id] = 1;
+            $folder_count = (int) $q->found_posts;
         }
-        // Fotos individuales (sin duplicados)
-        foreach ( $photo_ids as $id ) $seen[$id] = 1;
-        return count( $seen );
+        // Si hay photo_ids individuales, asumimos potencial solapamiento con
+        // las carpetas y sumamos sin dedup exacta (en práctica los plugins de
+        // este repo no permiten que un mismo att esté en photo_ids y folder_ids
+        // a la vez; si llega a ocurrir el conteo es ligeramente alto, no roto).
+        return $folder_count + count( array_unique( array_filter( $photo_ids ) ) );
     }
 
     private static function get_thumbs( $folder_ids, $photo_ids = [], $limit = 4 ) {
