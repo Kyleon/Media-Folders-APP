@@ -53,3 +53,11 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# ── Tests / CI artefactos ──
+plugin/vendor/
+plugin/composer.lock
+app/coverage/
+app/test-results/
+app/playwright-report/
+app/.playwright/
