@@ -5,6 +5,7 @@ import { MediaAPI } from '../api/endpoints';
 import { useFoldersStore } from '../stores/folders';
 import { useMediaStore } from '../stores/media';
 import { useUiStore } from '../stores/ui';
+import { useAuthStore } from '../stores/auth';
 import Spinner from '../components/Spinner.vue';
 import FolderPicker from '../components/FolderPicker.vue';
 import GeoTagger from '../components/GeoTagger.vue';
@@ -17,6 +18,7 @@ const router  = useRouter();
 const folders = useFoldersStore();
 const media   = useMediaStore();
 const ui      = useUiStore();
+const auth    = useAuthStore();
 
 const item       = ref(null);
 const loading    = ref(true);
@@ -32,7 +34,7 @@ const miniMapEl = ref(null);
 let miniMap = null;
 let miniMarker = null;
 
-const form = ref({ title: '', alt: '', seo_title: '', caption: '', description: '' });
+const form = ref({ title: '', alt: '', seo_title: '', caption: '', description: '', ai_context: '' });
 const loadError = ref('');
 
 async function loadDetail() {
@@ -47,6 +49,7 @@ async function loadDetail() {
       seo_title: item.value.seo_title || '',
       caption: item.value.caption || '',
       description: item.value.description || '',
+      ai_context: item.value.ai_context || '',
     };
     folderId.value = item.value.folder_ids?.[0] || 0;
   } catch (e) {
@@ -79,7 +82,7 @@ async function save() {
 async function generateAI() {
   generating.value = true;
   try {
-    const r = await MediaAPI.generateAI(props.id);
+    const r = await MediaAPI.generateAI(props.id, form.value.ai_context);
     form.value.alt     = r.alt;
     form.value.caption = r.caption;
     ui.toast('✓ Generado con IA', 'ok');
@@ -98,11 +101,22 @@ async function copyUrl() {
 }
 
 async function download() {
-  if (!item.value?.url) return;
+  if (!item.value?.id) return;
   const filename = item.value.filename || `media-${item.value.id}`;
+  // Endpoint que sirve el archivo ORIGINAL desde disco con
+  // Content-Disposition: attachment y Cache-Control: no-transform.
+  // Esto esquiva la conversión a WebP de LiteSpeed Cache que afectaba a
+  // las URLs directas de /uploads/.
+  const base = auth.creds.baseUrl.replace(/\/+$/, '');
+  const endpoint = base + '/wp-json/yzmf/v1/media/' + item.value.id + '/download';
+  const pw = auth.creds.appPassword.replace(/\s+/g, '');
+  const authHeader = 'Basic ' + btoa(auth.creds.username + ':' + pw);
+
   try {
-    // Intentar fetch para descarga directa (respeta el nombre original)
-    const res = await fetch(item.value.url, { credentials: 'omit' });
+    const res = await fetch(endpoint, {
+      headers: { Authorization: authHeader },
+      credentials: 'omit',
+    });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const blob = await res.blob();
     const blobUrl = URL.createObjectURL(blob);
@@ -113,9 +127,11 @@ async function download() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(blobUrl), 200);
-    ui.toast('⬇ Descargando', 'ok');
+    ui.toast('⬇ Descargando original', 'ok');
   } catch (e) {
-    // Fallback: abrir en nueva pestaña — el navegador permite "guardar como"
+    // Fallback: abrir el archivo original en nueva pestaña.
+    // El navegador puede usar "Guardar como" — aunque LiteSpeed podría
+    // entregar WebP aquí. El endpoint de arriba es el camino preferido.
     const a = document.createElement('a');
     a.href = item.value.url;
     a.download = filename;
@@ -124,7 +140,7 @@ async function download() {
     document.body.appendChild(a);
     a.click();
     a.remove();
-    ui.toast('⬇ Abriendo para guardar', 'ok');
+    ui.toast('⬇ Abriendo para guardar (puede ser WebP)', 'ok');
   }
 }
 
@@ -317,6 +333,7 @@ watch(() => props.id, async (newId) => {
       seo_title: item.value.seo_title || '',
       caption: item.value.caption || '',
       description: item.value.description || '',
+      ai_context: item.value.ai_context || '',
     };
     folderId.value = item.value.folder_ids?.[0] || 0;
     if (tab.value === 'geo') renderMiniMap();
@@ -412,6 +429,13 @@ watch(() => props.id, async (newId) => {
             🏷 {{ t }}
           </button>
         </div>
+      </div>
+
+      <div class="field">
+        <label>Contexto para la IA</label>
+        <input v-model="form.ai_context"
+          placeholder="Ej.: Matterhorn, Alpes suizos, amanecer" />
+        <span class="hint muted">Pistas de lugar, sujeto o nombres propios para que la descripción sea más precisa.</span>
       </div>
 
       <div class="row" style="margin-top:14px">
@@ -643,6 +667,7 @@ watch(() => props.id, async (newId) => {
 .kv-row:last-child { border-bottom: 0; }
 .filename { font-family: monospace; font-size: 11px; word-break: break-all; max-width: 60%; text-align: right; }
 .small { font-size: 12px; }
+.field .hint { display: block; margin-top: 4px; font-size: 11px; line-height: 1.35; }
 
 .folder-picker-btn {
   display: flex; align-items: center; justify-content: space-between;

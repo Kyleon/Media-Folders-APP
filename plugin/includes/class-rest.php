@@ -247,6 +247,12 @@ class YZMF_REST {
             'permission_callback' => [ __CLASS__, 'can_upload' ],
         ] );
 
+        register_rest_route( self::NS, '/media/(?P<id>\d+)/download', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'media_download' ],
+            'permission_callback' => [ __CLASS__, 'can_upload' ],
+        ] );
+
         // ── MAP ──────────────────────────────────────────────────
         register_rest_route( self::NS, '/map/data', [
             'methods'             => 'GET',
@@ -452,9 +458,11 @@ class YZMF_REST {
         $title       = $req->get_param( 'title' );
         $caption     = $req->get_param( 'caption' );
         $description = $req->get_param( 'description' );
+        $ai_context  = $req->get_param( 'ai_context' );
 
         if ( $alt !== null )       update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( $alt ) );
         if ( $seo_title !== null ) update_post_meta( $id, '_yzmf_seo_title',          sanitize_text_field( $seo_title ) );
+        if ( $ai_context !== null ) update_post_meta( $id, '_yzmf_ai_context',        sanitize_text_field( $ai_context ) );
 
         $pd = [ 'ID' => $id ];
         if ( $title !== null )       $pd['post_title']   = sanitize_text_field( $title );
@@ -959,9 +967,53 @@ class YZMF_REST {
     public static function media_ai( WP_REST_Request $req ) {
         $id = intval( $req['id'] );
         if ( ! $id ) return new WP_Error( 'yzmf_invalid', 'ID inválido', [ 'status' => 400 ] );
-        $r = YZMF_Ajax::generate_ai_for_image( $id );
+        // Contexto opcional escrito por el fotógrafo en la app. null si no se
+        // envía → el generador usa el contexto guardado en meta.
+        $context = $req->get_param( 'context' );
+        $r = YZMF_Ajax::generate_ai_for_image( $id, $context );
         if ( $r['success'] ) return rest_ensure_response( $r['data'] );
         return new WP_Error( 'yzmf_ai_failed', $r['data']['message'] ?? 'Error', [ 'status' => 500 ] );
+    }
+
+    /**
+     * Descarga el archivo ORIGINAL desde disco con Content-Disposition.
+     *
+     * Esquiva caches que convierten a WebP (LiteSpeed Cache de Hostinger
+     * sirve WebP a navegadores que envían Accept: image/webp incluso para
+     * URLs .jpg). Al servirlo nosotros con headers explícitos y desde un
+     * endpoint REST custom, el cache de imágenes no toca nada.
+     *
+     * Stream directo (readfile) para no cargar en memoria archivos grandes.
+     */
+    public static function media_download( WP_REST_Request $req ) {
+        $id = intval( $req['id'] );
+        if ( ! $id || get_post_type( $id ) !== 'attachment' ) {
+            return new WP_Error( 'yzmf_not_found', 'No encontrado', [ 'status' => 404 ] );
+        }
+        $path = get_attached_file( $id );
+        if ( ! $path || ! file_exists( $path ) || ! is_file( $path ) ) {
+            return new WP_Error( 'yzmf_file_missing', 'Archivo no existe en disco', [ 'status' => 404 ] );
+        }
+
+        $mime    = get_post_mime_type( $id ) ?: 'application/octet-stream';
+        $name    = basename( $path );
+        $size    = filesize( $path );
+
+        // Limpiar cualquier buffer previo de WordPress para que readfile
+        // escriba directamente al socket sin contaminarse con HTML.
+        while ( ob_get_level() > 0 ) ob_end_clean();
+
+        nocache_headers();
+        header( 'Content-Type: ' . $mime );
+        header( 'Content-Length: ' . $size );
+        header( 'Content-Disposition: attachment; filename="' . str_replace( '"', '', $name ) . '"' );
+        header( 'X-Content-Type-Options: nosniff' );
+        // Anti-conversion hints para LiteSpeed/Cloudflare/etc.
+        header( 'Cache-Control: private, no-store, no-transform' );
+        header( 'X-LiteSpeed-Cache-Control: no-cache' );
+
+        readfile( $path );
+        exit;
     }
 
     /* ─────────── MAP ─────────── */

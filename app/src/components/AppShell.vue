@@ -50,7 +50,10 @@ function isImageLogo() {
     <header class="topbar safe-top" role="banner">
       <button class="topbar-back" v-if="showBack" @click="router.back()" aria-label="Volver">‹</button>
 
-      <button class="brand-mark" @click="router.push({ name: 'dashboard' })" :aria-label="`Ir al inicio (${brand.name || 'YPVA'})`">
+      <button class="brand-mark"
+        :class="{ 'has-initials': !isImageLogo() }"
+        @click="router.push({ name: 'dashboard' })"
+        :aria-label="`Ir al inicio (${brand.name || 'YPVA'})`">
         <img v-if="isImageLogo()" :src="brand.logoUrl" :alt="brand.name || 'Logo'" class="brand-logo" />
         <span v-else class="brand-initials">{{ brand.initials }}</span>
       </button>
@@ -91,19 +94,41 @@ function isImageLogo() {
   font-size: 28px;
   color: var(--text-mute);
 }
+/* brand-mark se adapta al ancho del logo (manteniendo la altura fija de la
+   topbar). Cuando solo hay iniciales, queda como cuadrado con fondo. */
 .brand-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
+  height: 40px;
+  width: auto;
+  min-width: 40px;
+  max-width: 220px;
+  padding: 2px 8px;
   border-radius: 8px;
-  background: var(--s2);
+  background: transparent;
   overflow: hidden;
   flex-shrink: 0;
   cursor: pointer;
+  border: 0;
   transition: background .12s, transform .12s;
 }
-.brand-mark:hover { background: var(--s3); transform: scale(1.04); }
-.brand-logo { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
-.brand-initials { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
+.brand-mark:hover { background: var(--s2); transform: scale(1.04); }
+
+/* Modo iniciales: mantén el cuadrado con fondo */
+.brand-mark.has-initials {
+  width: 40px;
+  background: var(--s2);
+  padding: 0;
+}
+.brand-mark.has-initials:hover { background: var(--s3); }
+
+.brand-logo {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+}
+.brand-initials { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
 
 .topbar-title {
   margin: 0;
@@ -140,11 +165,17 @@ function isImageLogo() {
     padding: 0 32px;
   }
   .topbar-title { font-size: 19px; }
+  .brand-mark { height: 46px; max-width: 280px; }
+  .brand-mark.has-initials { width: 46px; }
   .content {
     max-width: 1180px;
     margin: 0 auto;
     padding: 24px 32px calc(80px + env(safe-area-inset-bottom));
   }
+}
+
+@media (min-width: 1600px) {
+  .brand-mark { max-width: 320px; }
 }
 
 /* Escritorio ≥1024px: dejar 220px a la izquierda para el sidebar.

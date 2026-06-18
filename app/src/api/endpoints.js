@@ -29,7 +29,7 @@ export const MediaAPI = {
     if (folder_id) fd.append('folder_id', folder_id);
     return api.upload(NS + 'media', fd);
   },
-  generateAI: (id)            => api.post(NS + 'media/' + id + '/ai'),
+  generateAI: (id, context)   => api.post(NS + 'media/' + id + '/ai', context != null ? { context } : {}),
   setGeo: (id, body)          => api.put(NS + 'media/' + id + '/geo', body),
   bulkGeo: (ids, body)        => api.post(NS + 'media/geo/bulk', { ids, ...body }),
   listGeo: (params = {})      => {

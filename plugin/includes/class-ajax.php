@@ -236,6 +236,7 @@ class YZMF_Ajax {
             'seo_title'  => get_post_meta( $att->ID, '_yzmf_seo_title', true ) ?: '',
             'caption'    => $att->post_excerpt,
             'description'=> $att->post_content,
+            'ai_context' => get_post_meta( $att->ID, '_yzmf_ai_context', true ) ?: '',
             'exif'       => $exif,
             'tags'       => $ai_tags,
             'edit_url'   => get_edit_post_link( $att->ID, 'raw' ),
@@ -399,7 +400,7 @@ class YZMF_Ajax {
      * Lógica central de generación de alt+caption con Claude.
      * Reusable desde AJAX y REST. Devuelve [ 'success' => bool, 'data' => array ].
      */
-    public static function generate_ai_for_image( $image_id ) {
+    public static function generate_ai_for_image( $image_id, $context = null ) {
         $image_id = intval( $image_id );
         if ( ! $image_id ) return [ 'success' => false, 'data' => [ 'message' => 'ID de imagen requerido' ] ];
 
@@ -437,6 +438,26 @@ class YZMF_Ajax {
             if ( $bits ) $exif_ctx = ' Datos técnicos: ' . implode( ', ', $bits ) . '.';
         }
 
+        // Contexto del fotógrafo. Si llega del request (aunque sea ''), manda y
+        // se persiste como meta; si es null (p.ej. generación masiva sin UI), se
+        // usa el que hubiera guardado de antes.
+        if ( $context === null ) {
+            $context = get_post_meta( $image_id, '_yzmf_ai_context', true ) ?: '';
+        } else {
+            $context = sanitize_text_field( $context );
+            update_post_meta( $image_id, '_yzmf_ai_context', $context );
+        }
+
+        // Bloque de contexto inyectado en el prompt: pista fiable sobre lugar,
+        // sujeto o nombres propios (p.ej. "Matterhorn, Alpes suizos, amanecer")
+        // para que la IA nombre correctamente lo que aparece.
+        $ctx_block = '';
+        if ( $context !== '' ) {
+            $ctx_block = "CONTEXTO DEL FOTÓGRAFO (información fiable sobre el lugar, el sujeto o "
+                . "nombres propios; úsala con prioridad para nombrar correctamente lo que aparece, "
+                . "pero NO inventes elementos que no se vean en la imagen): " . $context . "\n\n";
+        }
+
         $prompt = "Eres un experto en SEO fotográfico y accesibilidad web. Analiza esta fotografía y genera en español:\n\n"
             . "1. ALT TEXT: Descripción concisa (máx 125 caracteres) para el atributo alt de HTML. "
             . "Debe describir objetivamente lo que se ve, ser específico y útil para lectores de pantalla. "
@@ -449,6 +470,7 @@ class YZMF_Ajax {
             . "evento, abstracto, macro, animal, persona, objeto, vehículo, comida, deporte, arte. "
             . "Si aplica, añade tu propia etiqueta breve (1-2 palabras).\n\n"
             . "Título del archivo: " . $title . '.' . $exif_ctx . "\n\n"
+            . $ctx_block
             . "Responde ÚNICAMENTE en este formato JSON exacto, sin texto adicional:\n"
             . '{"alt":"...","caption":"...","tags":["...","..."]}';
 
