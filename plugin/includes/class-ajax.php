@@ -40,6 +40,8 @@ class YZMF_Ajax {
                     update_post_meta( $attachment_id, '_yzmf_geo_lng',    $gps['lng'] );
                     update_post_meta( $attachment_id, '_yzmf_geo_source', 'exif' );
                     update_post_meta( $attachment_id, '_yzmf_geo_set_at', time() );
+                    // Nueva foto con geo → refresca el mapa público de fotos.
+                    if ( class_exists( 'YZMF_Map' ) ) YZMF_Map::invalidate_photo_cache();
                 }
             }
         }

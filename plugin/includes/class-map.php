@@ -135,6 +135,18 @@ class YZMF_Map {
     }
 
     /**
+     * Invalida SOLO el cache del mapa público de fotos individuales
+     * (yzmf/v1/map/photos). Se llama desde cualquier punto que cambie la geo
+     * de un attachment: set/clear manual (apply_geo_to_id), auto-EXIF en la
+     * subida y el scan de fondo. Va separado de invalidate_caches() porque
+     * las ubicaciones curadas y las fotos geolocalizadas son datasets
+     * independientes — cambiar una no afecta al otro.
+     */
+    public static function invalidate_photo_cache() {
+        delete_transient( 'yzmf_map_photos_public' );
+    }
+
+    /**
      * Persiste una ubicación (insert o update). Centraliza la lógica que
      * antes vivía duplicada en YZMF_REST::save_location y YZMF_Map::yzmf_map_save_location.
      *
@@ -336,12 +348,24 @@ class YZMF_Map {
     // ── SHORTCODE ───────────────────────────────────────────────────
 
     public static function shortcode( $atts ) {
-        $atts = shortcode_atts( [ 'height' => '600px' ], $atts );
+        $atts = shortcode_atts( [
+            'height' => '600px',
+            // Qué capas pintar: 'locations' (solo ubicaciones curadas),
+            // 'photos' (solo fotos individuales geolocalizadas) o 'both'.
+            'layers' => 'both',
+        ], $atts );
+        $layers = in_array( $atts['layers'], [ 'locations', 'photos', 'both' ], true )
+            ? $atts['layers'] : 'both';
+
         if ( ! wp_script_is( 'yzmf-map-front', 'enqueued' ) ) {
             wp_enqueue_style(  'leaflet',         'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', [], '1.9.4' );
             wp_enqueue_script( 'leaflet',         'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',  [], '1.9.4', true );
-            wp_enqueue_style(  'yzmf-map-front',  YZMF_URL . 'assets/css/map-front.css',  [ 'leaflet' ], YZMF_VERSION );
-            wp_enqueue_script( 'yzmf-map-front',  YZMF_URL . 'assets/js/map-front.js',    [ 'leaflet' ], YZMF_VERSION, true );
+            // Clustering — necesario para la capa de fotos (cientos de markers).
+            wp_enqueue_style(  'leaflet-markercluster',         'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css',         [ 'leaflet' ], '1.5.3' );
+            wp_enqueue_style(  'leaflet-markercluster-default', 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css', [ 'leaflet' ], '1.5.3' );
+            wp_enqueue_script( 'leaflet-markercluster',         'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js',  [ 'leaflet' ], '1.5.3', true );
+            wp_enqueue_style(  'yzmf-map-front',  YZMF_URL . 'assets/css/map-front.css',  [ 'leaflet', 'leaflet-markercluster' ], YZMF_VERSION );
+            wp_enqueue_script( 'yzmf-map-front',  YZMF_URL . 'assets/js/map-front.js',    [ 'leaflet', 'leaflet-markercluster' ], YZMF_VERSION, true );
             wp_localize_script( 'yzmf-map-front', 'YZMF_Map', [
                 'ajaxurl'      => admin_url( 'admin-ajax.php' ),
                 'rest_root'    => esc_url_raw( rest_url() ),
@@ -351,6 +375,6 @@ class YZMF_Map {
             ] );
         }
         $id = 'yzmf-map-' . uniqid();
-        return '<div class="yzmf-map-wrap" style="height:' . esc_attr( $atts['height'] ) . '"><div id="' . esc_attr( $id ) . '" class="yzmf-map-canvas"></div></div>';
+        return '<div class="yzmf-map-wrap" style="height:' . esc_attr( $atts['height'] ) . '"><div id="' . esc_attr( $id ) . '" class="yzmf-map-canvas" data-layers="' . esc_attr( $layers ) . '"></div></div>';
     }
 }

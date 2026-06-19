@@ -260,6 +260,14 @@ class YZMF_REST {
             'permission_callback' => '__return_true',
         ] );
 
+        // Público: todas las fotos individuales con geo (capa de fotos del
+        // mapa frontend). Separado de /media/geo/all (que es admin-only).
+        register_rest_route( self::NS, '/map/photos', [
+            'methods'             => 'GET',
+            'callback'            => [ __CLASS__, 'map_photos_public' ],
+            'permission_callback' => '__return_true',
+        ] );
+
         register_rest_route( self::NS, '/map/locations', [
             [
                 'methods'             => 'GET',
@@ -809,6 +817,8 @@ class YZMF_REST {
         // devuelva la lista actualizada. update_post_meta no dispara hooks
         // de purge automáticamente.
         do_action( 'litespeed_purge_all' );
+        // Y el cache del mapa público de fotos (yzmf/v1/map/photos).
+        if ( class_exists( 'YZMF_Map' ) ) YZMF_Map::invalidate_photo_cache();
 
         return YZMF_Ajax::format_image( get_post( $id ) );
     }
@@ -1050,6 +1060,66 @@ class YZMF_REST {
         $resp = rest_ensure_response( $cache );
         $resp->header( 'Cache-Control', 'public, max-age=600' );
         return $resp;
+    }
+
+    /**
+     * Público y cacheable. Devuelve TODAS las fotos individuales con geo
+     * asignada (manual o EXIF) para la capa de fotos del mapa frontend.
+     * Subset mínimo de campos: no expone folder_ids ni rutas internas.
+     * Cache 15min en transient 'yzmf_map_photos_public', invalidado desde
+     * YZMF_Map::invalidate_photo_cache() en cada cambio de geo.
+     */
+    public static function map_photos_public( WP_REST_Request $req ) {
+        $cache = get_transient( 'yzmf_map_photos_public' );
+        if ( $cache === false ) {
+            $cache = self::build_public_photos();
+            set_transient( 'yzmf_map_photos_public', $cache, 15 * MINUTE_IN_SECONDS );
+        }
+        $resp = rest_ensure_response( $cache );
+        $resp->header( 'Cache-Control', 'public, max-age=600' );
+        return $resp;
+    }
+
+    /**
+     * Construye el array de fotos geolocalizadas para el mapa público.
+     * Cap a 1000 — el clustering del frontend aguanta de sobra ese volumen.
+     */
+    private static function build_public_photos() {
+        $q = new WP_Query( [
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
+            'post_mime_type' => 'image',
+            'posts_per_page' => 1000,
+            'meta_query'     => [
+                [ 'key' => '_yzmf_geo_lat', 'compare' => 'EXISTS' ],
+            ],
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+        ] );
+
+        if ( ! empty( $q->posts ) ) {
+            update_meta_cache( 'post', $q->posts );
+        }
+
+        $out = [];
+        foreach ( $q->posts as $id ) {
+            $lat = get_post_meta( $id, '_yzmf_geo_lat', true );
+            $lng = get_post_meta( $id, '_yzmf_geo_lng', true );
+            if ( $lat === '' || $lng === '' ) continue;
+            $full = wp_get_attachment_url( $id );
+            $out[] = [
+                'id'     => (int) $id,
+                'lat'    => (float) $lat,
+                'lng'    => (float) $lng,
+                'thumb'  => wp_get_attachment_image_url( $id, 'thumbnail' ) ?: $full,
+                'medium' => wp_get_attachment_image_url( $id, 'medium' )    ?: $full,
+                'full'   => $full,
+                'title'  => get_the_title( $id ),
+                'alt'    => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
+                'place'  => (string) get_post_meta( $id, '_yzmf_geo_place', true ),
+            ];
+        }
+        return $out;
     }
 
     public static function list_locations( WP_REST_Request $req ) {

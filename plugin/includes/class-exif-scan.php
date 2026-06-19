@@ -160,6 +160,12 @@ class YZMF_Exif_Scan {
             }
         }
 
+        // Si este batch encontró geo nueva, refresca el cache del mapa
+        // público de fotos para que aparezcan sin esperar al TTL del transient.
+        if ( $found > 0 && class_exists( 'YZMF_Map' ) ) {
+            YZMF_Map::invalidate_photo_cache();
+        }
+
         // Excluir los marcados "scaneados sin geo" del siguiente batch.
         // Repetimos: si no hay más NOT EXISTS scanned=NOT EXISTS, hemos acabado.
         $remaining = self::count_remaining();
