@@ -79,6 +79,29 @@ export const PortfoliosAPI = {
   listGeo:    ()                => api.get(NS + 'portfolios/geo/all'),
 };
 
+/**
+ * Feed: CPT yzmf_feed_post (publicaciones tipo Instagram) con fotos,
+ * caption, hashtags (taxonomía yzmf_hashtag), likes y comentarios.
+ */
+export const FeedAPI = {
+  list:     (params)     => api.get(NS + 'feed', params),
+  detail:   (id)         => api.get(NS + 'feed/' + id),
+  create:   (body)       => api.post(NS + 'feed', body),
+  update:   (id, body)   => api.put(NS + 'feed/' + id, body),
+  remove:   (id, force=false) => api.del(NS + 'feed/' + id, { force: force ? 1 : 0 }),
+  hashtags: ()           => api.get(NS + 'feed/hashtags'),
+};
+
+/**
+ * Moderación de comentarios del feed. La lista pública la sirve el propio
+ * detalle público; aquí solo lo que necesita el panel de admin.
+ */
+export const FeedCommentsAPI = {
+  list:     (postId, status = 'all') => api.get(NS + 'feed/' + postId + '/comments', { status }),
+  moderate: (cid, action)            => api.put(NS + 'feed/comments/' + cid, { action }),
+  remove:   (cid)                    => api.del(NS + 'feed/comments/' + cid),
+};
+
 export const StatsAPI = {
   get:    (opts = {}) => api.get(NS + 'stats', opts.fresh ? { fresh: 1 } : {}),
   exif:   () => api.get(NS + 'stats/exif'),

@@ -14,6 +14,9 @@ const titles = {
   'media-detail': 'Imagen',
   folders: 'Carpetas',
   upload: 'Subir',
+  feed: 'Feed',
+  'feed-new': 'Nueva publicación',
+  'feed-detail': 'Publicación',
   portfolios: 'Portfolios',
   'portfolio-new': 'Nuevo portfolio',
   'portfolio-detail': 'Portfolio',
@@ -30,7 +33,7 @@ const title = computed(() => titles[route.name] || brand.name || 'YPVA');
 
 const showBack = computed(() => {
   // Mostrar back en sub-rutas; en raíces de cada tab (root paths) no.
-  const roots = ['/', '/media', '/portfolios', '/folders', '/map', '/upload', '/settings', '/client-galleries', '/users'];
+  const roots = ['/', '/media', '/feed', '/portfolios', '/folders', '/map', '/upload', '/settings', '/client-galleries', '/users'];
   return !roots.includes(route.path);
 });
 
