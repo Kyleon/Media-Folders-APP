@@ -21,12 +21,27 @@ function Initialize-FtpTls {
     if ($Cfg.PSObject.Properties['secure'] -and $Cfg.secure -eq $false) { $secure = $false }
 
     if ($secure) {
-        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {
-            param($sender, $cert, $chain, $errors)
-            return ($errors -eq [System.Net.Security.SslPolicyErrors]::None) -or
-                   ($errors -eq [System.Net.Security.SslPolicyErrors]::RemoteCertificateNameMismatch)
+        # Añade TLS 1.2 sin quitar los que ya haya (p. ej. TLS 1.3).
+        [System.Net.ServicePointManager]::SecurityProtocol =
+            [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
+        # Validador compilado (no scriptblock): el callback puede ejecutarse
+        # en otro hilo (p. ej. Invoke-WebRequest del health-check) y un
+        # scriptblock sin runspace hace fallar la conexión.
+        if (-not ('YzmfFtpCertPolicy' -as [type])) {
+            Add-Type -TypeDefinition @'
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+public static class YzmfFtpCertPolicy {
+    public static bool Validate(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors) {
+        return errors == SslPolicyErrors.None || errors == SslPolicyErrors.RemoteCertificateNameMismatch;
+    }
+    public static RemoteCertificateValidationCallback Callback {
+        get { return Validate; }
+    }
+}
+'@
         }
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = [YzmfFtpCertPolicy]::Callback
     } else {
         Write-Host "  AVISO: FTP sin cifrar ('secure': false en sftp.json). Credenciales en claro." -ForegroundColor Yellow
     }
