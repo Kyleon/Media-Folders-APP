@@ -415,6 +415,49 @@ add_action('init', 'ypva_child_register_theme_meta_rest');
 
 
 /* ============================================================
+ *  11. OMITIR CSS DEL TEMA PADRE EN PÁGINAS ELEMENTOR
+ * ============================================================ */
+
+/**
+ * Las páginas construidas con Elementor (portada, sobre-mí, tienda...)
+ * no renderizan markup del tema padre: el menú es el widget nav-menu
+ * de Elementor y no existe .main-header/.nav-holder en el HTML. Ahí
+ * las hojas de kotlis solo aportan reglas que interfieren con el
+ * diseño del kit: tipografía (p, blockquote, colores de texto),
+ * overrides de WooCommerce, sliders, etc.
+ *
+ * En el contenido que SÍ renderiza el tema (portfolios kotlis, blog,
+ * archivos) no se toca nada — las galerías (fw-carousel/swiper,
+ * popup-image) dependen de kotlis-style y kotlis-plugins.
+ *
+ * Se conservan siempre kotlis-main (clases WP: screen-reader-text,
+ * wp-caption, alignleft...) y kotlis-reset (quitar el reset devolvería
+ * los márgenes por defecto del navegador dentro de los widgets).
+ */
+function ypva_child_dequeue_parent_css_on_elementor() {
+    if ( ! is_singular() || ! class_exists( '\Elementor\Plugin' ) ) return;
+
+    $document = \Elementor\Plugin::$instance->documents->get( get_the_ID() );
+    if ( ! $document || ! $document->is_built_with_elementor() ) return;
+
+    $handles = array(
+        'kotlis-plugins',    // bundles de terceros del tema (magnific, swiper...)
+        'kotlis-style',      // grueso del tema: tipografía, header, sliders, woo
+        'kotlis-style-dark', // variante oscura (colores de texto/fondo)
+        'kotlis-cursors',    // archivo vacío
+        'kotlis-map',        // mapa de contacto del tema
+        'kotlis-main-style', // fixes varios: comentarios, gutenberg, woocommerce
+        'js_composer_front', // WPBakery (sin uso en el sitio)
+        'kotlis_fonts',      // Google Fonts del tema; el kit de Elementor carga las suyas
+    );
+    foreach ( $handles as $handle ) {
+        wp_dequeue_style( $handle );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'ypva_child_dequeue_parent_css_on_elementor', 20 );
+
+
+/* ============================================================
  *  ✅ FIN DEL ARCHIVO
  * ============================================================ */
 ?>
