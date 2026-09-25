@@ -19,13 +19,15 @@ $cfg = Get-Content $sftpFile -Raw | ConvertFrom-Json
 
 $ftpHost = $cfg.host
 $ftpPort = if ($cfg.port) { $cfg.port } else { 21 }
+. (Join-Path $PSScriptRoot 'ftp-common.ps1')
+$ftpSsl  = Initialize-FtpTls $cfg
 $creds   = New-Object System.Net.NetworkCredential($cfg.username, $cfg.password)
 
-$uri = "ftp://${ftpHost}:${ftpPort}${RemotePath}"
+$uri = Get-FtpUri $ftpHost $ftpPort $RemotePath
 $req = [System.Net.FtpWebRequest]::Create($uri)
 $req.Credentials = $creds
 $req.Method      = [System.Net.WebRequestMethods+Ftp]::DeleteFile
-$req.UsePassive  = $true
+$req.UsePassive  = $true; $req.EnableSsl = $ftpSsl
 
 try {
     $resp = $req.GetResponse()

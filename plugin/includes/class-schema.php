@@ -244,7 +244,9 @@ class YZMF_Schema {
     private static function print_jsonld( $schema ) {
         if ( ! $schema ) return;
         echo "\n<script type=\"application/ld+json\">\n";
-        echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT );
+        // JSON_HEX_TAG/AMP: un '</script>' en un título o alt no puede cerrar
+        // el bloque (UNESCAPED_SLASHES desactiva el escape de '/' por defecto).
+        echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP );
         echo "\n</script>\n";
     }
 }

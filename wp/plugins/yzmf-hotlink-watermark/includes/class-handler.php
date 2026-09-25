@@ -37,10 +37,18 @@ class YZMF_HW_Handler {
         $abs = trailingslashit( $upload_dir['basedir'] ) . $path;
         if ( ! file_exists( $abs ) || ! is_file( $abs ) ) self::respond_404();
 
-        // Solo procesamos imagenes
+        // Solo imágenes. Cualquier otro archivo → 404: este endpoint es
+        // público y servirlo tal cual permitiría leer ficheros de uploads/
+        // protegidos por .htaccess (backups, logs, exportaciones…).
         $mime = wp_check_filetype( $abs )['type'] ?? '';
         if ( ! preg_match( '~^image/(jpe?g|png|webp)$~i', $mime ) ) {
-            self::stream( $abs, $mime );
+            self::respond_404();
+        }
+        // Defensa extra: la ruta real (symlinks resueltos) debe seguir dentro de uploads/
+        $real = realpath( $abs );
+        $base = realpath( $upload_dir['basedir'] );
+        if ( ! $real || ! $base || strpos( $real, $base . DIRECTORY_SEPARATOR ) !== 0 ) {
+            self::respond_404();
         }
 
         // Si NO es hotlink (referer interno o vacío directo), servir original
@@ -79,19 +87,30 @@ class YZMF_HW_Handler {
             if ( $host === $allowed || self::ends_with( $host, '.' . $allowed ) ) return false;
         }
 
-        // Excepción común: motores de búsqueda y previsualizadores de redes sociales
-        $crawlers = [
-            'google.', 'bing.', 'yahoo.', 'duckduckgo.',
-            'facebook.', 'fbcdn.', 'twitter.', 't.co', 'instagram.',
-            'linkedin.', 'pinterest.', 'whatsapp.', 'telegram.',
-        ];
-        if ( get_option( 'yzmf_hw_allow_search_engines', true ) ) {
-            foreach ( $crawlers as $needle ) {
-                if ( strpos( $host, $needle ) !== false ) return false;
-            }
+        // Excepción común: motores de búsqueda y previsualizadores de redes
+        // sociales. Se compara por dominio (etiqueta completa + TLD), no por
+        // subcadena: 't.co' coincidía con cualquier '…t.com'.
+        if ( get_option( 'yzmf_hw_allow_search_engines', true ) && self::is_crawler_host( $host ) ) {
+            return false;
         }
 
         return true;
+    }
+
+    /** Marcas permitidas: <marca>.<tld> o <marca>.<sld>.<tld> (google.es, google.co.uk). */
+    const CRAWLER_BRANDS = [
+        'google', 'bing', 'yahoo', 'duckduckgo', 'facebook', 'fbcdn', 'twitter',
+        'instagram', 'linkedin', 'pinterest', 'whatsapp', 'telegram',
+    ];
+    const CRAWLER_HOSTS = [ 't.co', 'x.com' ];
+
+    public static function is_crawler_host( $host ) {
+        $host = strtolower( $host );
+        foreach ( self::CRAWLER_HOSTS as $h ) {
+            if ( $host === $h || self::ends_with( $host, '.' . $h ) ) return true;
+        }
+        $brands = implode( '|', self::CRAWLER_BRANDS );
+        return (bool) preg_match( '~(^|\.)(' . $brands . ')\.((co|com)\.)?[a-z]{2,}$~', $host );
     }
 
     public static function get_whitelist() {

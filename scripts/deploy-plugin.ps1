@@ -54,6 +54,8 @@ $ftpHost = $cfg.host
 $ftpUser = $cfg.username
 $ftpPass = $cfg.password
 $ftpPort = if ($cfg.port) { $cfg.port } else { 21 }
+. (Join-Path $PSScriptRoot 'ftp-common.ps1')
+$ftpSsl  = Initialize-FtpTls $cfg
 $baseRemote = '/domains/yezraelperez.es/public_html/wp-content'
 
 # ── 2. Construir lista de targets ──────────────────────────────────────
@@ -133,12 +135,12 @@ $creds = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
 
 function Ensure-FtpDir {
     param([string]$path)
-    $uri = "ftp://${ftpHost}:${ftpPort}${path}"
+    $uri = Get-FtpUri $ftpHost $ftpPort $path
     try {
         $req = [System.Net.FtpWebRequest]::Create($uri)
         $req.Credentials = $creds
         $req.Method = [System.Net.WebRequestMethods+Ftp]::MakeDirectory
-        $req.UsePassive = $true; $req.UseBinary = $true
+        $req.UsePassive = $true; $req.EnableSsl = $ftpSsl; $req.UseBinary = $true
         $req.GetResponse().Close()
     } catch [System.Net.WebException] {
         $resp = $_.Exception.Response
@@ -150,11 +152,11 @@ function Ensure-FtpDir {
 
 function Upload-FtpFile {
     param([string]$local, [string]$remote)
-    $uri = "ftp://${ftpHost}:${ftpPort}${remote}"
+    $uri = Get-FtpUri $ftpHost $ftpPort $remote
     $req = [System.Net.FtpWebRequest]::Create($uri)
     $req.Credentials = $creds
     $req.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
-    $req.UsePassive = $true; $req.UseBinary = $true; $req.KeepAlive = $true
+    $req.UsePassive = $true; $req.EnableSsl = $ftpSsl; $req.UseBinary = $true; $req.KeepAlive = $true
     $bytes = [System.IO.File]::ReadAllBytes($local)
     $req.ContentLength = $bytes.Length
     $stream = $req.GetRequestStream()

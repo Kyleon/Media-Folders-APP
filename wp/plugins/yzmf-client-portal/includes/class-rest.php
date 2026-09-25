@@ -14,7 +14,6 @@
  *  GET  /cp/{token}/images             Lista de imágenes de la galería
  *  POST /cp/{token}/favorite           { att_id, on } toggle favorita
  *  POST /cp/{token}/comment            { att_id, text, name? }
- *  GET  /cp/{token}/zip                Descarga ZIP (si allow_download)
  *
  * Endpoints admin (auth WP):
  *  GET  /cp/admin/galleries            Lista galerías
@@ -100,7 +99,9 @@ class YZMF_CP_REST {
     }
 
     public static function can_manage() {
-        return current_user_can( 'edit_posts' );
+        // edit_others_posts (Editor/Admin): un Colaborador no debe ver los
+        // tokens de todas las galerías.
+        return current_user_can( 'edit_others_posts' );
     }
 
     /* ─────────── Helpers ─────────── */
@@ -172,8 +173,14 @@ class YZMF_CP_REST {
         ];
     }
 
-    private static function format_image( $att_id ) {
-        $full = wp_get_attachment_url( $att_id );
+    /**
+     * $allow_full=false (galería sin descarga): no exponemos la URL del
+     * original; el tamaño máximo servido es 'large'.
+     */
+    private static function format_image( $att_id, $allow_full = true ) {
+        $full = $allow_full
+            ? wp_get_attachment_url( $att_id )
+            : ( wp_get_attachment_image_url( $att_id, 'large' ) ?: wp_get_attachment_image_url( $att_id, 'medium_large' ) );
         return [
             'id'      => (int) $att_id,
             'title'   => get_the_title( $att_id ),
@@ -239,9 +246,19 @@ class YZMF_CP_REST {
         if ( ! $post ) return new WP_Error( 'not_found', 'No encontrada', [ 'status' => 404 ] );
         if ( YZMF_CP_CPT::is_expired( $post ) ) return new WP_Error( 'expired', 'Expirada', [ 'status' => 410 ] );
 
-        // Contador de visitas (1 por sesión)
-        $views = (int) get_post_meta( $post->ID, '_yzmf_cp_views', true );
-        update_post_meta( $post->ID, '_yzmf_cp_views', $views + 1 );
+        // Contador de visitas: 1 por navegador cada 12 h (cookie)
+        $vcookie = 'yzmf_cp_v_' . $post->ID;
+        if ( empty( $_COOKIE[ $vcookie ] ) ) {
+            $views = (int) get_post_meta( $post->ID, '_yzmf_cp_views', true );
+            update_post_meta( $post->ID, '_yzmf_cp_views', $views + 1 );
+            setcookie( $vcookie, '1', [
+                'expires'  => time() + 12 * HOUR_IN_SECONDS,
+                'path'     => '/',
+                'httponly' => true,
+                'secure'   => is_ssl(),
+                'samesite' => 'Lax',
+            ] );
+        }
 
         $meta = self::format_gallery_meta( $post );
         $meta['locked'] = ! self::is_unlocked( $post );
@@ -274,10 +291,11 @@ class YZMF_CP_REST {
 
         $ids = YZMF_CP_CPT::get_images( $post );
         $favs = self::get_favorites( $post );
+        $allow_full = (bool) get_post_meta( $post->ID, '_yzmf_cp_allow_download', true );
 
         $out = [];
         foreach ( $ids as $id ) {
-            $img = self::format_image( $id );
+            $img = self::format_image( $id, $allow_full );
             $img['favorited'] = isset( $favs[ $id ] );
             $out[] = $img;
         }
@@ -325,6 +343,9 @@ class YZMF_CP_REST {
         if ( ! $allow ) return new WP_Error( 'comments_disabled', 'Comentarios deshabilitados', [ 'status' => 403 ] );
 
         $att_id = (int) $req->get_param( 'att_id' );
+        if ( ! in_array( $att_id, YZMF_CP_CPT::get_images( $post ), true ) ) {
+            return new WP_Error( 'invalid_image', 'Imagen no pertenece a esta galería', [ 'status' => 400 ] );
+        }
         $text   = trim( (string) $req->get_param( 'text' ) );
         $name   = sanitize_text_field( (string) $req->get_param( 'name' ) );
         if ( ! $text ) return new WP_Error( 'empty', 'Comentario vacío', [ 'status' => 400 ] );
@@ -423,9 +444,11 @@ class YZMF_CP_REST {
             else update_post_meta( $post_id, '_yzmf_cp_password', wp_hash_password( (string) $pwd ) );
         }
 
-        foreach ( [ 'expires', 'allow_download', 'allow_comments' ] as $k ) {
+        $expires = $req->get_param( 'expires' );
+        if ( $expires !== null ) update_post_meta( $post_id, '_yzmf_cp_expires', max( 0, (int) $expires ) );
+        foreach ( [ 'allow_download', 'allow_comments' ] as $k ) {
             $v = $req->get_param( $k );
-            if ( $v !== null ) update_post_meta( $post_id, '_yzmf_cp_' . $k, $v );
+            if ( $v !== null ) update_post_meta( $post_id, '_yzmf_cp_' . $k, rest_sanitize_boolean( $v ) ? '1' : '' );
         }
         foreach ( [ 'client_name', 'client_email', 'message' ] as $k ) {
             $v = $req->get_param( $k );

@@ -3,7 +3,7 @@
  * Plugin Name: YZMF Hotlink Watermark
  * Plugin URI:  https://yezraelperez.es
  * Description: Detecta hotlinking de imágenes desde dominios externos y sirve una versión con marca de agua. Cache en disco, configurable.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Requires PHP: 7.4
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'YZMF_HW_VERSION', '1.0.0' );
+define( 'YZMF_HW_VERSION', '1.0.1' );
 define( 'YZMF_HW_PATH',    plugin_dir_path( __FILE__ ) );
 define( 'YZMF_HW_URL',     plugin_dir_url( __FILE__ ) );
 // Caché: wp-content/uploads/yzmf-hotlink-cache/

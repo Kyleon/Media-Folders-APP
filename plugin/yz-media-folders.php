@@ -3,7 +3,7 @@
  * Plugin Name: YZ Media Folders
  * Plugin URI:  https://nubedocs.es
  * Description: Gestor de medios propio con carpetas, drag & drop, modal de edición, sliders configurables y REST API. Independiente de la librería nativa de WordPress.
- * Version:     2.8.0
+ * Version:     2.8.1
  * Requires PHP: 7.4
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'YZMF_VERSION',  '2.8.0' );
+define( 'YZMF_VERSION',  '2.8.1' );
 define( 'YZMF_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'YZMF_URL',      plugin_dir_url( __FILE__ ) );
 define( 'YZMF_TAXONOMY', 'yz_media_folder' );
@@ -74,6 +74,9 @@ if ( ! function_exists( 'yzmf_bust_stats_cache' ) ) {
         delete_transient( 'yzmf_stats_exif_cache' );
         delete_transient( 'yzmf_tags_cache' );
         delete_transient( 'yzmf_colors_cache' );
+        // El mapa público incluye miniaturas de adjuntos: si se borra o
+        // edita uno, que no siga apareciendo 15 min.
+        delete_transient( 'yzmf_map_public_data' );
         // Pide al plugin LSCache que invalide el HTML público que pudiera
         // estar mostrando este attachment. do_action no-op si LSCache no
         // está instalado. Evita tener que purgar manualmente desde hPanel

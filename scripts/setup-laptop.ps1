@@ -126,6 +126,7 @@ if (Test-Path $sftpFile) {
   "name": "YPVA App",
   "host": "145.14.152.131",
   "protocol": "ftp",
+  "secure": true,
   "port": 21,
   "username": "u604760889",
   "password": "PEGA_AQUI_TU_PASSWORD_FTP",

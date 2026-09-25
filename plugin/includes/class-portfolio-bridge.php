@@ -136,12 +136,12 @@ class YZMF_Portfolio_Bridge {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'update_portfolio' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_edit_item' ],
             ],
             [
                 'methods'             => 'DELETE',
                 'callback'            => [ __CLASS__, 'delete_portfolio' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_delete' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_delete_item' ],
             ],
         ] );
 
@@ -154,14 +154,14 @@ class YZMF_Portfolio_Bridge {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'set_portfolio_gallery' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_edit_item' ],
             ],
         ] );
 
         register_rest_route( self::NS, '/portfolios/(?P<id>\d+)/sync-folder', [
             'methods'             => 'POST',
             'callback'            => [ __CLASS__, 'sync_folder_to_gallery' ],
-            'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+            'permission_callback' => [ 'YZMF_REST', 'can_edit_item' ],
         ] );
 
         register_rest_route( self::NS, '/portfolios/(?P<id>\d+)/duplicate', [
@@ -185,7 +185,7 @@ class YZMF_Portfolio_Bridge {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'set_portfolio_meta' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_edit_item' ],
             ],
         ] );
 
@@ -198,7 +198,7 @@ class YZMF_Portfolio_Bridge {
             [
                 'methods'             => 'POST',
                 'callback'            => [ __CLASS__, 'create_category' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_manage_terms' ],
             ],
         ] );
 
@@ -206,12 +206,12 @@ class YZMF_Portfolio_Bridge {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'update_category' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_manage_terms' ],
             ],
             [
                 'methods'             => 'DELETE',
                 'callback'            => [ __CLASS__, 'delete_category' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_manage_terms' ],
             ],
         ] );
     }
@@ -265,7 +265,7 @@ class YZMF_Portfolio_Bridge {
             'post_title'   => $title,
             'post_content' => wp_kses_post( $req->get_param( 'content' ) ?: '' ),
             'post_excerpt' => sanitize_textarea_field( $req->get_param( 'excerpt' ) ?: '' ),
-            'post_status'  => sanitize_key( $req->get_param( 'status' ) ?: 'draft' ),
+            'post_status'  => self::allowed_status( $req->get_param( 'status' ) ?: 'draft' ),
         ], true );
         if ( is_wp_error( $id ) ) return $id;
 
@@ -284,7 +284,7 @@ class YZMF_Portfolio_Bridge {
         if ( $req->get_param( 'title' )   !== null ) $update['post_title']   = sanitize_text_field( $req->get_param( 'title' ) );
         if ( $req->get_param( 'content' ) !== null ) $update['post_content'] = wp_kses_post( $req->get_param( 'content' ) );
         if ( $req->get_param( 'excerpt' ) !== null ) $update['post_excerpt'] = sanitize_textarea_field( $req->get_param( 'excerpt' ) );
-        if ( $req->get_param( 'status' )  !== null ) $update['post_status']  = sanitize_key( $req->get_param( 'status' ) );
+        if ( $req->get_param( 'status' )  !== null ) $update['post_status']  = self::allowed_status( $req->get_param( 'status' ) );
         if ( count( $update ) > 1 ) wp_update_post( $update );
 
         self::apply_portfolio_fields( $id, $req );
@@ -300,6 +300,19 @@ class YZMF_Portfolio_Bridge {
         $force = (bool) $req->get_param( 'force' );
         wp_delete_post( $id, $force );
         return rest_ensure_response( [ 'deleted' => true, 'id' => $id, 'force' => $force ] );
+    }
+
+    /**
+     * Estados permitidos desde la API. Sin publish_posts, 'publish'/'future'
+     * se degradan a 'pending' (igual que hace el editor de WordPress).
+     */
+    private static function allowed_status( $status ) {
+        $status = sanitize_key( (string) $status );
+        if ( ! in_array( $status, [ 'draft', 'pending', 'private', 'publish', 'future' ], true ) ) $status = 'draft';
+        if ( in_array( $status, [ 'publish', 'future', 'private' ], true ) && ! current_user_can( 'publish_posts' ) ) {
+            $status = 'pending';
+        }
+        return $status;
     }
 
     private static function apply_portfolio_fields( $id, WP_REST_Request $req ) {

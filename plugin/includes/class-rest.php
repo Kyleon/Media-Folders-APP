@@ -104,6 +104,23 @@ class YZMF_REST {
         return current_user_can( 'manage_options' );
     }
 
+    /**
+     * Permisos por objeto para rutas con {id}: además de subir archivos,
+     * el usuario debe poder editar/borrar ESE post (un Autor no puede tocar
+     * los medios, portfolios o posts del feed de otro usuario).
+     */
+    public static function can_edit_item( WP_REST_Request $req ) {
+        return current_user_can( 'upload_files' ) && current_user_can( 'edit_post', (int) $req['id'] );
+    }
+
+    public static function can_delete_item( WP_REST_Request $req ) {
+        return current_user_can( 'upload_files' ) && current_user_can( 'delete_post', (int) $req['id'] );
+    }
+
+    public static function can_manage_terms() {
+        return current_user_can( 'manage_categories' );
+    }
+
     /* ─────────── Routes ─────────── */
 
     public static function register_routes() {
@@ -164,19 +181,19 @@ class YZMF_REST {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'update_media' ],
-                'permission_callback' => [ __CLASS__, 'can_upload' ],
+                'permission_callback' => [ __CLASS__, 'can_edit_item' ],
             ],
             [
                 'methods'             => 'DELETE',
                 'callback'            => [ __CLASS__, 'delete_media' ],
-                'permission_callback' => [ __CLASS__, 'can_delete' ],
+                'permission_callback' => [ __CLASS__, 'can_delete_item' ],
             ],
         ] );
 
         register_rest_route( self::NS, '/media/(?P<id>\d+)/folder', [
             'methods'             => 'PUT',
             'callback'            => [ __CLASS__, 'set_media_folder' ],
-            'permission_callback' => [ __CLASS__, 'can_upload' ],
+            'permission_callback' => [ __CLASS__, 'can_edit_item' ],
         ] );
 
         register_rest_route( self::NS, '/media/folder/bulk', [
@@ -195,7 +212,7 @@ class YZMF_REST {
         register_rest_route( self::NS, '/media/(?P<id>\d+)/geo', [
             'methods'             => 'PUT',
             'callback'            => [ __CLASS__, 'set_media_geo' ],
-            'permission_callback' => [ __CLASS__, 'can_upload' ],
+            'permission_callback' => [ __CLASS__, 'can_edit_item' ],
         ] );
 
         register_rest_route( self::NS, '/media/geo/bulk', [
@@ -244,7 +261,7 @@ class YZMF_REST {
         register_rest_route( self::NS, '/media/(?P<id>\d+)/ai', [
             'methods'             => 'POST',
             'callback'            => [ __CLASS__, 'media_ai' ],
-            'permission_callback' => [ __CLASS__, 'can_upload' ],
+            'permission_callback' => [ __CLASS__, 'can_edit_item' ],
         ] );
 
         register_rest_route( self::NS, '/media/(?P<id>\d+)/download', [
@@ -285,12 +302,12 @@ class YZMF_REST {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'save_location' ],
-                'permission_callback' => [ __CLASS__, 'can_upload' ],
+                'permission_callback' => [ __CLASS__, 'can_edit_item' ],
             ],
             [
                 'methods'             => 'DELETE',
                 'callback'            => [ __CLASS__, 'delete_location' ],
-                'permission_callback' => [ __CLASS__, 'can_upload' ],
+                'permission_callback' => [ __CLASS__, 'can_delete_item' ],
             ],
         ] );
 
@@ -322,7 +339,7 @@ class YZMF_REST {
         register_rest_route( self::NS, '/media/(?P<id>\d+)/palette', [
             'methods'             => 'PUT',
             'callback'            => [ __CLASS__, 'set_media_palette' ],
-            'permission_callback' => [ __CLASS__, 'can_upload' ],
+            'permission_callback' => [ __CLASS__, 'can_edit_item' ],
         ] );
 
         // ── GEOCODING (proxy de Nominatim) ──────────────────────
@@ -578,7 +595,9 @@ class YZMF_REST {
         if ( ! $id || get_post_type( $id ) !== 'attachment' ) {
             return new WP_Error( 'yzmf_not_found', 'No encontrado', [ 'status' => 404 ] );
         }
-        return rest_ensure_response( self::apply_geo_to_id( $id, $req->get_params() ) );
+        $r = self::apply_geo_to_id( $id, $req->get_params() );
+        if ( is_wp_error( $r ) ) return $r;
+        return rest_ensure_response( $r );
     }
 
     public static function set_media_geo_bulk( WP_REST_Request $req ) {
@@ -591,7 +610,14 @@ class YZMF_REST {
                 $errors[] = [ 'id' => $id, 'error' => 'No attachment' ];
                 continue;
             }
-            self::apply_geo_to_id( $id, $params );
+            if ( ! current_user_can( 'edit_post', $id ) ) {
+                $errors[] = [ 'id' => $id, 'error' => 'Sin permisos' ];
+                continue;
+            }
+            $r = self::apply_geo_to_id( $id, $params );
+            if ( is_wp_error( $r ) ) {
+                return $r; // mismos params para todos: si falla uno, fallan todos
+            }
             $done++;
         }
         return rest_ensure_response( [
@@ -662,6 +688,10 @@ class YZMF_REST {
         foreach ( $ids as $id ) {
             if ( get_post_type( $id ) !== 'attachment' ) {
                 $errors[] = [ 'id' => $id, 'error' => 'No attachment' ];
+                continue;
+            }
+            if ( ! current_user_can( 'edit_post', $id ) ) {
+                $errors[] = [ 'id' => $id, 'error' => 'Sin permisos' ];
                 continue;
             }
             $post = get_post( $id );
@@ -779,7 +809,7 @@ class YZMF_REST {
 
     /**
      * Aplica datos de geo a un attachment. Si lat/lng vienen vacíos o nulos,
-     * se elimina la geo. Devuelve el image formateado.
+     * se elimina la geo. Devuelve el image formateado o WP_Error.
      */
     private static function apply_geo_to_id( $id, $params ) {
         $lat   = $params['lat']   ?? null;
@@ -798,7 +828,7 @@ class YZMF_REST {
             $lng_f = floatval( $lng );
             // Validación: rangos legales
             if ( $lat_f < -90 || $lat_f > 90 || $lng_f < -180 || $lng_f > 180 ) {
-                return [ 'error' => 'Coordenadas fuera de rango' ];
+                return new WP_Error( 'yzmf_invalid_coords', 'Coordenadas fuera de rango', [ 'status' => 400 ] );
             }
             update_post_meta( $id, '_yzmf_geo_lat', round( $lat_f, 6 ) );
             update_post_meta( $id, '_yzmf_geo_lng', round( $lng_f, 6 ) );
@@ -1557,9 +1587,13 @@ class YZMF_REST {
     }
 
     public static function geocode_reverse( WP_REST_Request $req ) {
-        $lat = floatval( $req->get_param( 'lat' ) );
-        $lng = floatval( $req->get_param( 'lng' ) );
-        if ( ! $lat || ! $lng ) return new WP_Error( 'yzmf_invalid', 'lat/lng requeridos', [ 'status' => 400 ] );
+        $lat_raw = $req->get_param( 'lat' );
+        $lng_raw = $req->get_param( 'lng' );
+        if ( ! is_numeric( $lat_raw ) || ! is_numeric( $lng_raw ) ) {
+            return new WP_Error( 'yzmf_invalid', 'lat/lng requeridos', [ 'status' => 400 ] );
+        }
+        $lat = floatval( $lat_raw );
+        $lng = floatval( $lng_raw );
 
         $cache_key = 'yzmf_geo_r_' . md5( $lat . ',' . $lng );
         $cached    = get_transient( $cache_key );

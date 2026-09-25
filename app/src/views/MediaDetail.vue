@@ -12,6 +12,7 @@ import GeoTagger from '../components/GeoTagger.vue';
 import MediaPicker from '../components/MediaPicker.vue';
 import L from 'leaflet';
 import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts';
+import { basicAuth } from '../utils/basicAuth';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 const router  = useRouter();
@@ -110,7 +111,7 @@ async function download() {
   const base = auth.creds.baseUrl.replace(/\/+$/, '');
   const endpoint = base + '/wp-json/yzmf/v1/media/' + item.value.id + '/download';
   const pw = auth.creds.appPassword.replace(/\s+/g, '');
-  const authHeader = 'Basic ' + btoa(auth.creds.username + ':' + pw);
+  const authHeader = basicAuth(auth.creds.username, pw);
 
   try {
     const res = await fetch(endpoint, {

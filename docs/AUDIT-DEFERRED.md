@@ -118,8 +118,8 @@ Hacerlo gradualmente, una clase por commit.
 
 ### L-06 · Migrar deploy de FTP → SFTP/FTPS
 
-**Estado:** diferido por dependencia externa.
-**Por qué:** `deploy.ps1` y `deploy-plugin.ps1` usan FTP puro (puerto 21) con credenciales en `app/.vscode/sftp.json`. Hostinger soporta SFTP pero PowerShell estándar no lo trae nativo.
+**Estado:** ✅ resuelto en 2.8.1 con **FTPS explícito** (AUTH TLS, TLS 1.2) vía `scripts/ftp-common.ps1`, sin dependencias externas. Los tres scripts (`deploy.ps1`, `deploy-plugin.ps1`, `delete-remote-file.ps1`) usan además rutas absolutas (`%2F`), porque Hostinger cambió el directorio inicial de la sesión FTP a `/public_html` y las rutas relativas daban 550. `"secure": false` en `sftp.json` vuelve a FTP plano. Queda pendiente solo lo de guardar la credencial fuera del JSON plano.
+**Por qué (original):** `deploy.ps1` y `deploy-plugin.ps1` usan FTP puro (puerto 21) con credenciales en `app/.vscode/sftp.json`. Hostinger soporta SFTP pero PowerShell estándar no lo trae nativo.
 
 **Plan:** instalar `Posh-SSH` o usar WinSCP CLI. Reescribir las funciones `Upload-FtpFile`/`Ensure-FtpDir` con el nuevo cliente. Documentar en `docs/MULTI-EQUIPO.md`. Considerar Credential Manager o `.env` cifrado en lugar del JSON plano.
 

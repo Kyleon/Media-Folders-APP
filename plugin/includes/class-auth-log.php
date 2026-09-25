@@ -47,10 +47,10 @@ class YZMF_Auth_Log {
             'ua'     => self::ua(),
         ] );
         // Resetear locks de esa IP en login exitoso
-        $locks = get_option( self::OPT_LOCKS, [] );
-        if ( is_array( $locks ) && isset( $locks[ self::ip() ] ) ) {
+        $locks = self::active_locks();
+        if ( isset( $locks[ self::ip() ] ) ) {
             unset( $locks[ self::ip() ] );
-            update_option( self::OPT_LOCKS, $locks );
+            update_option( self::OPT_LOCKS, $locks, false );
         }
     }
 
@@ -69,9 +69,9 @@ class YZMF_Auth_Log {
         if ( $user instanceof WP_User ) return $user;  // ya autenticado por otro filtro
         if ( empty( $username ) ) return $user;        // formulario vacío
 
-        $locks = get_option( self::OPT_LOCKS, [] );
+        $locks = self::active_locks();
         $ip = self::ip();
-        if ( is_array( $locks ) && ! empty( $locks[ $ip ] ) && $locks[ $ip ] > time() ) {
+        if ( ! empty( $locks[ $ip ] ) ) {
             $remaining = (int) ceil( ( $locks[ $ip ] - time() ) / 60 );
             return new WP_Error(
                 'yzmf_locked',
@@ -100,10 +100,9 @@ class YZMF_Auth_Log {
             }
         }
         if ( $count >= $max ) {
-            $locks = get_option( self::OPT_LOCKS, [] );
-            if ( ! is_array( $locks ) ) $locks = [];
+            $locks = self::active_locks();
             $locks[ $ip ] = time() + $lock * MINUTE_IN_SECONDS;
-            update_option( self::OPT_LOCKS, $locks );
+            update_option( self::OPT_LOCKS, $locks, false );
             self::push( [
                 'ts'   => time(),
                 'type' => 'lockout',
@@ -123,7 +122,21 @@ class YZMF_Auth_Log {
         if ( count( $log ) > self::MAX_LOG ) {
             $log = array_slice( $log, -self::MAX_LOG );
         }
-        update_option( self::OPT_LOG, $log );
+        // autoload=false: no cargar 200 entradas en cada request del sitio
+        update_option( self::OPT_LOG, $log, false );
+    }
+
+    /**
+     * Locks vigentes (ip => unlock_ts). Purga los caducados de la opción
+     * para que no crezca indefinidamente.
+     */
+    private static function active_locks() {
+        $locks = get_option( self::OPT_LOCKS, [] );
+        if ( ! is_array( $locks ) ) $locks = [];
+        $now    = time();
+        $active = array_filter( $locks, function ( $until ) use ( $now ) { return (int) $until > $now; } );
+        if ( count( $active ) !== count( $locks ) ) update_option( self::OPT_LOCKS, $active, false );
+        return $active;
     }
 
     public static function log() {
@@ -186,19 +199,13 @@ class YZMF_Auth_Log {
         }
         unset( $e );
 
-        $locks = get_option( self::OPT_LOCKS, [] );
         $active_locks = [];
-        if ( is_array( $locks ) ) {
-            $now = time();
-            foreach ( $locks as $ip => $until ) {
-                if ( $until > $now ) {
-                    $active_locks[] = [
-                        'ip'         => $ip,
-                        'unlock_at'  => (int) $until,
-                        'unlock_iso' => gmdate( 'c', (int) $until ),
-                    ];
-                }
-            }
+        foreach ( self::active_locks() as $ip => $until ) {
+            $active_locks[] = [
+                'ip'         => $ip,
+                'unlock_at'  => (int) $until,
+                'unlock_iso' => gmdate( 'c', (int) $until ),
+            ];
         }
 
         return rest_ensure_response( [

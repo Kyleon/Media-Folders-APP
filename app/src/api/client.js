@@ -13,12 +13,13 @@
 import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
 import router from '../router';
+import { basicAuth } from '../utils/basicAuth';
 
 function buildAuthHeader(creds) {
   if (!creds || !creds.username || !creds.appPassword) return null;
   // App passwords vienen con espacios — los toleramos
   const pw = creds.appPassword.replace(/\s+/g, '');
-  return 'Basic ' + btoa(creds.username + ':' + pw);
+  return basicAuth(creds.username, pw);
 }
 
 // Ventana corta de 401 consecutivos para detectar sesión realmente inválida.
@@ -85,7 +86,7 @@ async function request(method, path, { params, body, isMultipart = false, signal
     if (res.status === 401 && recordAuthFailure()) {
       try {
         useUiStore().toast('🔒 Sesión inválida — inicia de nuevo', 'err');
-        auth.logout();
+        auth.logout({ revoke: false }); // la clave ya no es válida
         router.replace({ name: 'login' });
       } catch {}
     }

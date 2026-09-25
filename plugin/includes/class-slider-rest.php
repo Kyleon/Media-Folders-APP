@@ -48,12 +48,12 @@ class YZMF_Slider_REST {
             [
                 'methods'             => 'PUT',
                 'callback'            => [ __CLASS__, 'update_slider' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_edit_item' ],
             ],
             [
                 'methods'             => 'DELETE',
                 'callback'            => [ __CLASS__, 'delete_slider' ],
-                'permission_callback' => [ 'YZMF_REST', 'can_upload' ],
+                'permission_callback' => [ 'YZMF_REST', 'can_delete_item' ],
             ],
         ] );
 

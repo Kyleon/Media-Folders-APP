@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { useUiStore } from '../stores/ui';
 import { useBrandStore } from '../stores/brand';
 import Spinner from '../components/Spinner.vue';
+import { basicAuth } from '../utils/basicAuth';
 
 const router = useRouter();
 const route  = useRoute();
@@ -36,6 +37,26 @@ function setMode(m) {
   error.value = '';
 }
 
+function loginErrorMessage(status, data) {
+  if (status === 401) return 'Usuario o contraseña incorrectos';
+  if (status === 403) return (data && data.message) || 'Acceso denegado por el servidor (permisos o lockout activo)';
+  if (status === 404) return 'No se encontró la API. Comprueba la URL del sitio (y que el plugin esté actualizado).';
+  if (status === 501) return (data && data.message) || 'El sitio no permite Application Passwords (requiere HTTPS).';
+  return 'No se pudo conectar (' + status + ')';
+}
+
+// Nombre corto del equipo para identificar la clave en WP (Usuarios → Perfil)
+function deviceLabel() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone/.test(ua))       return 'iPhone';
+  if (/iPad/.test(ua))         return 'iPad';
+  if (/Android/.test(ua))      return 'Android';
+  if (/Windows/.test(ua))      return 'Windows';
+  if (/Macintosh/.test(ua))    return 'Mac';
+  if (/Linux/.test(ua))        return 'Linux';
+  return 'Navegador';
+}
+
 async function login() {
   error.value = '';
   if (!baseUrl.value || !username.value || !password.value) {
@@ -44,25 +65,40 @@ async function login() {
   }
   submitting.value = true;
   try {
-    // En modo Application Password, quitamos los espacios que WordPress
-    // muestra al generar la clave (xxxx xxxx xxxx xxxx).
-    const pw = isAppMode.value ? password.value.replace(/\s+/g, '') : password.value;
-    const url = baseUrl.value.replace(/\/+$/, '') + '/wp-json/yzmf/v1/folders';
-    const headers = { Authorization: 'Basic ' + btoa(username.value + ':' + pw) };
-    const res = await fetch(url, { headers, credentials: 'omit' });
-    if (!res.ok) {
-      let msg;
-      if (res.status === 401)      msg = 'Usuario o contraseña incorrectos';
-      else if (res.status === 403) msg = 'Acceso denegado por el servidor (permisos o lockout activo)';
-      else if (res.status === 404) msg = 'No se encontró la API. Comprueba la URL del sitio.';
-      else                         msg = 'No se pudo conectar (' + res.status + ')';
-      throw new Error(msg);
+    const site = baseUrl.value.replace(/\/+$/, '');
+    let user = username.value;
+    let pw;
+
+    if (isAppMode.value) {
+      // Application Password pegada por el usuario: quitamos los espacios
+      // que WordPress muestra al generarla (xxxx xxxx xxxx xxxx) y validamos.
+      pw = password.value.replace(/\s+/g, '');
+      const res = await fetch(site + '/wp-json/yzmf/v1/folders', {
+        headers: { Authorization: basicAuth(user, pw) },
+        credentials: 'omit',
+      });
+      if (!res.ok) throw new Error(loginErrorMessage(res.status));
+    } else {
+      // Contraseña regular: la canjeamos por una Application Password nueva
+      // y guardamos SOLO esa (revocable). La contraseña real no se persiste.
+      const res = await fetch(site + '/wp-json/yzmf/v1/auth/token', {
+        method: 'POST',
+        headers: { Authorization: basicAuth(user, password.value), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device: deviceLabel() }),
+        credentials: 'omit',
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(loginErrorMessage(res.status, data));
+      user = data.username || user;
+      pw   = data.password;
     }
+
+    password.value = '';
     auth.login({
       baseUrl: baseUrl.value,
-      username: username.value,
+      username: user,
       appPassword: pw,
-      authMode: mode.value,
+      authMode: mode.value, // 'password' = clave generada por la PWA → se revoca al salir
     });
     ui.toast('✓ Sesión iniciada', 'ok');
     const redirect = route.query.redirect || '/';
@@ -121,7 +157,8 @@ async function login() {
             </button>
           </div>
           <p v-if="!isAppMode" class="hint muted">
-            La contraseña habitual de WordPress de tu usuario.
+            La contraseña habitual de WordPress. No se guarda: se canjea por una
+            clave de acceso propia de este dispositivo, que se revoca al cerrar sesión.
           </p>
           <p v-else class="hint muted">
             Crea una en <code>Ajustes → Usuarios → tu usuario → Application Passwords</code>.

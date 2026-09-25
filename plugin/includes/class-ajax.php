@@ -91,6 +91,16 @@ class YZMF_Ajax {
         if ( ! current_user_can( 'upload_files' ) ) wp_die( 'Forbidden', 403 );
     }
 
+    /** ¿Es un adjunto que el usuario actual puede editar? */
+    private static function can_edit_attachment( $id ) {
+        return $id > 0 && get_post_type( $id ) === 'attachment' && current_user_can( 'edit_post', $id );
+    }
+
+    /** Filtra una lista de IDs dejando solo adjuntos editables por el usuario. */
+    private static function editable_ids( array $ids ) {
+        return array_values( array_filter( array_map( 'intval', $ids ), [ __CLASS__, 'can_edit_attachment' ] ) );
+    }
+
     // ── FOLDER CRUD ───────────────────────────────────────────────
 
     public static function yzmf_get_tree() {
@@ -248,7 +258,7 @@ class YZMF_Ajax {
     public static function yzmf_assign_images() {
         self::check();
         $folder_id = intval( $_POST['folder_id'] ?? 0 );
-        $image_ids = array_map( 'intval', (array) ( $_POST['image_ids'] ?? [] ) );
+        $image_ids = self::editable_ids( (array) ( $_POST['image_ids'] ?? [] ) );
         if ( empty( $image_ids ) ) wp_send_json_error();
         foreach ( $image_ids as $id ) {
             $folder_id > 0
@@ -261,7 +271,7 @@ class YZMF_Ajax {
     public static function yzmf_copy_images() {
         self::check();
         $folder_id = intval( $_POST['folder_id'] ?? 0 );
-        $image_ids = array_map( 'intval', (array) ( $_POST['image_ids'] ?? [] ) );
+        $image_ids = self::editable_ids( (array) ( $_POST['image_ids'] ?? [] ) );
         if ( ! $folder_id || empty( $image_ids ) ) wp_send_json_error();
         foreach ( $image_ids as $id ) {
             wp_set_object_terms( $id, [ $folder_id ], YZMF_TAXONOMY, true );
@@ -273,7 +283,7 @@ class YZMF_Ajax {
         self::check();
         $folder_id = intval( $_POST['folder_id'] ?? 0 );
         $image_id  = intval( $_POST['image_id']  ?? 0 );
-        if ( ! $folder_id || ! $image_id ) wp_send_json_error();
+        if ( ! $folder_id || ! self::can_edit_attachment( $image_id ) ) wp_send_json_error();
         wp_remove_object_terms( $image_id, $folder_id, YZMF_TAXONOMY );
         wp_send_json_success();
     }
@@ -283,7 +293,10 @@ class YZMF_Ajax {
         if ( ! current_user_can( 'delete_posts' ) ) wp_send_json_error( [ 'message' => 'Sin permisos' ] );
         $ids     = array_map( 'intval', (array) ( $_POST['image_ids'] ?? [] ) );
         $deleted = 0;
-        foreach ( $ids as $id ) { if ( wp_delete_attachment( $id, false ) ) $deleted++; }
+        foreach ( $ids as $id ) {
+            if ( ! current_user_can( 'delete_post', $id ) ) continue;
+            if ( wp_delete_attachment( $id, false ) ) $deleted++;
+        }
         wp_send_json_success( [ 'deleted' => $deleted ] );
     }
 
@@ -298,7 +311,9 @@ class YZMF_Ajax {
     public static function yzmf_save_image_meta() {
         self::check();
         $id = intval( $_POST['id'] ?? 0 );
-        if ( ! $id ) wp_send_json_error();
+        // Solo adjuntos: antes aceptaba cualquier ID y permitía cambiar el
+        // título/contenido de páginas o posts ajenos.
+        if ( ! self::can_edit_attachment( $id ) ) wp_send_json_error( [ 'message' => 'Sin permisos' ] );
         if ( isset( $_POST['alt'] ) )         update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( $_POST['alt'] ) );
         if ( isset( $_POST['seo_title'] ) )   update_post_meta( $id, '_yzmf_seo_title',          sanitize_text_field( $_POST['seo_title'] ) );
         $pd = [ 'ID' => $id ];
@@ -393,6 +408,7 @@ class YZMF_Ajax {
     public static function yzmf_generate_ai_meta() {
         self::check();
         $image_id = intval( $_POST['image_id'] ?? 0 );
+        if ( ! self::can_edit_attachment( $image_id ) ) wp_send_json_error( [ 'message' => 'Sin permisos' ] );
         $r = self::generate_ai_for_image( $image_id );
         if ( $r['success'] ) wp_send_json_success( $r['data'] );
         wp_send_json_error( $r['data'] );
@@ -404,7 +420,9 @@ class YZMF_Ajax {
      */
     public static function generate_ai_for_image( $image_id, $context = null ) {
         $image_id = intval( $image_id );
-        if ( ! $image_id ) return [ 'success' => false, 'data' => [ 'message' => 'ID de imagen requerido' ] ];
+        if ( ! $image_id || get_post_type( $image_id ) !== 'attachment' ) {
+            return [ 'success' => false, 'data' => [ 'message' => 'ID de imagen requerido' ] ];
+        }
 
         $api_key = get_option( 'yzmf_claude_api_key', '' );
         if ( empty( $api_key ) ) {

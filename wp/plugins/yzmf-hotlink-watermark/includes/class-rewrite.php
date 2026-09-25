@@ -19,16 +19,20 @@ class YZMF_HW_Rewrite {
         // Reinstalar reglas si se actualiza la whitelist
         add_action( 'update_option_yzmf_hw_whitelist', [ __CLASS__, 'install_rules' ] );
         add_action( 'update_option_yzmf_hw_block_empty_referer', [ __CLASS__, 'install_rules' ] );
+        // Reinstalar tras un deploy SFTP (el activation hook no se dispara)
+        add_action( 'admin_init', [ __CLASS__, 'maybe_upgrade_rules' ] );
+    }
+
+    public static function maybe_upgrade_rules() {
+        if ( get_option( 'yzmf_hw_rules_version' ) === YZMF_HW_VERSION ) return;
+        if ( self::install_rules() === true ) {
+            update_option( 'yzmf_hw_rules_version', YZMF_HW_VERSION );
+        }
     }
 
     public static function rules_block() {
         $home_host = parse_url( home_url(), PHP_URL_HOST );
         $whitelist = YZMF_HW_Handler::get_whitelist();
-        $crawlers  = [
-            'google\.', 'bing\.', 'yahoo\.', 'duckduckgo\.',
-            'facebook\.', 'fbcdn\.', 'twitter\.', 't\.co', 'instagram\.',
-            'linkedin\.', 'pinterest\.', 'whatsapp\.', 'telegram\.',
-        ];
 
         $allow_empty = ! get_option( 'yzmf_hw_block_empty_referer', false );
 
@@ -49,11 +53,13 @@ class YZMF_HW_Rewrite {
             $lines[] = 'RewriteCond %{HTTP_REFERER} !^https?://(.+\.)?' . $w . '/ [NC]';
         }
 
-        // Permitir crawlers
+        // Permitir crawlers — anclado al host del referer (antes 't\.co'
+        // sin anclar dejaba pasar cualquier dominio '…t.com').
         if ( get_option( 'yzmf_hw_allow_search_engines', true ) ) {
-            foreach ( $crawlers as $c ) {
-                $lines[] = 'RewriteCond %{HTTP_REFERER} !' . $c . ' [NC]';
-            }
+            $brands  = implode( '|', YZMF_HW_Handler::CRAWLER_BRANDS );
+            $hosts   = implode( '|', array_map( function ( $h ) { return preg_quote( $h, '#' ); }, YZMF_HW_Handler::CRAWLER_HOSTS ) );
+            $lines[] = 'RewriteCond %{HTTP_REFERER} !^https?://([^/]+\.)?(' . $brands . ')\.((co|com)\.)?[a-z]{2,}(/|:|$) [NC]';
+            $lines[] = 'RewriteCond %{HTTP_REFERER} !^https?://([^/]+\.)?(' . $hosts . ')(/|:|$) [NC]';
         }
 
         // Reescribir solo imágenes

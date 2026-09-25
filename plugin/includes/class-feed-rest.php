@@ -59,8 +59,8 @@ class YZMF_Feed_REST {
 
 		register_rest_route( $ns, '/feed/(?P<id>\d+)', [
 			[ 'methods' => 'GET',    'callback' => [ __CLASS__, 'get_feed' ],    'permission_callback' => $auth ],
-			[ 'methods' => 'PUT',    'callback' => [ __CLASS__, 'update_feed' ], 'permission_callback' => $auth ],
-			[ 'methods' => 'DELETE', 'callback' => [ __CLASS__, 'delete_feed' ], 'permission_callback' => $auth ],
+			[ 'methods' => 'PUT',    'callback' => [ __CLASS__, 'update_feed' ], 'permission_callback' => [ 'YZMF_REST', 'can_edit_item' ] ],
+			[ 'methods' => 'DELETE', 'callback' => [ __CLASS__, 'delete_feed' ], 'permission_callback' => [ 'YZMF_REST', 'can_delete_item' ] ],
 		] );
 
 		register_rest_route( $ns, '/feed/(?P<id>\d+)/like', [
@@ -282,6 +282,16 @@ class YZMF_Feed_REST {
 		$params = self::params( $req );
 		$token  = substr( sanitize_text_field( $params['token'] ?? '' ), 0, 64 );
 		$ip     = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+
+		// Límite por IP: el token lo genera el cliente, así que rotándolo se
+		// podría inflar el contador sin fin. 30 toggles / 10 min por IP.
+		$rl_key = 'yzmf_feed_like_rl_' . md5( $ip );
+		$hits   = (int) get_transient( $rl_key );
+		if ( $hits >= 30 ) {
+			return new WP_Error( 'yzmf_feed_rate_limited', 'Demasiadas peticiones. Inténtalo más tarde.', [ 'status' => 429 ] );
+		}
+		set_transient( $rl_key, $hits + 1, 10 * MINUTE_IN_SECONDS );
+
 		$result = YZMF_Feed::toggle_like( $id, $ip . '|' . $token );
 
 		return rest_ensure_response( $result );
