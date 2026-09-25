@@ -167,7 +167,10 @@ function Upload-FtpFile {
 # Excluidos comunes
 $exclude = @(
     'users.json','setup.php','config.php','.git','.gitignore',
-    'node_modules','.cache','cache','.DS_Store','Thumbs.db'
+    'node_modules','.cache','cache','.DS_Store','Thumbs.db',
+    # Desarrollo/tests: no deben acabar en producción (ejecutables vía web).
+    # 'vendor' NO: kotlis-plugin lo necesita en runtime.
+    'tests','bin','composer.json','composer.lock','phpunit.xml','phpunit.xml.dist','.phpunit.result.cache'
 )
 
 # ── 4. Procesar cada target ────────────────────────────────────────────
